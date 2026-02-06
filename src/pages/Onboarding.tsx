@@ -97,6 +97,10 @@ export default function Onboarding() {
   // Identity
   const [identityType, setIdentityType] = useState<string>("other");
   const [consentGiven, setConsentGiven] = useState(false);
+  
+  // Video path storage (more reliable than localStorage)
+  const [savedVideoPath, setSavedVideoPath] = useState<string | null>(null);
+  const [savedVideoDuration, setSavedVideoDuration] = useState<number>(0);
 
   const navigate = useNavigate();
   const { user, profile, refreshUser } = useAuthContext();
@@ -442,9 +446,9 @@ export default function Onboarding() {
         metadata: { duration: recordingDuration, path }
       });
 
-      // Store path for identity creation
-      localStorage.setItem("ekko_onboarding_video_path", path);
-      localStorage.setItem("ekko_onboarding_video_duration", recordingDuration.toString());
+      // Store path in state for identity creation (more reliable than localStorage)
+      setSavedVideoPath(path);
+      setSavedVideoDuration(recordingDuration);
 
       toast({ title: "Vidéo enregistrée ✓" });
       setCurrentStep("identity");
@@ -482,13 +486,13 @@ export default function Onboarding() {
         .eq("is_active", true)
         .single();
 
-      const videoPath = localStorage.getItem("ekko_onboarding_video_path");
-      const videoDuration = parseInt(localStorage.getItem("ekko_onboarding_video_duration") || "0");
-      const hasVideo = !!videoPath;
-
       const displayName = `${title} – ${firstName} ${lastName}`;
 
-      // Create identity
+      // Create identity - always set to "ready" since onboarding requires video
+      // Use state values (more reliable) or fallback to localStorage for page refresh scenarios
+      const videoPath = savedVideoPath || localStorage.getItem("ekko_onboarding_video_path");
+      const videoDuration = savedVideoDuration || parseInt(localStorage.getItem("ekko_onboarding_video_duration") || "0");
+
       const { data: identity, error: identityError } = await supabase
         .from("identities")
         .insert({
@@ -497,7 +501,7 @@ export default function Onboarding() {
           provider_id: provider?.id || null,
           display_name: displayName,
           type: identityType as any,
-          status: hasVideo ? "ready" : "draft",
+          status: "ready", // Always ready - onboarding requires completing video step
           reference_video_path: videoPath,
           reference_video_duration: videoDuration || null,
           consent_given: consentGiven,
