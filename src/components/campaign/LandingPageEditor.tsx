@@ -315,28 +315,36 @@ export function LandingPageEditor({
 
                   {/* Content */}
                   <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
-                    <h2 
-                      className="text-xl font-bold mb-2"
+                    <input 
+                      type="text"
+                      value={config.headline}
+                      onChange={(e) => setConfig(prev => ({ ...prev, headline: e.target.value }))}
+                      placeholder="Titre principal"
+                      className="text-xl font-bold mb-2 bg-transparent border-none text-center w-full focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-2 py-1"
                       style={{ color: config.brandColor }}
-                    >
-                      {config.headline || "Titre principal"}
-                    </h2>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {config.subheadline || "Sous-titre"}
-                    </p>
+                    />
+                    <input 
+                      type="text"
+                      value={config.subheadline}
+                      onChange={(e) => setConfig(prev => ({ ...prev, subheadline: e.target.value }))}
+                      placeholder="Sous-titre"
+                      className="text-sm text-muted-foreground mb-4 bg-transparent border-none text-center w-full focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-2 py-1"
+                    />
 
                     {/* Video placeholder */}
                     <div className="w-full aspect-video bg-black/90 rounded-lg mb-6 flex items-center justify-center">
                       <div className="text-white/60 text-sm">Vidéo</div>
                     </div>
 
-                    {/* CTA Button */}
-                    <button
-                      className="px-6 py-3 rounded-lg text-white font-medium transition-transform hover:scale-105"
+                    {/* CTA Button - editable */}
+                    <input
+                      type="text"
+                      value={config.ctaText}
+                      onChange={(e) => setConfig(prev => ({ ...prev, ctaText: e.target.value }))}
+                      placeholder="Call to action"
+                      className="px-6 py-3 rounded-lg text-white font-medium text-center bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-white/30"
                       style={{ backgroundColor: config.brandColor }}
-                    >
-                      {config.ctaText || "Call to action"}
-                    </button>
+                    />
                   </div>
                 </div>
               </CardContent>
