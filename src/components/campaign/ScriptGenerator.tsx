@@ -39,8 +39,13 @@ const PURPOSE_OPTIONS = [
   { value: "autre", label: "Autre" },
 ];
 
+interface RecipientData {
+  firstName: string;
+  company: string;
+}
+
 interface ScriptGeneratorProps {
-  onScriptGenerated: (script: string) => void;
+  onScriptGenerated: (script: string, recipientData?: RecipientData) => void;
   senderName: string;
   senderTitle: string;
 }
@@ -101,11 +106,16 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
       }
 
       if (data?.script) {
-        onScriptGenerated(data.script);
+        // Pass both script and recipient data to parent
+        onScriptGenerated(data.script, data.recipientData);
         setIsOpen(false);
+        
+        const hasRecipientData = data.recipientData?.firstName || data.recipientData?.company;
         toast({
           title: "Script généré !",
-          description: "Le script a été ajouté. Vous pouvez le modifier si nécessaire.",
+          description: hasRecipientData 
+            ? "Le script et les informations du destinataire ont été ajoutés."
+            : "Le script a été ajouté. Vous pouvez le modifier si nécessaire.",
         });
       }
     } catch (error) {
