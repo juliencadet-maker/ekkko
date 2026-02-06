@@ -95,8 +95,15 @@ Génère le script maintenant:`;
     const data = await response.json();
     const script = data.choices?.[0]?.message?.content || "";
 
+    // Return script along with context data for auto-filling recipient fields
     return new Response(
-      JSON.stringify({ script }),
+      JSON.stringify({ 
+        script,
+        recipientData: {
+          firstName: context.recipientName || "",
+          company: context.recipientCompany || "",
+        }
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

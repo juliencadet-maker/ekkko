@@ -42,6 +42,7 @@ export default function NewCampaign() {
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientFirstName, setRecipientFirstName] = useState("");
   const [recipientLastName, setRecipientLastName] = useState("");
+  const [recipientCompany, setRecipientCompany] = useState("");
 
   // Data
   const [identities, setIdentities] = useState<Identity[]>([]);
@@ -192,6 +193,7 @@ export default function NewCampaign() {
         email: recipientEmail,
         first_name: recipientFirstName || null,
         last_name: recipientLastName || null,
+        company: recipientCompany || null,
       });
 
       // Log campaign creation
@@ -421,7 +423,16 @@ export default function NewCampaign() {
                   <div className="flex items-center justify-between">
                     <Label htmlFor="script">Script *</Label>
                     <ScriptGenerator
-                      onScriptGenerated={setScript}
+                      onScriptGenerated={(generatedScript, recipientData) => {
+                        setScript(generatedScript);
+                        // Auto-fill recipient fields if data provided
+                        if (recipientData?.firstName) {
+                          setRecipientFirstName(recipientData.firstName);
+                        }
+                        if (recipientData?.company) {
+                          setRecipientCompany(recipientData.company);
+                        }
+                      }}
                       senderName={`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Votre nom'}
                       senderTitle={profile?.title || 'Votre titre'}
                     />
@@ -499,6 +510,16 @@ export default function NewCampaign() {
                       placeholder="Dupont"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="recipientCompany">Entreprise</Label>
+                  <Input
+                    id="recipientCompany"
+                    value={recipientCompany}
+                    onChange={(e) => setRecipientCompany(e.target.value)}
+                    placeholder="TechCorp"
+                  />
                 </div>
 
                 <div className="flex gap-3">
