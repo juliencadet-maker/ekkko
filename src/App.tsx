@@ -17,6 +17,7 @@ import Approvals from "./pages/Approvals";
 import Audit from "./pages/Audit";
 import Governance from "./pages/Governance";
 import Settings from "./pages/Settings";
+import VideoLandingPage from "./pages/VideoLandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/lp/:campaignId" element={<VideoLandingPage />} />
             <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
             <Route path="/app/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
             <Route path="/app/campaigns" element={<AuthGuard><Campaigns /></AuthGuard>} />
