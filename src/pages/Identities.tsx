@@ -20,15 +20,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Users, Loader2, Trash2, Star } from "lucide-react";
+import { Users, Loader2, Trash2, Star, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Identity } from "@/types/database";
 import { IDENTITY_TYPES } from "@/lib/constants";
+import { CreateIdentityDialog } from "@/components/identity/CreateIdentityDialog";
 
 export default function Identities() {
   const [isLoading, setIsLoading] = useState(true);
   const [identities, setIdentities] = useState<Identity[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { membership, profile, user, refreshUser } = useAuthContext();
   const { toast } = useToast();
 
@@ -135,13 +137,31 @@ export default function Identities() {
 
   return (
     <AppLayout>
-      <PageHeader title="Identités" description="Gérez les identités numériques de votre organisation" />
+      <PageHeader 
+        title="Identités" 
+        description="Gérez les identités numériques de votre organisation"
+        actions={
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Créer une identité
+          </Button>
+        }
+      />
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
           ) : identities.length === 0 ? (
-            <EmptyState icon={Users} title="Aucune identité" description="Les identités sont créées lors de l'onboarding" className="py-16" />
+            <EmptyState 
+              icon={Users} 
+              title="Aucune identité" 
+              description="Créez votre première identité pour commencer à utiliser Ekko" 
+              className="py-16"
+              action={{
+                label: "Créer une identité",
+                onClick: () => setIsCreateDialogOpen(true)
+              }}
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -227,6 +247,12 @@ export default function Identities() {
           )}
         </CardContent>
       </Card>
+
+      <CreateIdentityDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onIdentityCreated={fetchIdentities}
+      />
     </AppLayout>
   );
 }
