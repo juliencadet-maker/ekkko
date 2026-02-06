@@ -18,10 +18,24 @@ import {
 } from "lucide-react";
 import { VIDEO_CONSTRAINTS, SUGGESTED_SCRIPT } from "@/lib/constants";
 
-// Teleprompter script that highlights benefits
-const TELEPROMPTER_SCRIPT = `Bonjour, je m'appelle [votre prénom] [votre nom].
+// User info for personalized teleprompter
+export interface VideoRecorderUserInfo {
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  title?: string;
+}
 
-Je travaille chez [votre entreprise] en tant que [votre fonction].
+// Generate personalized teleprompter script
+function generateTeleprompterScript(userInfo?: VideoRecorderUserInfo): string {
+  const firstName = userInfo?.firstName || "[votre prénom]";
+  const lastName = userInfo?.lastName || "[votre nom]";
+  const company = userInfo?.company || "[votre entreprise]";
+  const title = userInfo?.title || "[votre fonction]";
+
+  return `Bonjour, je m'appelle ${firstName} ${lastName}.
+
+Je travaille chez ${company} en tant que ${title}.
 
 Je fais cet enregistrement car bientôt je serai en mesure de créer plus de confiance sur le cycle de vente, tout en gagnant du temps.
 
@@ -32,6 +46,7 @@ Cela me permettra d'impliquer des personnes plus facilement, afin de créer plus
 Avec Ekko, je vais pouvoir personnaliser mes messages vidéo pour chaque prospect, et ainsi augmenter significativement mes taux de conversion.
 
 Merci de votre attention !`;
+}
 
 // Supported MIME types in order of preference
 const SUPPORTED_MIME_TYPES = [
@@ -68,9 +83,10 @@ interface VideoRecorderProps {
   onVideoReady: (blob: Blob, duration: number) => void;
   consentGiven: boolean;
   onConsentChange: (checked: boolean) => void;
+  userInfo?: VideoRecorderUserInfo;
 }
 
-export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: VideoRecorderProps) {
+export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo }: VideoRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
@@ -457,8 +473,8 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
               ref={teleprompterRef}
               className="h-24 overflow-hidden text-white text-center"
             >
-              <div className="space-y-3 py-2">
-                {TELEPROMPTER_SCRIPT.split('\n\n').map((paragraph, index) => (
+            <div className="space-y-3 py-2">
+                {generateTeleprompterScript(userInfo).split('\n\n').map((paragraph, index) => (
                   <p 
                     key={index} 
                     className="text-sm md:text-base leading-relaxed font-medium"
