@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, 
@@ -23,11 +24,47 @@ import {
   RotateCcw,
   Upload,
   AlertCircle,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle,
+  Camera,
+  FileVideo
 } from "lucide-react";
 import { ONBOARDING_STEPS, SUGGESTED_SCRIPT, VIDEO_CONSTRAINTS, IDENTITY_TYPES } from "@/lib/constants";
 
 type OnboardingStep = "welcome" | "profile" | "facecam" | "identity" | "complete";
+
+// Supported MIME types in order of preference
+const SUPPORTED_MIME_TYPES = [
+  "video/webm;codecs=vp9",
+  "video/webm;codecs=vp8",
+  "video/webm",
+  "video/mp4",
+];
+
+// Get best supported MIME type for the browser
+function getSupportedMimeType(): string | null {
+  if (typeof MediaRecorder === "undefined") return null;
+  for (const mimeType of SUPPORTED_MIME_TYPES) {
+    if (MediaRecorder.isTypeSupported(mimeType)) {
+      return mimeType;
+    }
+  }
+  return null;
+}
+
+// Check if browser supports all required APIs
+function checkBrowserSupport(): { supported: boolean; reason?: string } {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices) {
+    return { supported: false, reason: "Votre navigateur ne supporte pas l'accès à la caméra." };
+  }
+  if (typeof MediaRecorder === "undefined") {
+    return { supported: false, reason: "Votre navigateur ne supporte pas l'enregistrement vidéo." };
+  }
+  if (!getSupportedMimeType()) {
+    return { supported: false, reason: "Aucun format vidéo compatible n'est disponible." };
+  }
+  return { supported: true };
+}
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome");
@@ -46,11 +83,16 @@ export default function Onboarding() {
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isInitializingCamera, setIsInitializingCamera] = useState(false);
+  const [browserSupport, setBrowserSupport] = useState<{ supported: boolean; reason?: string } | null>(null);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Identity
   const [identityType, setIdentityType] = useState<string>("other");
@@ -61,30 +103,76 @@ export default function Onboarding() {
   const { logEvent } = useAuditLog();
   const { toast } = useToast();
 
-  // Log onboarding started
+  // Log onboarding started and check browser support
   useEffect(() => {
     logEvent({ eventType: "onboarding_started" });
+    setBrowserSupport(checkBrowserSupport());
   }, [logEvent]);
 
   // Calculate progress
   const stepIndex = ONBOARDING_STEPS.findIndex(s => s.key === currentStep);
   const progress = ((stepIndex + 1) / ONBOARDING_STEPS.length) * 100;
 
-  // Initialize camera
+  // Initialize camera with comprehensive error handling
   const initCamera = useCallback(async () => {
+    setIsInitializingCamera(true);
+    setCameraError(null);
+    setRecordingError(null);
+    
     try {
+      // Check browser support first
+      const support = checkBrowserSupport();
+      if (!support.supported) {
+        setCameraError(support.reason || "Navigateur non supporté");
+        setHasPermission(false);
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 1280, height: 720 },
+        video: { 
+          facingMode: "user", 
+          width: { ideal: 1280, min: 640 }, 
+          height: { ideal: 720, min: 480 } 
+        },
         audio: true,
       });
+      
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => resolve();
+            videoRef.current.onerror = () => reject(new Error("Erreur de chargement vidéo"));
+            setTimeout(() => reject(new Error("Timeout lors du chargement")), 10000);
+          } else {
+            reject(new Error("Référence vidéo manquante"));
+          }
+        });
       }
       setHasPermission(true);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Camera error:", error);
       setHasPermission(false);
+      
+      // Provide specific error messages based on error type
+      const err = error as Error & { name?: string };
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setCameraError("Accès à la caméra refusé. Veuillez autoriser l'accès dans les paramètres de votre navigateur.");
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        setCameraError("Aucune caméra détectée. Veuillez connecter une webcam.");
+      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+        setCameraError("La caméra est utilisée par une autre application. Veuillez la fermer et réessayer.");
+      } else if (err.name === "OverconstrainedError") {
+        setCameraError("Votre caméra ne supporte pas la résolution requise.");
+      } else if (err.name === "TypeError") {
+        setCameraError("Erreur de configuration. Veuillez actualiser la page.");
+      } else {
+        setCameraError(err.message || "Erreur inattendue lors de l'accès à la caméra.");
+      }
+    } finally {
+      setIsInitializingCamera(false);
     }
   }, []);
 
@@ -100,67 +188,162 @@ export default function Onboarding() {
     };
   }, []);
 
-  // Start recording
+  // Start recording with error handling
   const startRecording = useCallback(() => {
-    if (!streamRef.current) return;
+    if (!streamRef.current) {
+      setRecordingError("La caméra n'est pas initialisée. Veuillez réessayer.");
+      return;
+    }
 
+    setRecordingError(null);
     chunksRef.current = [];
-    const mediaRecorder = new MediaRecorder(streamRef.current, {
-      mimeType: "video/webm;codecs=vp9",
-    });
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunksRef.current.push(e.data);
+    
+    try {
+      const mimeType = getSupportedMimeType();
+      if (!mimeType) {
+        setRecordingError("Aucun format d'enregistrement compatible trouvé.");
+        return;
       }
-    };
 
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
-      setRecordedBlob(blob);
-      setRecordedUrl(URL.createObjectURL(blob));
-    };
+      const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType });
 
-    mediaRecorder.start(1000);
-    mediaRecorderRef.current = mediaRecorder;
-    setIsRecording(true);
-    setRecordingDuration(0);
-
-    // Start timer
-    timerRef.current = setInterval(() => {
-      setRecordingDuration(prev => {
-        if (prev >= VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS) {
-          stopRecording();
-          return prev;
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
         }
-        return prev + 1;
-      });
-    }, 1000);
-  }, []);
+      };
 
-  // Stop recording
+      mediaRecorder.onstop = () => {
+        try {
+          if (chunksRef.current.length === 0) {
+            setRecordingError("Aucune donnée enregistrée. Veuillez réessayer.");
+            return;
+          }
+          const blob = new Blob(chunksRef.current, { type: mimeType });
+          if (blob.size === 0) {
+            setRecordingError("L'enregistrement est vide. Veuillez réessayer.");
+            return;
+          }
+          setRecordedBlob(blob);
+          setRecordedUrl(URL.createObjectURL(blob));
+        } catch (e) {
+          console.error("Error creating blob:", e);
+          setRecordingError("Erreur lors de la création de la vidéo.");
+        }
+      };
+
+      mediaRecorder.onerror = (event: Event) => {
+        console.error("MediaRecorder error:", event);
+        setRecordingError("Erreur pendant l'enregistrement. Veuillez réessayer.");
+        setIsRecording(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+      };
+
+      mediaRecorder.start(1000);
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Start timer with auto-stop at max duration
+      timerRef.current = setInterval(() => {
+        setRecordingDuration(prev => {
+          const newDuration = prev + 1;
+          if (newDuration >= VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS) {
+            stopRecording();
+            toast({
+              title: "Durée maximale atteinte",
+              description: `L'enregistrement a été arrêté automatiquement après ${VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS} secondes.`,
+            });
+            return prev;
+          }
+          return newDuration;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      setRecordingError("Impossible de démarrer l'enregistrement. Veuillez actualiser la page.");
+    }
+  }, [toast]);
+
+  // Stop recording safely
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+    try {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      setIsRecording(false);
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+      setIsRecording(false);
     }
-  }, [isRecording]);
+  }, []);
 
   // Reset recording
   const resetRecording = useCallback(() => {
     setRecordedBlob(null);
+    setRecordingError(null);
     if (recordedUrl) {
       URL.revokeObjectURL(recordedUrl);
     }
     setRecordedUrl(null);
     setRecordingDuration(0);
+    setConsentGiven(false);
     if (videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
     }
   }, [recordedUrl]);
+
+  // Handle file upload as alternative to recording
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("video/")) {
+      toast({
+        title: "Format invalide",
+        description: "Veuillez sélectionner un fichier vidéo (MP4, WebM, MOV).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: "Fichier trop volumineux",
+        description: "La taille maximale est de 100 Mo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create blob and URL
+    setRecordedBlob(file);
+    setRecordedUrl(URL.createObjectURL(file));
+    setRecordingError(null);
+    
+    // Try to get video duration
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      setRecordingDuration(Math.round(video.duration));
+      URL.revokeObjectURL(video.src);
+    };
+    video.src = URL.createObjectURL(file);
+
+    toast({
+      title: "Vidéo importée",
+      description: "Vous pouvez prévisualiser votre vidéo ci-dessus.",
+    });
+  }, [toast]);
 
   // Handle profile submission
   const handleProfileSubmit = async () => {
@@ -524,76 +707,213 @@ export default function Onboarding() {
                   Vidéo de référence
                 </CardTitle>
                 <CardDescription>
-                  Enregistrez une vidéo de 30 à 60 secondes. Cette vidéo servira de référence pour générer vos futures vidéos personnalisées.
+                  Enregistrez une vidéo de {VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS} à {VIDEO_CONSTRAINTS.RECOMMENDED_DURATION_SECONDS} secondes. 
+                  Cette vidéo servira de référence pour générer vos futures vidéos personnalisées.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Browser Support Warning */}
+                {browserSupport && !browserSupport.supported && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {browserSupport.reason} Vous pouvez importer une vidéo ou ignorer cette étape.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Recording Error Display */}
+                {recordingError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{recordingError}</AlertDescription>
+                  </Alert>
+                )}
+
                 {/* Video Preview */}
                 <div className={`facecam-preview ${isRecording ? "facecam-preview-active" : ""}`}>
                   {recordedUrl ? (
                     <video
                       src={recordedUrl}
                       controls
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-lg"
                     />
-                  ) : (
+                  ) : hasPermission ? (
                     <video
                       ref={videoRef}
                       autoPlay
                       muted
                       playsInline
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-lg"
                     />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-muted rounded-lg">
+                      <Camera className="h-16 w-16 text-muted-foreground mb-4" />
+                      <p className="text-sm text-muted-foreground">
+                        {isInitializingCamera ? "Initialisation de la caméra..." : "Activez la caméra pour commencer"}
+                      </p>
+                    </div>
                   )}
+                  
+                  {/* Recording Indicator with Duration Warnings */}
                   {isRecording && (
-                    <div className="absolute top-4 left-4 recording-indicator">
+                    <div className={`absolute top-4 left-4 recording-indicator ${
+                      recordingDuration >= VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS - 10 ? "bg-amber-600" : ""
+                    }`}>
                       <span className="recording-dot" />
                       REC {formatTime(recordingDuration)}
                     </div>
                   )}
+                  
+                  {/* Duration Warning Overlay */}
+                  {isRecording && recordingDuration >= VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS - 10 && (
+                    <div className="absolute bottom-4 left-4 right-4 bg-amber-600/90 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                      <span>
+                        {recordingDuration >= VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS - 5
+                          ? `Arrêt automatique dans ${VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS - recordingDuration}s`
+                          : "La durée maximale approche"
+                        }
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Recording Controls */}
-                {hasPermission === null ? (
-                  <Button onClick={initCamera} className="w-full">
-                    <Video className="mr-2 h-4 w-4" />
-                    Activer la caméra
-                  </Button>
-                ) : hasPermission === false ? (
-                  <div className="text-center p-4 bg-destructive/10 rounded-lg">
-                    <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
-                    <p className="text-sm text-destructive">
-                      Accès à la caméra refusé. Vous pouvez ignorer cette étape ou importer une vidéo.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    {!recordedUrl ? (
-                      <>
-                        {!isRecording ? (
-                          <Button onClick={startRecording} className="flex-1">
-                            <Play className="mr-2 h-4 w-4" />
-                            Commencer l'enregistrement
-                          </Button>
-                        ) : (
-                          <Button onClick={stopRecording} variant="destructive" className="flex-1">
-                            <Square className="mr-2 h-4 w-4" />
-                            Arrêter ({formatTime(recordingDuration)})
-                          </Button>
-                        )}
-                      </>
-                    ) : (
-                      <Button onClick={resetRecording} variant="outline" className="flex-1">
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        Recommencer
-                      </Button>
-                    )}
+                {/* Duration Info Bar */}
+                {(isRecording || recordedBlob) && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Durée : <span className={`font-medium ${
+                        recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS 
+                          ? "text-amber-600" 
+                          : recordingDuration <= VIDEO_CONSTRAINTS.RECOMMENDED_DURATION_SECONDS 
+                            ? "text-green-600" 
+                            : "text-amber-600"
+                      }`}>{formatTime(recordingDuration)}</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      {recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS && (
+                        <span className="text-amber-600">Min. {VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS}s</span>
+                      )}
+                      {recordingDuration >= VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS && 
+                       recordingDuration <= VIDEO_CONSTRAINTS.RECOMMENDED_DURATION_SECONDS && (
+                        <span className="text-green-600">✓ Durée idéale</span>
+                      )}
+                      {recordingDuration > VIDEO_CONSTRAINTS.RECOMMENDED_DURATION_SECONDS && (
+                        <span className="text-amber-600">Max. {VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS}s</span>
+                      )}
+                    </span>
                   </div>
                 )}
 
+                {/* Recording Controls */}
+                {browserSupport?.supported !== false && (
+                  <>
+                    {hasPermission === null ? (
+                      <Button 
+                        onClick={initCamera} 
+                        className="w-full"
+                        disabled={isInitializingCamera}
+                      >
+                        {isInitializingCamera ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Initialisation...</>
+                        ) : (
+                          <><Camera className="mr-2 h-4 w-4" />Activer la caméra</>
+                        )}
+                      </Button>
+                    ) : hasPermission === false ? (
+                      <div className="space-y-3">
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="space-y-2">
+                            <p className="font-medium">{cameraError || "Accès à la caméra refusé"}</p>
+                            <p className="text-xs opacity-90">
+                              Pour activer la caméra, cliquez sur l'icône de caméra dans la barre d'adresse 
+                              et autorisez l'accès, puis actualisez la page.
+                            </p>
+                          </AlertDescription>
+                        </Alert>
+                        <Button 
+                          onClick={initCamera} 
+                          variant="outline" 
+                          className="w-full"
+                          disabled={isInitializingCamera}
+                        >
+                          {isInitializingCamera ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Réessai...</>
+                          ) : (
+                            <><RotateCcw className="mr-2 h-4 w-4" />Réessayer l'accès caméra</>
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        {!recordedUrl ? (
+                          <>
+                            {!isRecording ? (
+                              <Button onClick={startRecording} className="flex-1">
+                                <Play className="mr-2 h-4 w-4" />
+                                Commencer l'enregistrement
+                              </Button>
+                            ) : (
+                              <Button 
+                                onClick={stopRecording} 
+                                variant={recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS ? "outline" : "destructive"} 
+                                className="flex-1"
+                              >
+                                <Square className="mr-2 h-4 w-4" />
+                                Arrêter ({formatTime(recordingDuration)})
+                                {recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS && (
+                                  <span className="ml-2 text-xs opacity-75">min. {VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS}s</span>
+                                )}
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <Button onClick={resetRecording} variant="outline" className="flex-1">
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Recommencer
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* File Upload Alternative */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">ou</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <FileVideo className="mr-2 h-4 w-4" />
+                    Importer une vidéo existante
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Formats acceptés : MP4, WebM, MOV • Taille max. 100 Mo
+                  </p>
+                </div>
+
                 {/* Suggested Script */}
                 <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium mb-2">Script suggéré :</p>
+                  <p className="text-sm font-medium mb-2">💡 Script suggéré :</p>
                   <p className="text-sm text-muted-foreground whitespace-pre-line">
                     {SUGGESTED_SCRIPT}
                   </p>
@@ -601,16 +921,30 @@ export default function Onboarding() {
 
                 {/* Consent */}
                 {recordedBlob && (
-                  <div className="flex items-start gap-3 p-4 border rounded-lg">
+                  <div className={`flex items-start gap-3 p-4 border rounded-lg transition-colors ${
+                    !consentGiven ? "border-amber-500/50 bg-amber-500/5" : "border-green-500/50 bg-green-500/5"
+                  }`}>
                     <Checkbox 
                       id="consent"
                       checked={consentGiven}
                       onCheckedChange={(checked) => setConsentGiven(checked as boolean)}
                     />
                     <Label htmlFor="consent" className="text-sm cursor-pointer">
-                      J'accepte d'utiliser cette vidéo comme vidéo de référence pour mon identité Ekko.
+                      J'accepte d'utiliser cette vidéo comme vidéo de référence pour mon identité Ekko. 
+                      Je confirme que je suis bien la personne apparaissant dans cette vidéo.
                     </Label>
                   </div>
+                )}
+
+                {/* Duration Warning for Short Videos */}
+                {recordedBlob && recordingDuration > 0 && recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Votre vidéo est plus courte que la durée minimale recommandée ({VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS}s). 
+                      Vous pouvez continuer, mais une vidéo plus longue donnera de meilleurs résultats.
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 <div className="flex gap-2">
@@ -619,7 +953,7 @@ export default function Onboarding() {
                     onClick={() => setCurrentStep("identity")} 
                     className="flex-1"
                   >
-                    Ignorer
+                    Ignorer cette étape
                   </Button>
                   <Button 
                     onClick={handleVideoUpload} 
@@ -627,7 +961,7 @@ export default function Onboarding() {
                     disabled={isLoading || (recordedBlob && !consentGiven)}
                   >
                     {isLoading ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Envoi...</>
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Envoi en cours...</>
                     ) : (
                       <>Continuer<ArrowRight className="ml-2 h-4 w-4" /></>
                     )}
