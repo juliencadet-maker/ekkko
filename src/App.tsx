@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
+import CampaignDetail from "./pages/CampaignDetail";
 import NewCampaign from "./pages/NewCampaign";
 import Identities from "./pages/Identities";
 import Approvals from "./pages/Approvals";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/app/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
             <Route path="/app/campaigns" element={<AuthGuard><Campaigns /></AuthGuard>} />
             <Route path="/app/campaigns/new" element={<AuthGuard><NewCampaign /></AuthGuard>} />
+            <Route path="/app/campaigns/:id" element={<AuthGuard><CampaignDetail /></AuthGuard>} />
             <Route path="/app/identities" element={<AuthGuard><Identities /></AuthGuard>} />
             <Route path="/app/approvals" element={<AuthGuard><Approvals /></AuthGuard>} />
             <Route path="/app/audit" element={<AuthGuard><Audit /></AuthGuard>} />
