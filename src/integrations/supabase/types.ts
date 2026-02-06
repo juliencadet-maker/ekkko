@@ -824,6 +824,10 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["org_role"]
       }
+      handle_user_signup: {
+        Args: { p_email: string; p_org_name: string; p_user_id: string }
+        Returns: Json
+      }
       has_min_role_in_org: {
         Args: {
           _min_role: Database["public"]["Enums"]["org_role"]
