@@ -34,6 +34,7 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
   // Profile fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [company, setCompany] = useState("");
   const [title, setTitle] = useState("");
   const [identityType, setIdentityType] = useState<string>("other");
   
@@ -64,6 +65,7 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
     setCurrentStep("profile");
     setFirstName("");
     setLastName("");
+    setCompany("");
     setTitle("");
     setIdentityType("other");
     setVideoBlob(null);
@@ -257,6 +259,16 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="company">Entreprise (optionnel)</Label>
+              <Input
+                id="company"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Acme Corp"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="identityType">Type d'identité</Label>
               <Select value={identityType} onValueChange={setIdentityType}>
                 <SelectTrigger>
@@ -298,6 +310,12 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
               onVideoReady={handleVideoReady}
               consentGiven={consentGiven}
               onConsentChange={setConsentGiven}
+              userInfo={{
+                firstName,
+                lastName,
+                company,
+                title,
+              }}
             />
 
             <div className="flex justify-between pt-4">
