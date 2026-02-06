@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
 import { 
   ArrowLeft, 
   Play, 
@@ -25,7 +26,8 @@ import {
   Share2,
   Download,
   BarChart3,
-  Video
+  Video,
+  Pencil
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -44,6 +46,8 @@ export default function CampaignDetail() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [videos, setVideos] = useState<(VideoType & { recipient?: Recipient })[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showLandingPageEditor, setShowLandingPageEditor] = useState(false);
+  const [landingPageConfig, setLandingPageConfig] = useState<LandingPageConfig | undefined>();
 
   // Mock KPIs for demo
   const mockKPIs = {
@@ -72,6 +76,12 @@ export default function CampaignDetail() {
 
         if (campaignError) throw campaignError;
         setCampaign(campaignData as Campaign);
+        
+        // Load landing page config from metadata
+        const metadata = campaignData.metadata as Record<string, unknown> | null;
+        if (metadata?.landingPageConfig) {
+          setLandingPageConfig(metadata.landingPageConfig as LandingPageConfig);
+        }
 
         // Fetch videos for this campaign
         const { data: videosData, error: videosError } = await supabase
@@ -93,6 +103,34 @@ export default function CampaignDetail() {
 
     fetchCampaign();
   }, [id, membership?.org_id]);
+
+  const handleSaveLandingPageConfig = async (config: LandingPageConfig) => {
+    if (!campaign || !membership?.org_id) return;
+
+    try {
+      const currentMetadata = (campaign.metadata || {}) as Record<string, unknown>;
+      const updatedMetadata = JSON.parse(JSON.stringify({
+        ...currentMetadata,
+        landingPageConfig: config,
+      }));
+
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ metadata: updatedMetadata })
+        .eq("id", campaign.id)
+        .eq("org_id", membership.org_id);
+
+      if (error) throw error;
+
+      setLandingPageConfig(config);
+      setCampaign(prev => prev ? { ...prev, metadata: updatedMetadata } : null);
+    } catch (error) {
+      console.error("Save landing page config error:", error);
+      toast.error("Erreur lors de la sauvegarde");
+    }
+  };
+
+  const landingPageUrl = id ? `${window.location.origin}/lp/${id}` : "";
 
   const generateShareLink = (videoId?: string) => {
     const baseUrl = window.location.origin;
@@ -512,15 +550,67 @@ export default function CampaignDetail() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Créez une landing page avec votre vidéo et un call-to-action personnalisé.
                 </p>
-                <Button>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Créer une landing page
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={() => setShowLandingPageEditor(true)}>
+                    {landingPageConfig ? (
+                      <>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Modifier la landing page
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Créer une landing page
+                      </>
+                    )}
+                  </Button>
+                  {landingPageConfig && (
+                    <Button 
+                      variant="outline"
+                      onClick={() => window.open(landingPageUrl, '_blank')}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Voir
+                    </Button>
+                  )}
+                </div>
+                {landingPageConfig && (
+                  <div className="mt-3 flex gap-2">
+                    <Input
+                      value={landingPageUrl}
+                      readOnly
+                      className="font-mono text-sm"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(landingPageUrl);
+                        toast.success("Lien copié");
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Landing Page Editor */}
+      {campaign && (
+        <LandingPageEditor
+          open={showLandingPageEditor}
+          onOpenChange={setShowLandingPageEditor}
+          campaignId={campaign.id}
+          campaignName={campaign.name}
+          videoUrl={MOCK_VIDEO_URL}
+          initialConfig={landingPageConfig}
+          onSave={handleSaveLandingPageConfig}
+        />
+      )}
     </AppLayout>
   );
 }
