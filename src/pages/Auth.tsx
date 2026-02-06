@@ -169,54 +169,32 @@ export default function Auth() {
       }
 
       if (data.user) {
-        // Create organization
-        const orgSlug = orgName.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
-        
-        const { data: orgData, error: orgError } = await supabase
-          .from("orgs")
-          .insert({
-            name: orgName,
-            slug: `${orgSlug}-${Date.now()}`,
-          })
-          .select()
-          .single();
+        // Use the atomic signup handler function to create org, membership, profile, etc.
+        const { data: signupResult, error: signupError } = await supabase.rpc('handle_user_signup', {
+          p_user_id: data.user.id,
+          p_email: signupEmail,
+          p_org_name: orgName,
+        });
 
-        if (orgError) {
-          console.error("Org creation error:", orgError);
-        } else if (orgData) {
-          // Create org membership as owner
-          await supabase.from("org_memberships").insert({
-            org_id: orgData.id,
-            user_id: data.user.id,
-            role: "org_owner",
+        if (signupError) {
+          console.error("Signup handler error:", signupError);
+          toast({
+            title: "Erreur",
+            description: "Erreur lors de la création de l'organisation",
+            variant: "destructive",
           });
-
-          // Create default policy
-          await supabase.from("policies").insert({
-            org_id: orgData.id,
-          });
-
-          // Create mock provider
-          await supabase.from("providers").insert({
-            org_id: orgData.id,
-            name: "MockProvider",
-            provider_type: "mock",
-            is_active: true,
-          });
-
-          // Create profile
-          await supabase.from("profiles").insert({
-            user_id: data.user.id,
-            email: signupEmail,
-            onboarding_completed: false,
-            onboarding_step: 0,
-          });
+          return;
         }
+
+        console.log("Signup successful:", signupResult);
 
         toast({
           title: "Compte créé !",
-          description: "Vérifiez votre email pour confirmer votre compte.",
+          description: "Bienvenue sur Ekko !",
         });
+
+        // Navigate directly to onboarding for new users
+        navigate("/app/onboarding", { replace: true });
       }
     } catch (error) {
       console.error("Signup error:", error);
