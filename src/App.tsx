@@ -3,7 +3,19 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
+import Dashboard from "./pages/Dashboard";
+import Campaigns from "./pages/Campaigns";
+import NewCampaign from "./pages/NewCampaign";
+import Identities from "./pages/Identities";
+import Approvals from "./pages/Approvals";
+import Audit from "./pages/Audit";
+import Governance from "./pages/Governance";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -14,11 +26,22 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
+            <Route path="/app/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+            <Route path="/app/campaigns" element={<AuthGuard><Campaigns /></AuthGuard>} />
+            <Route path="/app/campaigns/new" element={<AuthGuard><NewCampaign /></AuthGuard>} />
+            <Route path="/app/identities" element={<AuthGuard><Identities /></AuthGuard>} />
+            <Route path="/app/approvals" element={<AuthGuard><Approvals /></AuthGuard>} />
+            <Route path="/app/audit" element={<AuthGuard><Audit /></AuthGuard>} />
+            <Route path="/app/governance" element={<AuthGuard><Governance /></AuthGuard>} />
+            <Route path="/app/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
