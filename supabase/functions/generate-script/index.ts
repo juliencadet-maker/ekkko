@@ -93,7 +93,16 @@ Génère le script maintenant:`;
     }
 
     const data = await response.json();
-    const script = data.choices?.[0]?.message?.content || "";
+    let script = data.choices?.[0]?.message?.content || "";
+
+    // Replace placeholders with actual values if provided
+    if (context.recipientName) {
+      script = script.replace(/\{prénom\}/gi, context.recipientName);
+      script = script.replace(/\{prenom\}/gi, context.recipientName);
+    }
+    if (context.recipientCompany) {
+      script = script.replace(/\{entreprise\}/gi, context.recipientCompany);
+    }
 
     // Return script along with context data for auto-filling recipient fields
     return new Response(
