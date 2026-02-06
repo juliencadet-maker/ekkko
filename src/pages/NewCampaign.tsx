@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { ScriptGenerator } from "@/components/campaign/ScriptGenerator";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -417,7 +418,14 @@ export default function NewCampaign() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="script">Script *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="script">Script *</Label>
+                    <ScriptGenerator
+                      onScriptGenerated={setScript}
+                      senderName={`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Votre nom'}
+                      senderTitle={profile?.title || 'Votre titre'}
+                    />
+                  </div>
                   <Textarea
                     id="script"
                     value={script}
