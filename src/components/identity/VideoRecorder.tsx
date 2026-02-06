@@ -13,9 +13,25 @@ import {
   AlertCircle, 
   AlertTriangle,
   Camera,
-  FileVideo
+  FileVideo,
+  ScrollText
 } from "lucide-react";
 import { VIDEO_CONSTRAINTS, SUGGESTED_SCRIPT } from "@/lib/constants";
+
+// Teleprompter script that highlights benefits
+const TELEPROMPTER_SCRIPT = `Bonjour, je m'appelle [votre prénom] [votre nom].
+
+Je travaille chez [votre entreprise] en tant que [votre fonction].
+
+Je fais cet enregistrement car bientôt je serai en mesure de créer plus de confiance sur le cycle de vente, tout en gagnant du temps.
+
+Je pourrai également être présent sur tous les deals sans avoir à bloquer mon agenda.
+
+Cela me permettra d'impliquer des personnes plus facilement, afin de créer plus de confiance et d'engagement avec mes clients et partenaires.
+
+Avec Ekko, je vais pouvoir personnaliser mes messages vidéo pour chaque prospect, et ainsi augmenter significativement mes taux de conversion.
+
+Merci de votre attention !`;
 
 // Supported MIME types in order of preference
 const SUPPORTED_MIME_TYPES = [
@@ -64,6 +80,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
   const [isInitializingCamera, setIsInitializingCamera] = useState(false);
   const [browserSupport, setBrowserSupport] = useState<{ supported: boolean; reason?: string } | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [showTeleprompter, setShowTeleprompter] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -71,6 +88,8 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const teleprompterRef = useRef<HTMLDivElement>(null);
+  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const { toast } = useToast();
 
@@ -153,11 +172,42 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+      }
       if (recordedUrl) {
         URL.revokeObjectURL(recordedUrl);
       }
     };
   }, [recordedUrl]);
+
+  // Auto-scroll teleprompter during recording
+  useEffect(() => {
+    if (isRecording && showTeleprompter && teleprompterRef.current) {
+      const element = teleprompterRef.current;
+      element.scrollTop = 0;
+      
+      // Calculate scroll speed: total scroll height over ~35 seconds for comfortable reading
+      const totalScrollHeight = element.scrollHeight - element.clientHeight;
+      const scrollDuration = 35000; // 35 seconds
+      const scrollStep = totalScrollHeight / (scrollDuration / 50); // Update every 50ms
+      
+      scrollIntervalRef.current = setInterval(() => {
+        if (element.scrollTop < totalScrollHeight) {
+          element.scrollTop += scrollStep;
+        }
+      }, 50);
+    } else if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+    
+    return () => {
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+      }
+    };
+  }, [isRecording, showTeleprompter]);
 
   const startRecording = useCallback(() => {
     if (!streamRef.current) {
@@ -167,6 +217,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
 
     setRecordingError(null);
     chunksRef.current = [];
+    setShowTeleprompter(true);
     
     try {
       const mimeType = getSupportedMimeType();
@@ -206,6 +257,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
         console.error("MediaRecorder error:", event);
         setRecordingError("Erreur pendant l'enregistrement. Veuillez réessayer.");
         setIsRecording(false);
+        setShowTeleprompter(false);
         if (timerRef.current) {
           clearInterval(timerRef.current);
         }
@@ -233,6 +285,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
     } catch (error) {
       console.error("Error starting recording:", error);
       setRecordingError("Impossible de démarrer l'enregistrement. Veuillez actualiser la page.");
+      setShowTeleprompter(false);
     }
   }, [toast]);
 
@@ -242,13 +295,19 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+        scrollIntervalRef.current = null;
+      }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
       setIsRecording(false);
+      setShowTeleprompter(false);
     } catch (error) {
       console.error("Error stopping recording:", error);
       setIsRecording(false);
+      setShowTeleprompter(false);
     }
   }, []);
 
@@ -381,9 +440,35 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange }: V
 
         {/* Recording indicator */}
         {isRecording && (
-          <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm">
+          <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm z-10">
             <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
             {formatTime(recordingDuration)} / {formatTime(VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS)}
+          </div>
+        )}
+
+        {/* Teleprompter overlay during recording */}
+        {isRecording && showTeleprompter && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 z-10">
+            <div className="flex items-center gap-2 text-white/80 mb-2">
+              <ScrollText className="h-4 w-4" />
+              <span className="text-xs font-medium">Lisez le script ci-dessous</span>
+            </div>
+            <div 
+              ref={teleprompterRef}
+              className="h-24 overflow-hidden text-white text-center"
+            >
+              <div className="space-y-3 py-2">
+                {TELEPROMPTER_SCRIPT.split('\n\n').map((paragraph, index) => (
+                  <p 
+                    key={index} 
+                    className="text-sm md:text-base leading-relaxed font-medium"
+                    style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
