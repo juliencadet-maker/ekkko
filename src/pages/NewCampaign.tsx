@@ -60,25 +60,30 @@ export default function NewCampaign() {
 
       setIsLoading(true);
       try {
-        // Fetch user's own identity
-        const { data: myIdentityData } = await supabase
-          .from("identities")
-          .select("*")
-          .eq("org_id", membership.org_id)
-          .eq("owner_user_id", user.id)
-          .eq("status", "ready")
-          .maybeSingle();
-
-        setMyIdentity(myIdentityData as Identity | null);
-
-        // Fetch all identities in org
+        // Fetch all identities in org first
         const { data: allIdentities } = await supabase
           .from("identities")
           .select("*")
           .eq("org_id", membership.org_id)
-          .eq("status", "ready");
+          .eq("status", "ready")
+          .order("created_at", { ascending: false });
 
-        setIdentities(allIdentities as Identity[] || []);
+        const typedIdentities = (allIdentities || []) as Identity[];
+        setIdentities(typedIdentities);
+
+        // Find user's own identity - prefer default_identity_id from profile
+        const userIdentities = typedIdentities.filter(i => i.owner_user_id === user.id);
+        
+        if (userIdentities.length > 0) {
+          // Use default identity if set and valid, otherwise use most recent
+          const defaultId = profile?.default_identity_id;
+          const defaultIdentity = defaultId 
+            ? userIdentities.find(i => i.id === defaultId)
+            : null;
+          setMyIdentity(defaultIdentity || userIdentities[0]);
+        } else {
+          setMyIdentity(null);
+        }
 
         // Fetch policy
         const { data: policyData } = await supabase
@@ -96,7 +101,7 @@ export default function NewCampaign() {
     };
 
     fetchData();
-  }, [membership?.org_id, user.id]);
+  }, [membership?.org_id, user.id, profile?.default_identity_id]);
 
   // Handle mode selection
   const handleModeSelect = (selectedMode: CampaignMode) => {
