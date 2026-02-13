@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.tavus-webhook]
 verify_jwt = false
+
+[functions.track-watch-progress]
+verify_jwt = false
+
+[functions.send-share-invite]
+verify_jwt = false

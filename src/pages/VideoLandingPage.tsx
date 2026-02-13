@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { ShareDialog } from "@/components/landing/ShareDialog";
 
 const MOCK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
@@ -372,19 +373,30 @@ export default function VideoLandingPage() {
             </Card>
           )}
 
-          {/* CTA Button */}
-          <Button
-            size="lg"
-            className="px-8 py-6 text-lg font-semibold rounded-xl transition-transform hover:scale-105"
-            style={{
-              backgroundColor: config.brandColor,
-              color: "white",
-            }}
-            onClick={() => window.open(config.ctaUrl, "_blank")}
-          >
-            {config.ctaText}
-            <ExternalLink className="ml-2 h-5 w-5" />
-          </Button>
+          {/* Share & CTA */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            {videoId && campaignId && (
+              <ShareDialog
+                videoId={videoId}
+                campaignId={campaignId}
+                senderName={identName || "Un collaborateur"}
+                senderViewerHash={viewerHashRef.current}
+                brandColor={config.brandColor}
+              />
+            )}
+            <Button
+              size="lg"
+              className="px-8 py-6 text-lg font-semibold rounded-xl transition-transform hover:scale-105"
+              style={{
+                backgroundColor: config.brandColor,
+                color: "white",
+              }}
+              onClick={() => window.open(config.ctaUrl, "_blank")}
+            >
+              {config.ctaText}
+              <ExternalLink className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </main>
 
