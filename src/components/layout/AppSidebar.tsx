@@ -27,7 +27,7 @@ const navigationItems = [
     roles: ["org_owner", "org_admin", "org_manager", "org_user"],
   },
   {
-    label: "Campagnes",
+    label: "Deals",
     href: "/app/campaigns",
     icon: Video,
     roles: ["org_owner", "org_admin", "org_manager", "org_user"],

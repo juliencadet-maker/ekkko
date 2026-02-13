@@ -1018,13 +1018,6 @@ Merci de votre attention !`;
                   </p>
                 </div>
 
-                {/* Suggested Script */}
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium mb-2">💡 Script suggéré :</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">
-                    {SUGGESTED_SCRIPT}
-                  </p>
-                </div>
 
                 {/* Consent */}
                 {recordedBlob && (
@@ -1136,19 +1129,19 @@ Merci de votre attention !`;
                 </div>
                 <CardTitle className="text-2xl">Tout est prêt ✅</CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Votre compte Ekko est configuré. Vous pouvez maintenant créer votre première campagne vidéo.
+                  Votre compte Ekko est configuré. Vous pouvez maintenant créer votre premier deal.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6 space-y-3">
-                <Button onClick={goToDashboard} className="w-full" size="lg">
-                  Aller au tableau de bord
+                <Button onClick={() => { refreshUser().then(() => navigate("/app/campaigns/new", { replace: true })); }} className="w-full" size="lg">
+                  Créer un nouveau deal
                 </Button>
                 <Button 
-                  onClick={() => navigate("/app/campaigns/new")} 
+                  onClick={goToDashboard} 
                   variant="outline" 
                   className="w-full"
                 >
-                  Créer une campagne
+                  Aller au tableau de bord
                 </Button>
               </CardContent>
             </>

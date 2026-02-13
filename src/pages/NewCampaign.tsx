@@ -279,8 +279,8 @@ export default function NewCampaign() {
   return (
     <AppLayout>
       <PageHeader 
-        title="Nouvelle campagne"
-        description="Créez une campagne vidéo personnalisée"
+        title="Nouveau deal"
+        description="Créez un deal avec présence exécutive vidéo"
         actions={
           <Button variant="outline" onClick={() => navigate("/app/campaigns")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -428,12 +428,12 @@ export default function NewCampaign() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="campaignName">Nom de la campagne *</Label>
+                  <Label htmlFor="campaignName">Nom du deal — Objectif *</Label>
                   <Input
                     id="campaignName"
                     value={campaignName}
                     onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="Ex: Bienvenue nouveaux clients Q1"
+                    placeholder="Ex: TechVision — Réponse RFP Q1"
                   />
                 </div>
 

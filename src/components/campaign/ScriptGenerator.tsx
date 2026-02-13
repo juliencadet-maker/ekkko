@@ -216,10 +216,10 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
             />
           </div>
 
-          {/* Optional: Recipient info for preview */}
+          {/* Recipient info — used for script personalization */}
           <div className="space-y-4 pt-4 border-t">
             <p className="text-sm font-medium text-muted-foreground">
-              Optionnel : Prévisualisation avec un destinataire exemple
+              Destinataire : ces informations seront intégrées dans le script final
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

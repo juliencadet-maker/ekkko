@@ -10,6 +10,7 @@ interface MetricCardProps {
     isPositive: boolean;
   };
   className?: string;
+  onClick?: () => void;
 }
 
 export function MetricCard({ 
@@ -17,10 +18,15 @@ export function MetricCard({
   value, 
   label, 
   trend,
-  className 
+  className,
+  onClick,
 }: MetricCardProps) {
   return (
-    <div className={cn("metric-card", className)}>
+    <div 
+      className={cn("metric-card", onClick && "cursor-pointer hover:border-primary/40 transition-colors", className)}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+    >
       <div className="flex items-start justify-between">
         <div>
           <p className="metric-value">{value}</p>

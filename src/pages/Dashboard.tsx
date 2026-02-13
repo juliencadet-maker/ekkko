@@ -121,7 +121,7 @@ export default function Dashboard() {
         actions={
           <Button onClick={() => navigate("/app/campaigns/new")}>
             <Plus className="mr-2 h-4 w-4" />
-            Nouvelle campagne
+            Nouveau deal
           </Button>
         }
       />
@@ -132,21 +132,25 @@ export default function Dashboard() {
           icon={Video}
           value={stats.videosGenerated}
           label="Deals avec présence exécutive"
+          onClick={() => navigate("/app/campaigns")}
         />
         <MetricCard
           icon={Eye}
           value={stats.totalViews}
           label="Vues par les décideurs"
+          onClick={() => navigate("/app/deal-intelligence")}
         />
         <MetricCard
           icon={CheckSquare}
           value={stats.pendingApprovals}
           label="Validations en attente"
+          onClick={() => navigate("/app/approvals")}
         />
         <MetricCard
           icon={AlertTriangle}
           value={stats.complianceAlerts}
           label="Alertes conformité"
+          onClick={() => navigate("/app/governance")}
         />
       </div>
 
@@ -236,17 +240,17 @@ export default function Dashboard() {
 
       {/* Quick Actions — deal-first */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Button variant="outline" className="h-auto py-4 flex-col gap-1" onClick={() => navigate("/app/campaigns/new")}>
-          <Plus className="h-5 w-5" />
-          <span className="text-sm font-medium">Nouveau deal</span>
+        <Button variant="default" className="h-auto py-5 flex-col gap-1.5" onClick={() => navigate("/app/campaigns/new")}>
+          <Plus className="h-6 w-6" />
+          <span className="text-sm font-semibold">Nouveau deal</span>
         </Button>
-        <Button variant="outline" className="h-auto py-4 flex-col gap-1" onClick={() => navigate("/app/identities")}>
-          <Video className="h-5 w-5" />
-          <span className="text-sm font-medium">Gérer les identités</span>
+        <Button variant="outline" className="h-auto py-5 flex-col gap-1.5" onClick={() => navigate("/app/identities")}>
+          <Video className="h-6 w-6" />
+          <span className="text-sm font-semibold">Gérer les identités</span>
         </Button>
-        <Button variant="outline" className="h-auto py-4 flex-col gap-1" onClick={() => navigate("/app/deal-intelligence")}>
-          <Eye className="h-5 w-5" />
-          <span className="text-sm font-medium">Deal Intelligence</span>
+        <Button variant="outline" className="h-auto py-5 flex-col gap-1.5" onClick={() => navigate("/app/deal-intelligence")}>
+          <Eye className="h-6 w-6" />
+          <span className="text-sm font-semibold">Deal Intelligence</span>
         </Button>
       </div>
     </AppLayout>

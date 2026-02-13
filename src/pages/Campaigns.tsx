@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Video, Pencil, Building2, Layers, Eye, TrendingUp } from "lucide-react";
+import { Plus, Search, Video, Building2, Layers, Eye, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Campaign } from "@/types/database";
@@ -76,17 +76,13 @@ export default function Campaigns() {
   return (
     <AppLayout>
       <PageHeader
-        title="Comptes & Campagnes"
-        description="Gérez vos comptes cibles et leurs campagnes vidéo"
+        title="Deals"
+        description="Gérez vos deals et leur présence exécutive vidéo"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/app/editor/demo")}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Tester l'éditeur
-            </Button>
             <Button onClick={() => navigate("/app/campaigns/new")}>
               <Plus className="mr-2 h-4 w-4" />
-              Nouveau compte
+              Nouveau deal
             </Button>
           </div>
         }

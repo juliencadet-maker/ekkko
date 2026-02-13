@@ -54,7 +54,7 @@ export default function Approvals() {
     try {
       const { data, error } = await supabase
         .from("approval_requests")
-        .select("*, campaigns(name, script, identities(display_name, owner_user_id), created_by_user_id, profiles:created_by_user_id(first_name, last_name, title))")
+        .select("*, campaigns(name, script, identities(display_name, owner_user_id))")
         .eq("org_id", membership.org_id)
         .order("created_at", { ascending: false });
 
@@ -179,9 +179,7 @@ export default function Approvals() {
   const processedApprovals = approvals.filter(a => a.status !== "pending");
 
   const campaign = selectedApproval ? (selectedApproval as any).campaigns : null;
-  const requesterName = campaign?.profiles
-    ? `${campaign.profiles.first_name || ""} ${campaign.profiles.last_name || ""}`.trim()
-    : "Inconnu";
+  const requesterName = "le demandeur";
 
   return (
     <AppLayout>
@@ -217,9 +215,6 @@ export default function Approvals() {
               <div className="grid gap-4">
                 {pendingApprovals.map((approval) => {
                   const c = (approval as any).campaigns;
-                  const reqName = c?.profiles
-                    ? `${c.profiles.first_name || ""} ${c.profiles.last_name || ""}`.trim()
-                    : null;
                   return (
                     <Card key={approval.id} className="card-interactive">
                       <CardContent className="p-6">
@@ -234,12 +229,6 @@ export default function Approvals() {
                                 <User className="h-3.5 w-3.5" />
                                 Identité : {c?.identities?.display_name}
                               </span>
-                              {reqName && (
-                                <span className="flex items-center gap-1.5">
-                                  <ArrowRight className="h-3.5 w-3.5" />
-                                  Demandé par : {reqName}
-                                </span>
-                              )}
                             </div>
                             <div className="p-3 bg-muted rounded-lg">
                               <p className="text-sm font-medium mb-1">Script :</p>
