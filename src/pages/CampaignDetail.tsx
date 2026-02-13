@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -50,6 +50,30 @@ function getVideoUrl(video?: VideoType | null): string {
   return FALLBACK_VIDEO_URL;
 }
 
+interface ViewEvent {
+  id: string;
+  video_id: string;
+  viewer_hash: string;
+  viewed_at: string;
+  viewer_email: string | null;
+  referred_by_hash: string | null;
+}
+
+interface WatchProgressRow {
+  id: string;
+  video_id: string;
+  viewer_hash: string;
+  watch_percentage: number;
+  max_percentage_reached: number;
+  total_watch_seconds: number;
+  session_count: number;
+  viewer_name: string | null;
+  viewer_email: string | null;
+  referred_by_hash: string | null;
+  first_watched_at: string;
+  last_watched_at: string;
+}
+
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -61,18 +85,8 @@ export default function CampaignDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showLandingPageEditor, setShowLandingPageEditor] = useState(false);
   const [landingPageConfig, setLandingPageConfig] = useState<LandingPageConfig | undefined>();
-
-  // Mock KPIs for demo
-  const mockKPIs = {
-    totalViews: 847,
-    uniqueViewers: 234,
-    avgWatchTime: 45,
-    completionRate: 78,
-    clickRate: 12.5,
-    shareCount: 23,
-    viewsTrend: 15,
-    clicksTrend: 8,
-  };
+  const [viewEvents, setViewEvents] = useState<ViewEvent[]>([]);
+  const [watchProgress, setWatchProgress] = useState<WatchProgressRow[]>([]);
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -106,6 +120,23 @@ export default function CampaignDetail() {
         if (videosError) throw videosError;
         setVideos(videosData as (VideoType & { recipient?: Recipient })[]);
 
+        // Fetch analytics data from real tables
+        const videoIds = (videosData || []).map((v: { id: string }) => v.id);
+        if (videoIds.length > 0) {
+          const [viewEventsRes, watchProgressRes] = await Promise.all([
+            supabase
+              .from("view_events")
+              .select("*")
+              .in("video_id", videoIds),
+            supabase
+              .from("watch_progress")
+              .select("*")
+              .in("video_id", videoIds),
+          ]);
+          if (viewEventsRes.data) setViewEvents(viewEventsRes.data as ViewEvent[]);
+          if (watchProgressRes.data) setWatchProgress(watchProgressRes.data as WatchProgressRow[]);
+        }
+
       } catch (error) {
         console.error("Fetch campaign error:", error);
         toast.error("Erreur lors du chargement de la campagne");
@@ -116,6 +147,29 @@ export default function CampaignDetail() {
 
     fetchCampaign();
   }, [id, membership?.org_id]);
+
+  // ── Compute real KPIs from fetched data ──
+  const kpis = useMemo(() => {
+    const totalViews = viewEvents.length;
+    const uniqueViewers = new Set(watchProgress.map((w) => w.viewer_hash)).size;
+    const avgWatchTime = watchProgress.length > 0
+      ? Math.round(watchProgress.reduce((s, w) => s + w.total_watch_seconds, 0) / watchProgress.length)
+      : 0;
+    const completionRate = watchProgress.length > 0
+      ? Math.round(watchProgress.filter((w) => w.max_percentage_reached >= 90).length / watchProgress.length * 100)
+      : 0;
+    const shareCount = new Set(watchProgress.filter((w) => w.referred_by_hash).map((w) => w.referred_by_hash)).size;
+    const totalSessions = watchProgress.reduce((s, w) => s + w.session_count, 0);
+    const avgSessions = watchProgress.length > 0 ? +(totalSessions / watchProgress.length).toFixed(1) : 0;
+    const avgMaxReached = watchProgress.length > 0
+      ? Math.round(watchProgress.reduce((s, w) => s + w.max_percentage_reached, 0) / watchProgress.length)
+      : 0;
+    const bounceRate = watchProgress.length > 0
+      ? Math.round(watchProgress.filter((w) => w.max_percentage_reached < 10).length / watchProgress.length * 100)
+      : 0;
+
+    return { totalViews, uniqueViewers, avgWatchTime, completionRate, shareCount, totalSessions, avgSessions, avgMaxReached, bounceRate };
+  }, [viewEvents, watchProgress]);
 
   const handleSaveLandingPageConfig = async (config: LandingPageConfig) => {
     if (!campaign || !membership?.org_id) return;
@@ -253,23 +307,22 @@ export default function CampaignDetail() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               icon={Eye}
-              value={mockKPIs.totalViews.toLocaleString()}
+              value={kpis.totalViews.toLocaleString()}
               label="Vues totales"
-              trend={{ value: mockKPIs.viewsTrend, isPositive: true }}
             />
             <MetricCard
               icon={Users}
-              value={mockKPIs.uniqueViewers.toLocaleString()}
+              value={kpis.uniqueViewers.toLocaleString()}
               label="Visiteurs uniques"
             />
             <MetricCard
               icon={Clock}
-              value={`${mockKPIs.avgWatchTime}s`}
+              value={`${kpis.avgWatchTime}s`}
               label="Temps moyen de visionnage"
             />
             <MetricCard
               icon={TrendingUp}
-              value={`${mockKPIs.completionRate}%`}
+              value={`${kpis.completionRate}%`}
               label="Taux de complétion"
             />
           </div>
@@ -416,26 +469,23 @@ export default function CampaignDetail() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               icon={Eye}
-              value={mockKPIs.totalViews.toLocaleString()}
+              value={kpis.totalViews.toLocaleString()}
               label="Vues totales"
-              trend={{ value: mockKPIs.viewsTrend, isPositive: true }}
             />
             <MetricCard
               icon={Users}
-              value={mockKPIs.uniqueViewers.toLocaleString()}
+              value={kpis.uniqueViewers.toLocaleString()}
               label="Visiteurs uniques"
-              trend={{ value: 12, isPositive: true }}
-            />
-            <MetricCard
-              icon={MousePointerClick}
-              value={`${mockKPIs.clickRate}%`}
-              label="Taux de clic"
-              trend={{ value: mockKPIs.clicksTrend, isPositive: true }}
             />
             <MetricCard
               icon={Share2}
-              value={mockKPIs.shareCount.toString()}
-              label="Partages"
+              value={kpis.shareCount.toString()}
+              label="Partages (referrals)"
+            />
+            <MetricCard
+              icon={MousePointerClick}
+              value={`${kpis.avgMaxReached}%`}
+              label="Progression moyenne"
             />
           </div>
 
@@ -451,22 +501,22 @@ export default function CampaignDetail() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Temps moyen de visionnage</span>
-                  <span className="font-medium">{mockKPIs.avgWatchTime} secondes</span>
+                  <span className="font-medium">{kpis.avgWatchTime} secondes</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Taux de complétion</span>
-                  <span className="font-medium">{mockKPIs.completionRate}%</span>
+                  <span className="text-sm text-muted-foreground">Taux de complétion (≥90%)</span>
+                  <span className="font-medium">{kpis.completionRate}%</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Taux de rebond</span>
-                  <span className="font-medium">22%</span>
+                  <span className="text-sm text-muted-foreground">Taux de rebond (&lt;10%)</span>
+                  <span className="font-medium">{kpis.bounceRate}%</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Replay moyen</span>
-                  <span className="font-medium">1.3x</span>
+                  <span className="text-sm text-muted-foreground">Sessions moyennes / viewer</span>
+                  <span className="font-medium">{kpis.avgSessions}x</span>
                 </div>
               </CardContent>
             </Card>
@@ -475,28 +525,28 @@ export default function CampaignDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Performance
+                  Détails
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Ouvertures email</span>
-                  <span className="font-medium">456</span>
+                  <span className="text-sm text-muted-foreground">Total sessions</span>
+                  <span className="font-medium">{kpis.totalSessions}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Clics sur le lien</span>
-                  <span className="font-medium">234</span>
+                  <span className="text-sm text-muted-foreground">Vidéos générées</span>
+                  <span className="font-medium">{videos.length}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Conversions</span>
-                  <span className="font-medium">12</span>
+                  <span className="text-sm text-muted-foreground">Progression max moyenne</span>
+                  <span className="font-medium">{kpis.avgMaxReached}%</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Taux de conversion</span>
-                  <span className="font-medium">5.1%</span>
+                  <span className="text-sm text-muted-foreground">Referrals uniques</span>
+                  <span className="font-medium">{kpis.shareCount}</span>
                 </div>
               </CardContent>
             </Card>
