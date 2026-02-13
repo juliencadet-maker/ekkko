@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-share-invite]
 verify_jwt = false
+
+[functions.hubspot-sync]
+verify_jwt = false
