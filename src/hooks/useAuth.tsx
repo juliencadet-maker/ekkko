@@ -107,6 +107,13 @@ export function useAuth(): UserContext & {
   }, [fetchUserData]);
 
   const signOut = useCallback(async () => {
+    // Reset onboarding for demo accounts so next login restarts the wizard
+    if (user?.email === "demo@ekko.app" && user?.id) {
+      await supabase
+        .from("profiles")
+        .update({ onboarding_completed: false, onboarding_step: 0, default_identity_id: null })
+        .eq("user_id", user.id);
+    }
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -114,7 +121,7 @@ export function useAuth(): UserContext & {
     setMembership(null);
     setOrg(null);
     setPolicy(null);
-  }, []);
+  }, [user?.email, user?.id]);
 
   const isAuthenticated = !!user && !!session;
   const needsOnboarding = isAuthenticated && profile && !profile.onboarding_completed;
