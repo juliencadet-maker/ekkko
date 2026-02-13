@@ -101,6 +101,81 @@ function isNewThisWeek(dateStr: string): boolean {
   return date >= weekAgo;
 }
 
+const MOCK_WATCH_DATA: WatchProgressEntry[] = [
+  {
+    id: "mock-1", video_id: "v1", viewer_hash: "abc123",
+    watch_percentage: 95, total_watch_seconds: 114, max_percentage_reached: 95,
+    viewer_name: "Sophie Martin", viewer_email: "sophie.martin@ingérop.fr",
+    viewer_title: "Directrice des Opérations", viewer_company: "Ingérop",
+    referred_by_hash: null, session_count: 3,
+    first_watched_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    last_watched_at: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    id: "mock-2", video_id: "v1", viewer_hash: "def456",
+    watch_percentage: 88, total_watch_seconds: 105, max_percentage_reached: 88,
+    viewer_name: "Thomas Durand", viewer_email: "t.durand@ingérop.fr",
+    viewer_title: "Responsable Innovation", viewer_company: "Ingérop",
+    referred_by_hash: "abc123", session_count: 2,
+    first_watched_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+    last_watched_at: new Date(Date.now() - 7200000).toISOString(),
+  },
+  {
+    id: "mock-3", video_id: "v1", viewer_hash: "ghi789",
+    watch_percentage: 45, total_watch_seconds: 54, max_percentage_reached: 45,
+    viewer_name: "Françoise Denis", viewer_email: "f.denis@ingérop.fr",
+    viewer_title: "DAF", viewer_company: "Ingérop",
+    referred_by_hash: "abc123", session_count: 1,
+    first_watched_at: new Date(Date.now() - 0.5 * 86400000).toISOString(),
+    last_watched_at: new Date(Date.now() - 0.5 * 86400000).toISOString(),
+  },
+  {
+    id: "mock-4", video_id: "v1", viewer_hash: "jkl012",
+    watch_percentage: 100, total_watch_seconds: 120, max_percentage_reached: 100,
+    viewer_name: "Marc Lefèvre", viewer_email: "m.lefevre@ingérop.fr",
+    viewer_title: "DG", viewer_company: "Ingérop",
+    referred_by_hash: null, session_count: 4,
+    first_watched_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    last_watched_at: new Date(Date.now() - 1800000).toISOString(),
+  },
+  {
+    id: "mock-5", video_id: "v1", viewer_hash: "mno345",
+    watch_percentage: 12, total_watch_seconds: 14, max_percentage_reached: 12,
+    viewer_name: "Julie Perrin", viewer_email: "j.perrin@ingérop.fr",
+    viewer_title: "Chargée de communication", viewer_company: "Ingérop",
+    referred_by_hash: "def456", session_count: 1,
+    first_watched_at: new Date(Date.now() - 0.3 * 86400000).toISOString(),
+    last_watched_at: new Date(Date.now() - 0.3 * 86400000).toISOString(),
+  },
+  {
+    id: "mock-6", video_id: "v1", viewer_hash: "pqr678",
+    watch_percentage: 72, total_watch_seconds: 86, max_percentage_reached: 72,
+    viewer_name: "Alexandre Morel", viewer_email: "a.morel@ingérop.fr",
+    viewer_title: "Directeur Technique", viewer_company: "Ingérop",
+    referred_by_hash: "abc123", session_count: 2,
+    first_watched_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+    last_watched_at: new Date(Date.now() - 43200000).toISOString(),
+  },
+  {
+    id: "mock-7", video_id: "v1", viewer_hash: "stu901",
+    watch_percentage: 8, total_watch_seconds: 10, max_percentage_reached: 8,
+    viewer_name: "Claire Bonnet", viewer_email: "c.bonnet@ingérop.fr",
+    viewer_title: "Assistante de direction", viewer_company: "Ingérop",
+    referred_by_hash: "jkl012", session_count: 1,
+    first_watched_at: new Date(Date.now() - 6 * 86400000).toISOString(),
+    last_watched_at: new Date(Date.now() - 6 * 86400000).toISOString(),
+  },
+  {
+    id: "mock-8", video_id: "v1", viewer_hash: "vwx234",
+    watch_percentage: 55, total_watch_seconds: 66, max_percentage_reached: 55,
+    viewer_name: "Nicolas Girard", viewer_email: "n.girard@ingérop.fr",
+    viewer_title: "Chef de Projet", viewer_company: "Ingérop",
+    referred_by_hash: "jkl012", session_count: 2,
+    first_watched_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+    last_watched_at: new Date(Date.now() - 18000000).toISOString(),
+  },
+];
+
 interface PowerMapProps {
   campaignId: string;
   orgId: string;
@@ -123,6 +198,8 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
           .eq("org_id", orgId);
 
         if (!videos?.length) {
+          // Use mock data when no real videos exist
+          setWatchData(MOCK_WATCH_DATA);
           setIsLoading(false);
           return;
         }
@@ -134,9 +211,15 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
           .select("*")
           .in("video_id", videoIds);
 
-        setWatchData((progress as WatchProgressEntry[]) || []);
+        // Fall back to mock data if no real progress data
+        setWatchData(
+          (progress as WatchProgressEntry[])?.length
+            ? (progress as WatchProgressEntry[])
+            : MOCK_WATCH_DATA
+        );
       } catch (err) {
         console.error("PowerMap fetch error:", err);
+        setWatchData(MOCK_WATCH_DATA);
       } finally {
         setIsLoading(false);
       }
