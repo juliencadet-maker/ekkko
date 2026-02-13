@@ -41,7 +41,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!membership?.org_id) return;
+      if (!membership?.org_id) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         // Fetch video count
