@@ -144,6 +144,7 @@ export type Database = {
           metadata: Json | null
           name: string
           org_id: string
+          parent_campaign_id: string | null
           scheduled_at: string | null
           script: string
           status: Database["public"]["Enums"]["campaign_status"]
@@ -163,6 +164,7 @@ export type Database = {
           metadata?: Json | null
           name: string
           org_id: string
+          parent_campaign_id?: string | null
           scheduled_at?: string | null
           script: string
           status?: Database["public"]["Enums"]["campaign_status"]
@@ -182,6 +184,7 @@ export type Database = {
           metadata?: Json | null
           name?: string
           org_id?: string
+          parent_campaign_id?: string | null
           scheduled_at?: string | null
           script?: string
           status?: Database["public"]["Enums"]["campaign_status"]
@@ -201,6 +204,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_parent_campaign_id_fkey"
+            columns: ["parent_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
           {

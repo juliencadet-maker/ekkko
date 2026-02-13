@@ -128,6 +128,7 @@ export interface Campaign {
   created_by_user_id: string | null;
   identity_id: string;
   template_id: string | null;
+  parent_campaign_id: string | null;
   name: string;
   description: string | null;
   script: string;
@@ -144,6 +145,7 @@ export interface Campaign {
   creator?: Profile;
   recipients?: Recipient[];
   approval_requests?: ApprovalRequest[];
+  sub_campaigns?: Campaign[];
 }
 
 export interface Recipient {
