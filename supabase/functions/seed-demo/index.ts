@@ -88,21 +88,37 @@ serve(async (req) => {
       onboarding_step: 0,
     }).eq("user_id", userId);
 
-    // 5. Create identity
+    // 5. Create sales identity
     const { data: identity } = await admin.from("identities").insert({
       org_id: orgId,
       owner_user_id: userId,
       display_name: "Jean Dupont",
-      type: "executive",
+      type: "sales_rep",
       status: "ready",
       consent_given: true,
       consent_given_at: new Date().toISOString(),
       reference_video_duration: 45,
+      is_shareable: false,
       metadata: { title: "VP Sales", company: "Acme Corp" },
     }).select().single();
     const identityId = identity!.id;
 
     await admin.from("profiles").update({ default_identity_id: identityId }).eq("user_id", userId);
+
+    // 5b. Create exec identity (shareable — "Executive Presence as a Service")
+    const { data: execIdentity } = await admin.from("identities").insert({
+      org_id: orgId,
+      owner_user_id: userId, // In demo, same user plays both roles
+      display_name: "Marc Lefevre — CEO",
+      type: "executive",
+      status: "ready",
+      consent_given: true,
+      consent_given_at: new Date().toISOString(),
+      reference_video_duration: 38,
+      is_shareable: true,
+      metadata: { title: "CEO", company: "Acme Corp" },
+    }).select().single();
+    const execIdentityId = execIdentity!.id;
 
     const { data: provider } = await admin.from("providers").select("id").eq("org_id", orgId).single();
     const providerId = provider!.id;
@@ -312,6 +328,40 @@ serve(async (req) => {
       status: "draft",
       is_self_campaign: false,
       metadata: {},
+    });
+
+    // ── Pending approval request (exec flow demo) ──────────────────
+    const { data: execCampaign } = await admin.from("campaigns").insert({
+      org_id: orgId,
+      identity_id: execIdentityId,
+      created_by_user_id: userId,
+      parent_campaign_id: tvParentId,
+      name: "Engagement CEO — Sponsor Deal",
+      description: "Message personnalisé du CEO pour réaffirmer l'engagement d'Acme Corp sur le deal TechVision.",
+      script: "Bonjour {{first_name}}, je suis Marc Lefevre, CEO d'Acme Corp. Je souhaitais personnellement vous assurer de notre engagement total sur ce partenariat stratégique avec TechVision. Nos équipes sont mobilisées pour garantir le succès de cette collaboration.",
+      status: "pending_approval",
+      is_self_campaign: false,
+      metadata: techVisionMeta,
+    }).select().single();
+
+    await admin.from("recipients").insert({
+      org_id: orgId,
+      campaign_id: execCampaign!.id,
+      email: "marie.bernard@techvision.fr",
+      first_name: "Marie",
+      last_name: "Bernard",
+      company: "TechVision",
+      variables: { title: "CEO" },
+    });
+
+    await admin.from("approval_requests").insert({
+      org_id: orgId,
+      campaign_id: execCampaign!.id,
+      requested_by_user_id: userId,
+      assigned_to_user_id: userId, // Same user in demo
+      approval_type: "script",
+      script_snapshot: execCampaign!.script,
+      status: "pending",
     });
 
     return new Response(

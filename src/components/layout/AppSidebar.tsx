@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   Video,
@@ -40,7 +42,8 @@ const navigationItems = [
     label: "Validations",
     href: "/app/approvals",
     icon: CheckSquare,
-    roles: ["org_owner", "org_admin", "org_manager"],
+    roles: ["org_owner", "org_admin", "org_manager", "org_user"],
+    badgeKey: "pendingApprovals" as const,
   },
   {
     label: "Journal d'audit",
@@ -70,8 +73,35 @@ const navigationItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { profile, membership, org, signOut } = useAuthContext();
+  const { user, profile, membership, org, signOut } = useAuthContext();
   const userRole = membership?.role || "org_user";
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchPending = async () => {
+      const { count } = await supabase
+        .from("approval_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending")
+        .eq("assigned_to_user_id", user.id);
+      setPendingCount(count || 0);
+    };
+
+    fetchPending();
+
+    const channel = supabase
+      .channel("approval-badge")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "approval_requests",
+      }, () => fetchPending())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
 
   const filteredNavItems = navigationItems.filter(
     (item) => item.roles.includes(userRole)
@@ -111,6 +141,7 @@ export function AppSidebar() {
             {filteredNavItems.map((item) => {
               const isActive = location.pathname === item.href;
               const Icon = item.icon;
+              const showBadge = item.badgeKey === "pendingApprovals" && pendingCount > 0;
 
               return (
                 <li key={item.href}>
@@ -124,7 +155,12 @@ export function AppSidebar() {
                     )}
                   >
                     <Icon className="w-5 h-5" />
-                    {item.label}
+                    <span className="flex-1">{item.label}</span>
+                    {showBadge && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold px-1.5">
+                        {pendingCount}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );

@@ -267,7 +267,7 @@ export default function NewCampaign() {
     }
   };
 
-  const otherIdentities = identities.filter(i => i.owner_user_id !== user.id);
+  const otherIdentities = identities.filter(i => i.owner_user_id !== user.id && i.is_shareable);
 
   return (
     <AppLayout>
