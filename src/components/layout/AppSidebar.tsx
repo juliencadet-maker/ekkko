@@ -11,6 +11,7 @@ import {
   LogOut,
   Shield,
   Building2,
+  LineChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -46,6 +47,12 @@ const navigationItems = [
     href: "/app/audit",
     icon: FileText,
     roles: ["org_owner", "org_admin"],
+  },
+  {
+    label: "Deal Intelligence",
+    href: "/app/deal-intelligence",
+    icon: LineChart,
+    roles: ["org_owner", "org_admin", "org_manager"],
   },
   {
     label: "Gouvernance",
