@@ -16,9 +16,13 @@ import {
   Mail,
   Building2,
   Briefcase,
+  Flame,
+  Zap,
+  BarChart3,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import type { LeadScoreBreakdown } from "./leadScoring";
 
 type InterestLevel = "high" | "neutral" | "low";
 
@@ -42,6 +46,7 @@ interface PowerMapEntry {
   referralCount: number;
   displayName: string;
   initials: string;
+  leadScore: LeadScoreBreakdown;
 }
 
 function getInterestConfig(interest: InterestLevel) {
@@ -122,6 +127,10 @@ export function PowerMapDetailPanel({
               <InterestIcon className="h-3 w-3 mr-1" />
               {config.label}
             </Badge>
+            <Badge variant="outline" className={`mt-1 ${entry.leadScore.bgColor} ${entry.leadScore.color} ${entry.leadScore.borderColor}`}>
+              {entry.leadScore.total >= 75 && <Flame className="h-3 w-3 mr-1" />}
+              Score : {entry.leadScore.total}/100 — {entry.leadScore.label}
+            </Badge>
           </div>
         </div>
 
@@ -178,6 +187,37 @@ export function PowerMapDetailPanel({
               </div>
               <p className="text-sm font-medium">{entry.session_count}</p>
             </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Lead Score Breakdown */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <BarChart3 className="h-3.5 w-3.5" />
+            Lead Score
+          </h4>
+          <div className="space-y-2">
+            {[
+              { label: "Engagement", value: entry.leadScore.engagement, max: 30, color: "bg-emerald-500" },
+              { label: "Fréquence", value: entry.leadScore.frequency, max: 25, color: "bg-blue-500" },
+              { label: "Récence", value: entry.leadScore.recency, max: 25, color: "bg-purple-500" },
+              { label: "Influence", value: entry.leadScore.influence, max: 20, color: "bg-amber-500" },
+            ].map((dim) => (
+              <div key={dim.label}>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-muted-foreground">{dim.label}</span>
+                  <span className="font-medium">{dim.value}/{dim.max}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${dim.color}`}
+                    style={{ width: `${(dim.value / dim.max) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
