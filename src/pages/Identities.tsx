@@ -20,7 +20,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Users, Loader2, Trash2, Star, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Users, Loader2, Trash2, Star, Plus, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Identity } from "@/types/database";
 import { IDENTITY_TYPES } from "@/lib/constants";
@@ -132,8 +134,29 @@ export default function Identities() {
     }
   };
 
+  const isAdmin = membership?.role === "org_owner" || membership?.role === "org_admin";
   const isMyIdentity = (identity: Identity) => identity.owner_user_id === user.id;
   const isDefaultIdentity = (identity: Identity) => profile?.default_identity_id === identity.id;
+
+  const handleToggleShareable = async (identity: Identity) => {
+    try {
+      await supabase
+        .from("identities")
+        .update({ is_shareable: !identity.is_shareable })
+        .eq("id", identity.id);
+
+      toast({
+        title: identity.is_shareable ? "Identité privée" : "Identité partageable",
+        description: identity.is_shareable
+          ? "Cette identité ne peut plus être utilisée par d'autres."
+          : "Les membres de l'organisation peuvent maintenant utiliser cette identité pour leurs campagnes.",
+      });
+      await fetchIdentities();
+    } catch (error) {
+      console.error("Toggle shareable error:", error);
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
 
   return (
     <AppLayout>
@@ -169,6 +192,7 @@ export default function Identities() {
                   <TableHead>Nom</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead>Partageable</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -191,6 +215,36 @@ export default function Identities() {
                     </TableCell>
                     <TableCell>{getTypeLabel(identity.type)}</TableCell>
                     <TableCell><StatusBadge status={identity.status} /></TableCell>
+                    <TableCell>
+                      {(isMyIdentity(identity) || isAdmin) ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={identity.is_shareable}
+                                onCheckedChange={() => handleToggleShareable(identity)}
+                              />
+                              {identity.is_shareable && (
+                                <Share2 className="h-3.5 w-3.5 text-primary" />
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {identity.is_shareable
+                              ? "Les membres peuvent utiliser cette identité pour leurs campagnes"
+                              : "Cliquez pour rendre cette identité utilisable par d'autres"}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        identity.is_shareable ? (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            <Share2 className="h-3 w-3" /> Oui
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Non</span>
+                        )
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         {isMyIdentity(identity) && !isDefaultIdentity(identity) && (
