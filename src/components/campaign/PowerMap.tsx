@@ -186,7 +186,18 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterInterest, setFilterInterest] = useState<string>("all");
+  const [filterSpecial, setFilterSpecial] = useState<string>("none");
   const [selectedEntry, setSelectedEntry] = useState<PowerMapEntry | null>(null);
+
+  const handleStatClick = (interest: string, special: string = "none") => {
+    if (special !== "none") {
+      setFilterSpecial((prev) => (prev === special ? "none" : special));
+      setFilterInterest("all");
+    } else {
+      setFilterInterest((prev) => (prev === interest ? "all" : interest));
+      setFilterSpecial("none");
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -274,6 +285,12 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
       result = result.filter((e) => e.interest === filterInterest);
     }
 
+    if (filterSpecial === "champion") {
+      result = result.filter((e) => e.isChampion);
+    } else if (filterSpecial === "new") {
+      result = result.filter((e) => e.isNew);
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -292,7 +309,7 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
         return order[a.interest] - order[b.interest];
       return b.max_percentage_reached - a.max_percentage_reached;
     });
-  }, [entries, filterInterest, searchQuery]);
+  }, [entries, filterInterest, filterSpecial, searchQuery]);
 
   const stats = useMemo(() => {
     const high = entries.filter((e) => e.interest === "high").length;
@@ -324,7 +341,10 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
       <div className={`flex-1 space-y-6 ${selectedEntry ? "pr-0" : ""}`}>
         {/* Summary Stats */}
         <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all hover:shadow-md ${filterInterest === "high" && filterSpecial === "none" ? "ring-2 ring-emerald-500 shadow-md" : ""}`}
+            onClick={() => handleStatClick("high")}
+          >
             <CardContent className="pt-4 pb-3 px-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-md bg-emerald-500/15">
@@ -337,7 +357,10 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all hover:shadow-md ${filterInterest === "neutral" && filterSpecial === "none" ? "ring-2 ring-border shadow-md" : ""}`}
+            onClick={() => handleStatClick("neutral")}
+          >
             <CardContent className="pt-4 pb-3 px-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-md bg-muted">
@@ -350,7 +373,10 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all hover:shadow-md ${filterInterest === "low" && filterSpecial === "none" ? "ring-2 ring-red-500 shadow-md" : ""}`}
+            onClick={() => handleStatClick("low")}
+          >
             <CardContent className="pt-4 pb-3 px-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-md bg-red-500/15">
@@ -363,7 +389,10 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all hover:shadow-md ${filterSpecial === "champion" ? "ring-2 ring-amber-500 shadow-md" : ""}`}
+            onClick={() => handleStatClick("all", "champion")}
+          >
             <CardContent className="pt-4 pb-3 px-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-md bg-amber-500/15">
@@ -376,7 +405,10 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            className={`cursor-pointer transition-all hover:shadow-md ${filterSpecial === "new" ? "ring-2 ring-blue-500 shadow-md" : ""}`}
+            onClick={() => handleStatClick("all", "new")}
+          >
             <CardContent className="pt-4 pb-3 px-4">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-md bg-blue-500/15">
