@@ -22,6 +22,10 @@ import {
   Crown,
   Share2,
   Sparkles,
+  Flame,
+  Bell,
+  Zap,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   Tooltip,
@@ -30,6 +34,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { PowerMapDetailPanel } from "./PowerMapDetailPanel";
+import { computeLeadScore, generateAlerts, type LeadScoreBreakdown, type LeadAlert } from "./leadScoring";
 
 interface WatchProgressEntry {
   id: string;
@@ -57,6 +62,7 @@ interface PowerMapEntry extends WatchProgressEntry {
   displayName: string;
   initials: string;
   isNew: boolean;
+  leadScore: LeadScoreBreakdown;
 }
 
 function getInterestLevel(maxPercentage: number): InterestLevel {
@@ -266,6 +272,14 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
             .slice(0, 2)
         : displayName.slice(0, 2).toUpperCase();
 
+      const leadScore = computeLeadScore({
+        maxPercentageReached: wp.max_percentage_reached,
+        sessionCount: wp.session_count,
+        lastWatchedAt: wp.last_watched_at,
+        referralCount,
+        totalWatchSeconds: wp.total_watch_seconds,
+      });
+
       return {
         ...wp,
         interest,
@@ -274,6 +288,7 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
         displayName,
         initials,
         isNew: isNewThisWeek(wp.first_watched_at),
+        leadScore,
       };
     });
   }, [watchData]);
@@ -303,13 +318,28 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
     }
 
     return result.sort((a, b) => {
+      // Sort by lead score first
+      if (a.leadScore.total !== b.leadScore.total)
+        return b.leadScore.total - a.leadScore.total;
       if (a.isChampion !== b.isChampion) return a.isChampion ? -1 : 1;
-      const order: Record<InterestLevel, number> = { high: 0, neutral: 1, low: 2 };
-      if (order[a.interest] !== order[b.interest])
-        return order[a.interest] - order[b.interest];
       return b.max_percentage_reached - a.max_percentage_reached;
     });
   }, [entries, filterInterest, filterSpecial, searchQuery]);
+
+  const alerts = useMemo(() => {
+    return generateAlerts(
+      entries.map((e) => ({
+        id: e.id,
+        displayName: e.displayName,
+        leadScore: e.leadScore,
+        sessionCount: e.session_count,
+        isChampion: e.isChampion,
+        referralCount: e.referralCount,
+        lastWatchedAt: e.last_watched_at,
+        maxPercentageReached: e.max_percentage_reached,
+      }))
+    );
+  }, [entries]);
 
   const stats = useMemo(() => {
     const high = entries.filter((e) => e.interest === "high").length;
@@ -458,6 +488,42 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
           </div>
         )}
 
+        {/* Lead Scoring Alerts */}
+        {alerts.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Bell className="h-4 w-4 text-orange-600" />
+              Alertes commerciales
+              <Badge variant="outline" className="bg-orange-500/15 text-orange-700 border-orange-500/30 text-[10px]">
+                {alerts.length}
+              </Badge>
+            </h3>
+            <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {alerts.slice(0, 3).map((alert) => (
+                <button
+                  key={alert.id}
+                  onClick={() => {
+                    const match = entries.find((e) => e.displayName === alert.viewerName);
+                    if (match) setSelectedEntry(match);
+                  }}
+                  className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:shadow-md transition-all text-left cursor-pointer"
+                >
+                  <span className="text-lg mt-0.5">{alert.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold truncate">{alert.title}</p>
+                      <Badge variant="outline" className="bg-orange-500/15 text-orange-700 border-orange-500/30 text-[10px] shrink-0">
+                        {alert.score}/100
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{alert.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex gap-3">
           <div className="relative flex-1 max-w-sm">
@@ -556,15 +622,23 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
                       </div>
                     </div>
 
-                    {/* Interest + stats */}
+                    {/* Lead Score + Interest */}
                     <div className="flex items-center justify-between">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] px-1.5 py-0 ${config.color}`}
-                      >
-                        {config.label}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] px-1.5 py-0 ${config.color}`}
+                        >
+                          {config.label}
+                        </Badge>
+                        {entry.leadScore.total >= 75 && (
+                          <Flame className="h-3 w-3 text-orange-500" />
+                        )}
+                      </div>
                       <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <span className={`font-bold ${entry.leadScore.color}`}>
+                          {entry.leadScore.total}
+                        </span>
                         <span className="flex items-center gap-0.5">
                           <Eye className="h-2.5 w-2.5" />
                           {entry.max_percentage_reached}%
