@@ -7,8 +7,9 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   Dialog,
   DialogContent,
@@ -24,7 +25,10 @@ import {
   XCircle, 
   Loader2,
   Clock,
-  FileText
+  FileText,
+  Pencil,
+  User,
+  ArrowRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -35,7 +39,9 @@ export default function Approvals() {
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
   const [selectedApproval, setSelectedApproval] = useState<ApprovalRequest | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"review" | "reject">("review");
   const [comment, setComment] = useState("");
+  const [editedScript, setEditedScript] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user, membership } = useAuthContext();
@@ -48,7 +54,7 @@ export default function Approvals() {
     try {
       const { data, error } = await supabase
         .from("approval_requests")
-        .select("*, campaigns(name, script, identities(display_name))")
+        .select("*, campaigns(name, script, identities(display_name, owner_user_id), created_by_user_id, profiles:created_by_user_id(first_name, last_name, title))")
         .eq("org_id", membership.org_id)
         .order("created_at", { ascending: false });
 
@@ -71,6 +77,7 @@ export default function Approvals() {
     setIsSubmitting(true);
     try {
       const newStatus = action === "approve" ? "approved" : "rejected";
+      const scriptChanged = action === "approve" && editedScript !== (selectedApproval.script_snapshot || (selectedApproval as any).campaigns?.script);
       
       // Update approval request
       await supabase
@@ -80,6 +87,7 @@ export default function Approvals() {
           decision_comment: comment || null,
           decided_at: new Date().toISOString(),
           decided_by_user_id: user.id,
+          ...(scriptChanged ? { script_snapshot: editedScript } : {}),
         })
         .eq("id", selectedApproval.id);
 
@@ -91,6 +99,7 @@ export default function Approvals() {
             status: "approved",
             approved_at: new Date().toISOString(),
             approved_by_user_id: user.id,
+            ...(scriptChanged ? { script: editedScript } : {}),
           })
           .eq("id", selectedApproval.campaign_id);
 
@@ -98,6 +107,7 @@ export default function Approvals() {
           eventType: "approval_approved",
           entityType: "approval_request",
           entityId: selectedApproval.id,
+          metadata: scriptChanged ? { script_modified: true } : undefined,
         });
 
         await logEvent({
@@ -135,6 +145,7 @@ export default function Approvals() {
       setIsDialogOpen(false);
       setSelectedApproval(null);
       setComment("");
+      setEditedScript("");
       fetchApprovals();
     } catch (error) {
       console.error("Approval action error:", error);
@@ -148,14 +159,29 @@ export default function Approvals() {
     }
   };
 
-  const openApprovalDialog = (approval: ApprovalRequest) => {
+  const openReviewDialog = (approval: ApprovalRequest) => {
     setSelectedApproval(approval);
+    setEditedScript(approval.script_snapshot || (approval as any).campaigns?.script || "");
     setComment("");
+    setDialogMode("review");
+    setIsDialogOpen(true);
+  };
+
+  const openRejectDialog = (approval: ApprovalRequest) => {
+    setSelectedApproval(approval);
+    setEditedScript(approval.script_snapshot || (approval as any).campaigns?.script || "");
+    setComment("");
+    setDialogMode("reject");
     setIsDialogOpen(true);
   };
 
   const pendingApprovals = approvals.filter(a => a.status === "pending");
   const processedApprovals = approvals.filter(a => a.status !== "pending");
+
+  const campaign = selectedApproval ? (selectedApproval as any).campaigns : null;
+  const requesterName = campaign?.profiles
+    ? `${campaign.profiles.first_name || ""} ${campaign.profiles.last_name || ""}`.trim()
+    : "Inconnu";
 
   return (
     <AppLayout>
@@ -189,54 +215,64 @@ export default function Approvals() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {pendingApprovals.map((approval) => (
-                  <Card key={approval.id} className="card-interactive">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold">
-                              {(approval as any).campaigns?.name}
-                            </h3>
-                            <StatusBadge status="pending" />
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Identité: {(approval as any).campaigns?.identities?.display_name}
-                          </p>
-                          <div className="p-3 bg-muted rounded-lg">
-                            <p className="text-sm font-medium mb-1">Script:</p>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-4">
-                              {approval.script_snapshot || (approval as any).campaigns?.script}
+                {pendingApprovals.map((approval) => {
+                  const c = (approval as any).campaigns;
+                  const reqName = c?.profiles
+                    ? `${c.profiles.first_name || ""} ${c.profiles.last_name || ""}`.trim()
+                    : null;
+                  return (
+                    <Card key={approval.id} className="card-interactive">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-semibold">{c?.name}</h3>
+                              <StatusBadge status="pending" />
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                              <span className="flex items-center gap-1.5">
+                                <User className="h-3.5 w-3.5" />
+                                Identité : {c?.identities?.display_name}
+                              </span>
+                              {reqName && (
+                                <span className="flex items-center gap-1.5">
+                                  <ArrowRight className="h-3.5 w-3.5" />
+                                  Demandé par : {reqName}
+                                </span>
+                              )}
+                            </div>
+                            <div className="p-3 bg-muted rounded-lg">
+                              <p className="text-sm font-medium mb-1">Script :</p>
+                              <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-4">
+                                {approval.script_snapshot || c?.script}
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-3">
+                              Demandé le {format(new Date(approval.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
                             </p>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-3">
-                            Demandé le {format(new Date(approval.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
-                          </p>
+                          <div className="flex gap-2 ml-4 flex-shrink-0">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => openRejectDialog(approval)}
+                            >
+                              <XCircle className="mr-2 h-4 w-4" />
+                              Refuser
+                            </Button>
+                            <Button 
+                              size="sm"
+                              onClick={() => openReviewDialog(approval)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Relire & Approuver
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => openApprovalDialog(approval)}
-                          >
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Refuser
-                          </Button>
-                          <Button 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedApproval(approval);
-                              handleApprovalAction("approve");
-                            }}
-                          >
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Approuver
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -271,7 +307,7 @@ export default function Approvals() {
                           </p>
                           {approval.decision_comment && (
                             <p className="text-sm text-muted-foreground mt-2">
-                              Commentaire: {approval.decision_comment}
+                              Commentaire : {approval.decision_comment}
                             </p>
                           )}
                         </div>
@@ -285,36 +321,78 @@ export default function Approvals() {
         </div>
       )}
 
-      {/* Reject Dialog */}
+      {/* Review / Reject Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Refuser cette demande ?</DialogTitle>
+            <DialogTitle>
+              {dialogMode === "review" ? "Relecture du script" : "Refuser cette demande ?"}
+            </DialogTitle>
             <DialogDescription>
-              Vous pouvez ajouter un commentaire pour expliquer le refus.
+              {dialogMode === "review"
+                ? `Script soumis par ${requesterName} pour la campagne "${campaign?.name}". Vous pouvez modifier le script avant d'approuver.`
+                : "Vous pouvez ajouter un commentaire pour expliquer le refus."}
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            placeholder="Commentaire (optionnel)"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={4}
-          />
-          <DialogFooter>
+
+          {dialogMode === "review" ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Script (modifiable)</Label>
+                <Textarea
+                  value={editedScript}
+                  onChange={(e) => setEditedScript(e.target.value)}
+                  rows={10}
+                  className="font-mono text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Commentaire (optionnel)</Label>
+                <Textarea
+                  placeholder="Ajoutez un commentaire..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          ) : (
+            <Textarea
+              placeholder="Commentaire (optionnel)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
+            />
+          )}
+
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Annuler
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => handleApprovalAction("reject")}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</>
-              ) : (
-                <>Refuser</>
-              )}
-            </Button>
+            {dialogMode === "review" ? (
+              <Button 
+                onClick={() => handleApprovalAction("approve")}
+                disabled={isSubmitting || !editedScript.trim()}
+              >
+                {isSubmitting ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</>
+                ) : (
+                  <><CheckCircle2 className="mr-2 h-4 w-4" />Approuver</>
+                )}
+              </Button>
+            ) : (
+              <Button 
+                variant="destructive" 
+                onClick={() => handleApprovalAction("reject")}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</>
+                ) : (
+                  <>Refuser</>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
