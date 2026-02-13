@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       approval_requests: {
         Row: {
+          approval_token: string | null
           approval_type: string
           assigned_to_user_id: string | null
           campaign_id: string
@@ -31,6 +32,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_token?: string | null
           approval_type?: string
           assigned_to_user_id?: string | null
           campaign_id: string
@@ -46,6 +48,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_token?: string | null
           approval_type?: string
           assigned_to_user_id?: string | null
           campaign_id?: string
@@ -422,6 +425,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          notification_channels: string[] | null
           onboarding_completed: boolean | null
           onboarding_step: number | null
           timezone: string | null
@@ -438,6 +442,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          notification_channels?: string[] | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
           timezone?: string | null
@@ -454,6 +459,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          notification_channels?: string[] | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
           timezone?: string | null

@@ -211,14 +211,21 @@ export default function NewCampaign() {
           ? selectedIdentity.owner_user_id 
           : null; // Will be assigned to org admin
 
-        await supabase.from("approval_requests").insert({
+        const { data: approvalData } = await supabase.from("approval_requests").insert({
           org_id: membership!.org_id,
           campaign_id: campaign.id,
           requested_by_user_id: user.id,
           assigned_to_user_id: assignedTo,
           approval_type: "script",
           script_snapshot: script,
-        });
+        }).select("id").single();
+
+        // Trigger notification to exec
+        if (approvalData?.id) {
+          supabase.functions.invoke("notify-approval", {
+            body: { approval_id: approvalData.id },
+          }).catch(err => console.error("Notification error:", err));
+        }
 
         await logEvent({
           eventType: "approval_requested",
