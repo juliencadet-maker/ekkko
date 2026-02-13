@@ -19,6 +19,7 @@ import Governance from "./pages/Governance";
 import Settings from "./pages/Settings";
 import VideoLandingPage from "./pages/VideoLandingPage";
 import VideoEditorPage from "./pages/VideoEditorPage";
+import DealIntelligence from "./pages/DealIntelligence";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/app/identities" element={<AuthGuard><Identities /></AuthGuard>} />
             <Route path="/app/approvals" element={<AuthGuard><Approvals /></AuthGuard>} />
             <Route path="/app/audit" element={<AuthGuard><Audit /></AuthGuard>} />
+            <Route path="/app/deal-intelligence" element={<AuthGuard><DealIntelligence /></AuthGuard>} />
             <Route path="/app/governance" element={<AuthGuard><Governance /></AuthGuard>} />
             <Route path="/app/settings" element={<AuthGuard><Settings /></AuthGuard>} />
             <Route path="*" element={<NotFound />} />
