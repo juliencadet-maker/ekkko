@@ -63,6 +63,13 @@ export function useAuth(): UserContext & {
   }, [user?.id, fetchUserData]);
 
   useEffect(() => {
+    let initialLoadDone = false;
+
+    const loadUserData = async (userId: string) => {
+      await fetchUserData(userId);
+      setIsLoading(false);
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -70,30 +77,30 @@ export function useAuth(): UserContext & {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer Supabase calls with setTimeout, keep loading until data is fetched
-          setTimeout(async () => {
-            await fetchUserData(session.user.id);
-            setIsLoading(false);
-          }, 0);
+          initialLoadDone = true;
+          loadUserData(session.user.id);
         } else {
           setProfile(null);
           setMembership(null);
           setOrg(null);
           setPolicy(null);
           setIsLoading(false);
+          initialLoadDone = true;
         }
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // THEN check for existing session (only if onAuthStateChange hasn't fired yet)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (initialLoadDone) return;
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await fetchUserData(session.user.id);
+        loadUserData(session.user.id);
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
