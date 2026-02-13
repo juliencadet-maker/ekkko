@@ -26,7 +26,10 @@ import {
   Bell,
   Zap,
   ArrowUpRight,
+  LayoutGrid,
+  GitBranchPlus,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -34,6 +37,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { PowerMapDetailPanel } from "./PowerMapDetailPanel";
+import { BuyingCommittee } from "./BuyingCommittee";
 import { computeLeadScore, generateAlerts, type LeadScoreBreakdown, type LeadAlert } from "./leadScoring";
 
 interface WatchProgressEntry {
@@ -194,6 +198,7 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
   const [filterInterest, setFilterInterest] = useState<string>("all");
   const [filterSpecial, setFilterSpecial] = useState<string>("none");
   const [selectedEntry, setSelectedEntry] = useState<PowerMapEntry | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "committee">("grid");
 
   const handleStatClick = (interest: string, special: string = "none") => {
     if (special !== "none") {
@@ -524,8 +529,8 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="flex gap-3">
+        {/* Filters + View Toggle */}
+        <div className="flex gap-3 items-center">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -546,10 +551,34 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
               <SelectItem value="low">🔴 Faible ({stats.low})</SelectItem>
             </SelectContent>
           </Select>
+          <div className="flex border rounded-md">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-r-none px-2.5"
+              onClick={() => setViewMode("grid")}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "committee" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-l-none px-2.5"
+              onClick={() => setViewMode("committee")}
+            >
+              <GitBranchPlus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        {/* Power Map Grid */}
-        {filteredEntries.length === 0 ? (
+        {/* View Content */}
+        {viewMode === "committee" ? (
+          <BuyingCommittee
+            entries={filteredEntries}
+            onSelectEntry={setSelectedEntry}
+            selectedEntryId={selectedEntry?.id}
+          />
+        ) : filteredEntries.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
