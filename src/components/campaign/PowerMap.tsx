@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -13,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Star,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -23,8 +21,15 @@ import {
   Search,
   Crown,
   Share2,
+  Sparkles,
 } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { PowerMapDetailPanel } from "./PowerMapDetailPanel";
 
 interface WatchProgressEntry {
   id: string;
@@ -51,6 +56,7 @@ interface PowerMapEntry extends WatchProgressEntry {
   referralCount: number;
   displayName: string;
   initials: string;
+  isNew: boolean;
 }
 
 function getInterestLevel(maxPercentage: number): InterestLevel {
@@ -63,17 +69,19 @@ function getInterestConfig(interest: InterestLevel) {
   switch (interest) {
     case "high":
       return {
-        label: "Intérêt élevé",
+        label: "Élevé",
         color: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
         icon: TrendingUp,
         ringColor: "ring-emerald-500/40",
+        dotColor: "bg-emerald-500",
       };
     case "low":
       return {
-        label: "Intérêt faible",
+        label: "Faible",
         color: "bg-red-500/15 text-red-700 border-red-500/30",
         icon: TrendingDown,
         ringColor: "ring-red-500/40",
+        dotColor: "bg-red-500",
       };
     default:
       return {
@@ -81,8 +89,16 @@ function getInterestConfig(interest: InterestLevel) {
         color: "bg-muted text-muted-foreground border-border",
         icon: Minus,
         ringColor: "ring-border",
+        dotColor: "bg-muted-foreground/50",
       };
   }
+}
+
+function isNewThisWeek(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  return date >= weekAgo;
 }
 
 interface PowerMapProps {
@@ -95,11 +111,11 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterInterest, setFilterInterest] = useState<string>("all");
+  const [selectedEntry, setSelectedEntry] = useState<PowerMapEntry | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Get all videos for this campaign
         const { data: videos } = await supabase
           .from("videos")
           .select("id")
@@ -130,7 +146,6 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
   }, [campaignId, orgId]);
 
   const entries: PowerMapEntry[] = useMemo(() => {
-    // Count referrals per viewer_hash
     const referralCounts = new Map<string, number>();
     watchData.forEach((wp) => {
       if (wp.referred_by_hash) {
@@ -164,6 +179,7 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
         referralCount,
         displayName,
         initials,
+        isNew: isNewThisWeek(wp.first_watched_at),
       };
     });
   }, [watchData]);
@@ -186,11 +202,11 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
       );
     }
 
-    // Sort: champions first, then by interest level, then by max_percentage_reached
     return result.sort((a, b) => {
       if (a.isChampion !== b.isChampion) return a.isChampion ? -1 : 1;
       const order: Record<InterestLevel, number> = { high: 0, neutral: 1, low: 2 };
-      if (order[a.interest] !== order[b.interest]) return order[a.interest] - order[b.interest];
+      if (order[a.interest] !== order[b.interest])
+        return order[a.interest] - order[b.interest];
       return b.max_percentage_reached - a.max_percentage_reached;
     });
   }, [entries, filterInterest, searchQuery]);
@@ -200,8 +216,14 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
     const neutral = entries.filter((e) => e.interest === "neutral").length;
     const low = entries.filter((e) => e.interest === "low").length;
     const champions = entries.filter((e) => e.isChampion).length;
-    return { total: entries.length, high, neutral, low, champions };
+    const newThisWeek = entries.filter((e) => e.isNew).length;
+    return { total: entries.length, high, neutral, low, champions, newThisWeek };
   }, [entries]);
+
+  const newEntries = useMemo(
+    () => filteredEntries.filter((e) => e.isNew),
+    [filteredEntries]
+  );
 
   if (isLoading) {
     return (
@@ -214,217 +236,259 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Summary Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/15">
-                <TrendingUp className="h-5 w-5 text-emerald-700" />
+    <div className="flex gap-0 h-full">
+      {/* Main content */}
+      <div className={`flex-1 space-y-6 ${selectedEntry ? "pr-0" : ""}`}>
+        {/* Summary Stats */}
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-emerald-500/15">
+                  <TrendingUp className="h-4 w-4 text-emerald-700" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{stats.high}</p>
+                  <p className="text-[10px] text-muted-foreground">Intérêt élevé</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.high}</p>
-                <p className="text-xs text-muted-foreground">Intérêt élevé</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-muted">
+                  <Minus className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{stats.neutral}</p>
+                  <p className="text-[10px] text-muted-foreground">Neutres</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-muted">
-                <Minus className="h-5 w-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-red-500/15">
+                  <TrendingDown className="h-4 w-4 text-red-700" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{stats.low}</p>
+                  <p className="text-[10px] text-muted-foreground">Intérêt faible</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.neutral}</p>
-                <p className="text-xs text-muted-foreground">Neutres</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-amber-500/15">
+                  <Crown className="h-4 w-4 text-amber-700" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{stats.champions}</p>
+                  <p className="text-[10px] text-muted-foreground">Champions</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/15">
-                <TrendingDown className="h-5 w-5 text-red-700" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-blue-500/15">
+                  <Sparkles className="h-4 w-4 text-blue-700" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{stats.newThisWeek}</p>
+                  <p className="text-[10px] text-muted-foreground">Nouveaux (7j)</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.low}</p>
-                <p className="text-xs text-muted-foreground">Intérêt faible</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/15">
-                <Crown className="h-5 w-5 text-amber-700" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.champions}</p>
-                <p className="text-xs text-muted-foreground">Champions</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom, email, entreprise..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+            </CardContent>
+          </Card>
         </div>
-        <Select value={filterInterest} onValueChange={setFilterInterest}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Tous les niveaux" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous ({stats.total})</SelectItem>
-            <SelectItem value="high">🟢 Élevé ({stats.high})</SelectItem>
-            <SelectItem value="neutral">⚫ Neutre ({stats.neutral})</SelectItem>
-            <SelectItem value="low">🔴 Faible ({stats.low})</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
-      {/* Power Map Grid */}
-      {filteredEntries.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-1">
-              {stats.total === 0
-                ? "Aucune donnée de visionnage"
-                : "Aucun résultat pour ces filtres"}
+        {/* New interlocutors this week */}
+        {newEntries.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-blue-600" />
+              Nouveaux interlocuteurs cette semaine
             </h3>
-            <p className="text-sm text-muted-foreground">
-              {stats.total === 0
-                ? "Les données apparaîtront ici quand des viewers regarderont vos vidéos."
-                : "Essayez de modifier vos critères de recherche."}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <TooltipProvider>
-            {filteredEntries.map((entry) => {
-              const config = getInterestConfig(entry.interest);
-              const InterestIcon = config.icon;
+            <div className="flex gap-2 flex-wrap">
+              {newEntries.map((entry) => {
+                const cfg = getInterestConfig(entry.interest);
+                return (
+                  <button
+                    key={entry.id}
+                    onClick={() => setSelectedEntry(entry)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer text-left ${
+                      selectedEntry?.id === entry.id
+                        ? "ring-2 ring-primary shadow-md"
+                        : ""
+                    }`}
+                    style={{ borderColor: "var(--border)" }}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${cfg.dotColor}`} />
+                    <span className="text-sm font-medium">{entry.displayName}</span>
+                    {entry.viewer_title && (
+                      <span className="text-xs text-muted-foreground">
+                        {entry.viewer_title}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-              return (
-                <Card
-                  key={entry.id}
-                  className={`relative overflow-hidden transition-all hover:shadow-md ring-2 ${config.ringColor}`}
-                >
-                  {entry.isChampion && (
-                    <div className="absolute top-2 right-2">
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/15 text-amber-700 text-xs font-medium">
-                            <Crown className="h-3 w-3" />
-                            Champion
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          A partagé la vidéo avec {entry.referralCount} personne
-                          {entry.referralCount > 1 ? "s" : ""}
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  )}
-                  <CardContent className="pt-5 pb-4">
-                    <div className="flex items-start gap-3">
-                      <Avatar className={`h-11 w-11 ring-2 ${config.ringColor}`}>
-                        <AvatarFallback className="text-sm font-medium">
+        {/* Filters */}
+        <div className="flex gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom, email, entreprise..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={filterInterest} onValueChange={setFilterInterest}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Tous les niveaux" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous ({stats.total})</SelectItem>
+              <SelectItem value="high">🟢 Élevé ({stats.high})</SelectItem>
+              <SelectItem value="neutral">⚫ Neutre ({stats.neutral})</SelectItem>
+              <SelectItem value="low">🔴 Faible ({stats.low})</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Power Map Grid */}
+        {filteredEntries.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-1">
+                {stats.total === 0
+                  ? "Aucune donnée de visionnage"
+                  : "Aucun résultat pour ces filtres"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {stats.total === 0
+                  ? "Les données apparaîtront ici quand des viewers regarderont vos vidéos."
+                  : "Essayez de modifier vos critères de recherche."}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <TooltipProvider>
+            <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {filteredEntries.map((entry) => {
+                const config = getInterestConfig(entry.interest);
+                const isSelected = selectedEntry?.id === entry.id;
+
+                return (
+                  <button
+                    key={entry.id}
+                    onClick={() => setSelectedEntry(entry)}
+                    className={`relative text-left p-3 rounded-lg border-2 transition-all hover:shadow-md cursor-pointer ${
+                      isSelected
+                        ? "ring-2 ring-primary shadow-md border-primary"
+                        : "border-border hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    {/* Champion badge */}
+                    {entry.isChampion && (
+                      <div className="absolute top-1.5 right-1.5">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Crown className="h-3.5 w-3.5 text-amber-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Champion · {entry.referralCount} partage
+                            {entry.referralCount > 1 ? "s" : ""}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    )}
+
+                    {/* New badge */}
+                    {entry.isNew && (
+                      <div className="absolute top-1.5 left-1.5">
+                        <span className="inline-flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 mb-2">
+                      <Avatar className={`h-8 w-8 ring-2 ${config.ringColor}`}>
+                        <AvatarFallback className="text-[10px] font-medium">
                           {entry.initials}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{entry.displayName}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold truncate">
+                          {entry.displayName}
+                        </p>
                         {entry.viewer_title && (
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-[10px] text-muted-foreground truncate">
                             {entry.viewer_title}
                           </p>
                         )}
-                        {entry.viewer_company && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {entry.viewer_company}
-                          </p>
-                        )}
-                        {entry.viewer_email && (
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {entry.viewer_email}
-                          </p>
-                        )}
                       </div>
                     </div>
 
-                    <Separator className="my-3" />
-
+                    {/* Interest + stats */}
                     <div className="flex items-center justify-between">
-                      <Badge variant="outline" className={config.color}>
-                        <InterestIcon className="h-3 w-3 mr-1" />
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] px-1.5 py-0 ${config.color}`}
+                      >
                         {config.label}
                       </Badge>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <Tooltip>
-                          <TooltipTrigger className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            {entry.max_percentage_reached}%
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Progression max : {entry.max_percentage_reached}%
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {entry.total_watch_seconds}s
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Temps total de visionnage
-                          </TooltipContent>
-                        </Tooltip>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-0.5">
+                          <Eye className="h-2.5 w-2.5" />
+                          {entry.max_percentage_reached}%
+                        </span>
                         {entry.isChampion && (
-                          <Tooltip>
-                            <TooltipTrigger className="flex items-center gap-1">
-                              <Share2 className="h-3 w-3" />
-                              {entry.referralCount}
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {entry.referralCount} personne{entry.referralCount > 1 ? "s" : ""} invitée{entry.referralCount > 1 ? "s" : ""}
-                            </TooltipContent>
-                          </Tooltip>
+                          <span className="flex items-center gap-0.5">
+                            <Share2 className="h-2.5 w-2.5" />
+                            {entry.referralCount}
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Progress bar */}
-                    <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
+                    {/* Mini progress bar */}
+                    <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${
-                          entry.interest === "high"
-                            ? "bg-emerald-500"
-                            : entry.interest === "low"
-                            ? "bg-red-500"
-                            : "bg-muted-foreground/40"
-                        }`}
-                        style={{ width: `${entry.max_percentage_reached}%` }}
+                        className={`h-full rounded-full ${config.dotColor}`}
+                        style={{
+                          width: `${entry.max_percentage_reached}%`,
+                        }}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </TooltipProvider>
+        )}
+      </div>
+
+      {/* Detail Panel */}
+      {selectedEntry && (
+        <div className="w-[340px] flex-shrink-0 ml-4">
+          <div className="sticky top-0">
+            <PowerMapDetailPanel
+              entry={selectedEntry}
+              onClose={() => setSelectedEntry(null)}
+            />
+          </div>
         </div>
       )}
     </div>
