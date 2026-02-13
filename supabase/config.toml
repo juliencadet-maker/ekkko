@@ -1,1 +1,13 @@
 project_id = "kqpbsznldzrklnnbqtwq"
+
+[functions.tavus-create-replica]
+verify_jwt = false
+
+[functions.tavus-generate-video]
+verify_jwt = false
+
+[functions.tavus-check-status]
+verify_jwt = false
+
+[functions.tavus-webhook]
+verify_jwt = false

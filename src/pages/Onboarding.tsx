@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { tavusApi } from "@/lib/api/tavus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -600,11 +601,18 @@ Merci de votre attention !`;
 
       await logEvent({ eventType: "onboarding_completed" });
 
+      // Trigger Tavus replica creation in background
+      try {
+        await tavusApi.createReplica(identity.id);
+      } catch (tavusError) {
+        console.error("Tavus replica creation error (non-blocking):", tavusError);
+      }
+
       // Cleanup
       localStorage.removeItem("ekko_onboarding_video_path");
       localStorage.removeItem("ekko_onboarding_video_duration");
 
-      toast({ title: "Configuration terminée ! 🎉" });
+      toast({ title: "Configuration terminée ! 🎉", description: "Votre avatar vidéo est en cours de création." });
       setCurrentStep("complete");
     } catch (error) {
       console.error("Completion error:", error);

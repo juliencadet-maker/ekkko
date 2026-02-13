@@ -34,8 +34,19 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Campaign, Video as VideoType, Recipient } from "@/types/database";
 
-// Mock video URL - placeholder video
-const MOCK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+// Fallback video URL when no Tavus video is available
+const FALLBACK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+
+// Get the best video URL from a video record
+function getVideoUrl(video?: VideoType | null): string {
+  if (!video) return FALLBACK_VIDEO_URL;
+  const metadata = video.metadata as Record<string, unknown> | null;
+  if (metadata?.hosted_url) return metadata.hosted_url as string;
+  if (metadata?.stream_url) return metadata.stream_url as string;
+  if (metadata?.download_url) return metadata.download_url as string;
+  if (video.storage_path?.startsWith("http")) return video.storage_path;
+  return FALLBACK_VIDEO_URL;
+}
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
@@ -270,7 +281,7 @@ export default function CampaignDetail() {
                 <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
                   <video
                     id="campaign-video"
-                    src={MOCK_VIDEO_URL}
+                    src={getVideoUrl(videos[0])}
                     className="w-full h-full object-cover"
                     poster="/placeholder.svg"
                     onPlay={() => setIsPlaying(true)}
@@ -359,7 +370,7 @@ export default function CampaignDetail() {
               <div className="max-w-3xl mx-auto">
                 <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
                   <video
-                    src={MOCK_VIDEO_URL}
+                    src={getVideoUrl(videos[0])}
                     className="w-full h-full"
                     controls
                     poster="/placeholder.svg"
@@ -606,7 +617,7 @@ export default function CampaignDetail() {
           onOpenChange={setShowLandingPageEditor}
           campaignId={campaign.id}
           campaignName={campaign.name}
-          videoUrl={MOCK_VIDEO_URL}
+          videoUrl={getVideoUrl(videos[0])}
           initialConfig={landingPageConfig}
           onSave={handleSaveLandingPageConfig}
         />
