@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { tavusApi } from "@/lib/api/tavus";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
@@ -230,17 +231,27 @@ export default function NewCampaign() {
           description: "La demande de validation a été envoyée.",
         });
       } else {
-        // Auto-approved - create video jobs
+        // Auto-approved - trigger Tavus video generation
         await logEvent({
           eventType: "campaign_approved",
           entityType: "campaign",
           entityId: campaign.id,
         });
 
-        toast({
-          title: "Campagne créée",
-          description: "La génération vidéo va commencer.",
-        });
+        try {
+          await tavusApi.generateVideo(campaign.id);
+          toast({
+            title: "Campagne créée",
+            description: "La génération vidéo est en cours via Tavus.",
+          });
+        } catch (genError) {
+          console.error("Tavus generation error:", genError);
+          toast({
+            title: "Campagne créée",
+            description: "La campagne a été approuvée mais la génération vidéo a rencontré une erreur.",
+            variant: "destructive",
+          });
+        }
       }
 
       navigate("/app/campaigns");

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { tavusApi } from "@/lib/api/tavus";
 import {
   Dialog,
   DialogContent,
@@ -158,7 +159,21 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
         newValues: { displayName, type: identityType },
       });
 
-      toast({ title: "Identité créée avec succès ! 🎉" });
+      // Trigger Tavus replica creation in background
+      try {
+        await tavusApi.createReplica(identity.id);
+        toast({ 
+          title: "Identité créée avec succès ! 🎉",
+          description: "L'entraînement de votre avatar vidéo est en cours. Cela prend quelques minutes.",
+        });
+      } catch (tavusError) {
+        console.error("Tavus replica creation error:", tavusError);
+        toast({ 
+          title: "Identité créée avec succès ! 🎉",
+          description: "Note : l'avatar vidéo n'a pas pu être créé automatiquement. Vous pourrez le relancer depuis les paramètres.",
+        });
+      }
+
       handleClose();
       onIdentityCreated();
       await refreshUser();
