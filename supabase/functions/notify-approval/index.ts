@@ -79,6 +79,15 @@ serve(async (req) => {
     const channels = execProfile.notification_channels || ["email"];
     const results: Record<string, string> = {};
 
+    // Fetch org settings for Slack webhook URL
+    const { data: orgData } = await admin
+      .from("orgs")
+      .select("settings")
+      .eq("id", approval.org_id)
+      .single();
+
+    const orgSettings = (orgData?.settings || {}) as Record<string, any>;
+
     // ── EMAIL via Resend ────────────────────────────────────────
     if (channels.includes("email")) {
       const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -136,16 +145,103 @@ serve(async (req) => {
       }
     }
 
-    // ── SLACK (placeholder — needs webhook URL in org settings) ──
+    // ── SLACK via Incoming Webhook ──────────────────────────────
     if (channels.includes("slack")) {
-      results.slack = "not_configured";
-      // TODO: Implement Slack interactive message via connector
+      const slackWebhookUrl = orgSettings.slack_webhook_url;
+      if (slackWebhookUrl) {
+        try {
+          const slackPayload = {
+            blocks: [
+              {
+                type: "header",
+                text: { type: "plain_text", text: "🎬 Validation Ekko requise", emoji: true }
+              },
+              {
+                type: "section",
+                fields: [
+                  { type: "mrkdwn", text: `*Campagne:*\n${campaignName}` },
+                  { type: "mrkdwn", text: `*Identité:*\n${identityName}` },
+                ],
+              },
+              {
+                type: "section",
+                text: { type: "mrkdwn", text: `*Demandé par:* ${requesterName}` }
+              },
+              {
+                type: "section",
+                text: { type: "mrkdwn", text: `*Script (extrait):*\n>${scriptPreview.slice(0, 200).replace(/\n/g, "\n>")}${scriptPreview.length > 200 ? "..." : ""}` }
+              },
+              {
+                type: "actions",
+                elements: [
+                  {
+                    type: "button",
+                    text: { type: "plain_text", text: "✅ Relire et répondre", emoji: true },
+                    url: reviewUrl,
+                    style: "primary",
+                  },
+                ],
+              },
+            ],
+          };
+
+          const slackRes = await fetch(slackWebhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(slackPayload),
+          });
+
+          results.slack = slackRes.ok ? "sent" : "failed";
+        } catch (e) {
+          console.error("Slack notification error:", e);
+          results.slack = "error";
+        }
+      } else {
+        results.slack = "no_webhook_url";
+      }
     }
 
-    // ── WHATSAPP (placeholder — needs Twilio config) ────────────
+    // ── WHATSAPP via Twilio ─────────────────────────────────────
     if (channels.includes("whatsapp")) {
-      results.whatsapp = "not_configured";
-      // TODO: Implement WhatsApp via Twilio
+      const twilioSid = orgSettings.twilio_account_sid;
+      const twilioToken = orgSettings.twilio_auth_token;
+      const twilioFrom = orgSettings.twilio_whatsapp_from; // e.g. "whatsapp:+14155238886"
+      const execPhone = orgSettings.exec_whatsapp_numbers?.[approval.assigned_to_user_id];
+
+      if (twilioSid && twilioToken && twilioFrom && execPhone) {
+        try {
+          const message = `🎬 *Validation Ekko requise*\n\n` +
+            `Campagne: ${campaignName}\n` +
+            `Identité: ${identityName}\n` +
+            `Demandé par: ${requesterName}\n\n` +
+            `Script (extrait):\n${scriptPreview.slice(0, 200)}${scriptPreview.length > 200 ? "..." : ""}\n\n` +
+            `👉 Relire et répondre: ${reviewUrl}`;
+
+          const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
+          const authHeader = btoa(`${twilioSid}:${twilioToken}`);
+
+          const body = new URLSearchParams();
+          body.append("From", twilioFrom);
+          body.append("To", `whatsapp:${execPhone}`);
+          body.append("Body", message);
+
+          const waRes = await fetch(twilioUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `Basic ${authHeader}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: body.toString(),
+          });
+
+          results.whatsapp = waRes.ok ? "sent" : "failed";
+        } catch (e) {
+          console.error("WhatsApp notification error:", e);
+          results.whatsapp = "error";
+        }
+      } else {
+        results.whatsapp = "not_configured";
+      }
     }
 
     return new Response(

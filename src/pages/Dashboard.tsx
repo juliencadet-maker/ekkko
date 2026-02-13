@@ -17,12 +17,9 @@ import {
   Plus,
   ArrowRight,
   Clock,
-  FileText
 } from "lucide-react";
-import type { Campaign, AuditLog, ApprovalRequest } from "@/types/database";
-import { AUDIT_EVENT_LABELS } from "@/lib/constants";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import type { Campaign, ApprovalRequest } from "@/types/database";
+
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +30,7 @@ export default function Dashboard() {
     complianceAlerts: 0,
   });
   const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
-  const [recentAuditLogs, setRecentAuditLogs] = useState<AuditLog[]>([]);
+  
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
 
   const navigate = useNavigate();
@@ -96,15 +93,6 @@ export default function Dashboard() {
 
         setPendingApprovals(approvals as ApprovalRequest[] || []);
 
-        // Fetch recent audit logs
-        const { data: logs } = await supabase
-          .from("audit_logs")
-          .select("*")
-          .eq("org_id", membership.org_id)
-          .order("created_at", { ascending: false })
-          .limit(10);
-
-        setRecentAuditLogs(logs as AuditLog[] || []);
       } catch (error) {
         console.error("Dashboard fetch error:", error);
       } finally {
@@ -246,40 +234,21 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card className="mt-6">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Activité récente</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/app/audit")}>
-            Journal complet
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {recentAuditLogs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Aucune activité récente</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {recentAuditLogs.slice(0, 5).map((log) => (
-                <div key={log.id} className="flex items-center gap-3 py-2 border-b last:border-0">
-                  <div className="w-2 h-2 rounded-full bg-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm">
-                      {AUDIT_EVENT_LABELS[log.event_type] || log.event_type}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(log.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Quick Actions — deal-first */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Button variant="outline" className="h-auto py-4 flex-col gap-1" onClick={() => navigate("/app/campaigns/new")}>
+          <Plus className="h-5 w-5" />
+          <span className="text-sm font-medium">Nouveau deal</span>
+        </Button>
+        <Button variant="outline" className="h-auto py-4 flex-col gap-1" onClick={() => navigate("/app/identities")}>
+          <Video className="h-5 w-5" />
+          <span className="text-sm font-medium">Gérer les identités</span>
+        </Button>
+        <Button variant="outline" className="h-auto py-4 flex-col gap-1" onClick={() => navigate("/app/deal-intelligence")}>
+          <Eye className="h-5 w-5" />
+          <span className="text-sm font-medium">Deal Intelligence</span>
+        </Button>
+      </div>
     </AppLayout>
   );
 }
