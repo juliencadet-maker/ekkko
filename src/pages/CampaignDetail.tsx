@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { cn } from "@/lib/utils";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -328,7 +329,6 @@ export default function CampaignDetail() {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics agrégés</TabsTrigger>
             <TabsTrigger value="powermap">
               <Map className="mr-1.5 h-4 w-4" />
               Power Map
@@ -418,72 +418,6 @@ export default function CampaignDetail() {
             </div>
           </TabsContent>
 
-          {/* Aggregated Analytics */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <MetricCard icon={Eye} value={kpis.totalViews.toLocaleString()} label="Vues totales" />
-              <MetricCard icon={Users} value={kpis.uniqueViewers.toLocaleString()} label="Visiteurs uniques" />
-              <MetricCard icon={Share2} value={kpis.shareCount.toString()} label="Partages (referrals)" />
-              <MetricCard icon={MousePointerClick} value={`${kpis.avgMaxReached}%`} label="Progression moyenne" />
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Engagement global
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Temps moyen de visionnage</span>
-                    <span className="font-medium">{kpis.avgWatchTime} secondes</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Taux de complétion (≥90%)</span>
-                    <span className="font-medium">{kpis.completionRate}%</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Taux de rebond (&lt;10%)</span>
-                    <span className="font-medium">{kpis.bounceRate}%</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Sessions moyennes / viewer</span>
-                    <span className="font-medium">{kpis.avgSessions}x</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Per sub-campaign breakdown */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Layers className="h-5 w-5" />
-                    Par sous-campagne
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {subCampaigns.map((sub) => {
-                    const subData = subAnalytics[sub.id];
-                    const subKpis = subData ? computeKpis(subData.viewEvents, subData.watchProgress) : null;
-                    return (
-                      <div key={sub.id} className="flex items-center justify-between py-1.5">
-                        <span className="text-sm truncate mr-4">{sub.name}</span>
-                        <div className="flex items-center gap-4 text-sm shrink-0">
-                          <span className="text-muted-foreground">{subKpis?.totalViews || 0} vues</span>
-                          <span className="font-medium">{subKpis?.completionRate || 0}%</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
 
           {/* Power Map (aggregated across all sub-campaigns) */}
           <TabsContent value="powermap" className="space-y-6">
@@ -516,32 +450,46 @@ export default function CampaignDetail() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate(`/app/campaigns/${id}/editor`)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Éditeur vidéo
-            </Button>
             <Button variant="outline">
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
-            <Button>
+            <Button onClick={() => { copyShareLink(shareLink); }}>
               <Share2 className="mr-2 h-4 w-4" />
-              Partager
+              Copier le lien
             </Button>
           </div>
         </div>
+
+        {/* Deal Progress Bar */}
+        {(() => {
+          const statusSteps = ["draft", "pending_approval", "approved", "generating", "completed"];
+          const statusLabels: Record<string, string> = { draft: "Brouillon", pending_approval: "Validation", approved: "Approuvé", generating: "Génération", completed: "Prête" };
+          const currentIdx = statusSteps.indexOf(campaign.status);
+          const progressPct = currentIdx >= 0 ? ((currentIdx + 1) / statusSteps.length) * 100 : 0;
+          return (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                {statusSteps.map((s, i) => (
+                  <span key={s} className={cn("font-medium", i <= currentIdx ? "text-primary" : "")}>
+                    {statusLabels[s]}
+                  </span>
+                ))}
+              </div>
+              <Progress value={progressPct} className="h-2" />
+            </div>
+          );
+        })()}
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="video">Vidéo</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="powermap">
             <Map className="mr-1.5 h-4 w-4" />
             Power Map
           </TabsTrigger>
-          <TabsTrigger value="sharing">Partage</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -652,172 +600,11 @@ export default function CampaignDetail() {
           </Card>
         </TabsContent>
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard icon={Eye} value={kpis.totalViews.toLocaleString()} label="Vues totales" />
-            <MetricCard icon={Users} value={kpis.uniqueViewers.toLocaleString()} label="Visiteurs uniques" />
-            <MetricCard icon={Share2} value={kpis.shareCount.toString()} label="Partages (referrals)" />
-            <MetricCard icon={MousePointerClick} value={`${kpis.avgMaxReached}%`} label="Progression moyenne" />
-          </div>
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Engagement
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Temps moyen de visionnage</span>
-                  <span className="font-medium">{kpis.avgWatchTime} secondes</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Taux de complétion (≥90%)</span>
-                  <span className="font-medium">{kpis.completionRate}%</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Taux de rebond (&lt;10%)</span>
-                  <span className="font-medium">{kpis.bounceRate}%</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Sessions moyennes / viewer</span>
-                  <span className="font-medium">{kpis.avgSessions}x</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Détails
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total sessions</span>
-                  <span className="font-medium">{kpis.totalSessions}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Vidéos générées</span>
-                  <span className="font-medium">{videos.filter((v) => v.campaign_id === id).length}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Progression max moyenne</span>
-                  <span className="font-medium">{kpis.avgMaxReached}%</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Referrals uniques</span>
-                  <span className="font-medium">{kpis.shareCount}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
         {/* Power Map Tab */}
         <TabsContent value="powermap" className="space-y-6">
           {membership?.org_id && id && <PowerMap campaignId={id} orgId={membership.org_id} />}
         </TabsContent>
 
-        {/* Sharing Tab */}
-        <TabsContent value="sharing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Options de partage</CardTitle>
-              <CardDescription>Partagez votre vidéo via un lien unique ou intégrez-la sur votre site</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Lien direct</label>
-                <div className="flex gap-2">
-                  <Input value={shareLink} readOnly className="font-mono text-sm" />
-                  <Button variant="outline" onClick={() => copyShareLink(shareLink)}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Copier
-                  </Button>
-                  <Button variant="outline" onClick={() => window.open(shareLink, "_blank")}>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Ouvrir
-                  </Button>
-                </div>
-              </div>
-              <Separator />
-              <div>
-                <label className="text-sm font-medium mb-2 block">Code d'intégration</label>
-                <div className="bg-muted rounded-lg p-4">
-                  <code className="text-xs text-muted-foreground break-all">
-                    {`<iframe src="${shareLink}" width="640" height="360" frameborder="0" allowfullscreen></iframe>`}
-                  </code>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `<iframe src="${shareLink}" width="640" height="360" frameborder="0" allowfullscreen></iframe>`
-                    );
-                    toast.success("Code d'intégration copié");
-                  }}
-                >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copier le code
-                </Button>
-              </div>
-              <Separator />
-              <div>
-                <label className="text-sm font-medium mb-2 block">Page de destination personnalisée</label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Créez une landing page avec votre vidéo et un call-to-action personnalisé.
-                </p>
-                <div className="flex gap-2">
-                  <Button onClick={() => setShowLandingPageEditor(true)}>
-                    {landingPageConfig ? (
-                      <>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Modifier la landing page
-                      </>
-                    ) : (
-                      <>
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Créer une landing page
-                      </>
-                    )}
-                  </Button>
-                  {landingPageConfig && (
-                    <Button variant="outline" onClick={() => window.open(landingPageUrl, "_blank")}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Voir
-                    </Button>
-                  )}
-                </div>
-                {landingPageConfig && (
-                  <div className="mt-3 flex gap-2">
-                    <Input value={landingPageUrl} readOnly className="font-mono text-sm" />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        navigator.clipboard.writeText(landingPageUrl);
-                        toast.success("Lien copié");
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Landing Page Editor */}
