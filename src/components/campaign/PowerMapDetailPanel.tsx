@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   X,
   Eye,
@@ -28,6 +31,8 @@ import {
   ChevronRight,
   Video,
   Target,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -101,15 +106,18 @@ interface PowerMapDetailPanelProps {
   entry: PowerMapEntry;
   onClose: () => void;
   videoDuration?: number;
+  campaignName?: string;
 }
 
 export function PowerMapDetailPanel({
   entry,
   onClose,
   videoDuration,
+  campaignName,
 }: PowerMapDetailPanelProps) {
   const config = getInterestConfig(entry.interest);
   const InterestIcon = config.icon;
+  const [isSyncing, setIsSyncing] = useState(false);
 
   return (
     <div className="h-full flex flex-col border-l bg-card">
@@ -293,6 +301,11 @@ export function PowerMapDetailPanel({
 
         {/* Next Best Actions */}
         <NextBestActions entry={entry} />
+
+        <Separator />
+
+        {/* HubSpot CRM Push */}
+        <HubSpotPushButton entry={entry} campaignName={campaignName} isSyncing={isSyncing} setIsSyncing={setIsSyncing} />
       </div>
     </div>
   );
@@ -499,6 +512,102 @@ function NextBestActions({ entry }: { entry: PowerMapEntry }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ---- HubSpot CRM Push ----
+function HubSpotPushButton({
+  entry,
+  campaignName,
+  isSyncing,
+  setIsSyncing,
+}: {
+  entry: PowerMapEntry;
+  campaignName?: string;
+  isSyncing: boolean;
+  setIsSyncing: (v: boolean) => void;
+}) {
+  const role = inferRole(entry);
+
+  const handlePush = async () => {
+    if (!entry.viewer_email) {
+      toast.error("Ce viewer n'a pas d'email — impossible de synchroniser.");
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("hubspot-sync", {
+        body: {
+          action: "sync_contacts",
+          viewers: [
+            {
+              viewer_email: entry.viewer_email,
+              viewer_name: entry.viewer_name,
+              viewer_title: entry.viewer_title,
+              viewer_company: entry.viewer_company,
+              watch_percentage: entry.watch_percentage,
+              max_percentage_reached: entry.max_percentage_reached,
+              total_watch_seconds: entry.total_watch_seconds,
+              session_count: entry.session_count,
+              lead_score: entry.leadScore.total,
+              interest_level: entry.interest,
+              is_champion: entry.isChampion,
+              referral_count: entry.referralCount,
+              committee_role: role,
+              campaign_name: campaignName,
+              first_watched_at: entry.first_watched_at,
+              last_watched_at: entry.last_watched_at,
+            },
+          ],
+        },
+        headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+      });
+
+      if (res.data?.success) {
+        const result = res.data.results?.[0];
+        toast.success(
+          result?.status === "created"
+            ? `Contact créé dans HubSpot ✓`
+            : `Contact mis à jour dans HubSpot ✓`
+        );
+      } else {
+        toast.error(res.data?.error || "Erreur lors de la synchronisation");
+      }
+    } catch (e) {
+      console.error("HubSpot sync error:", e);
+      toast.error("Erreur de connexion à HubSpot");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+        <Upload className="h-3.5 w-3.5" />
+        CRM HubSpot
+      </h4>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full"
+        onClick={handlePush}
+        disabled={isSyncing || !entry.viewer_email}
+      >
+        {isSyncing ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" />
+        ) : (
+          <Upload className="h-3.5 w-3.5 mr-2" />
+        )}
+        {isSyncing ? "Synchronisation..." : "Envoyer vers HubSpot"}
+      </Button>
+      {!entry.viewer_email && (
+        <p className="text-[11px] text-muted-foreground">
+          Email requis pour synchroniser ce contact.
+        </p>
+      )}
     </div>
   );
 }
