@@ -15,7 +15,11 @@ import {
   Eye,
   Building2,
   Briefcase,
-  Scale
+  Scale,
+  TrendingUp,
+  Target,
+  Handshake,
+  LineChart
 } from "lucide-react";
 
 export default function Index() {
@@ -46,12 +50,13 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
-              Sécurisez chaque deal.<br />
-              <span className="text-muted-foreground">Sans être à chaque réunion.</span>
+              Votre présence sur chaque deal.<br />
+              <span className="text-muted-foreground">Votre revenue sécurisé.</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed">
-              Ekko permet aux dirigeants et équipes commerciales d'être présents sur tous leurs deals 
-              grâce à la vidéo personnalisée, avec validation, gouvernance et traçabilité intégrées.
+              Ekko permet aux dirigeants et aux équipes commerciales de se rendre présents 
+              sur tous leurs deals — réponses RFP, cycles longs, comptes stratégiques — 
+              grâce à la vidéo personnalisée, avec gouvernance intégrée.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <Button size="lg" className="text-base px-8" onClick={() => navigate("/auth")}>
@@ -63,7 +68,7 @@ export default function Index() {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Conçu pour les cycles de vente complexes et les environnements enterprise.
+              Conçu pour les CRO, VP Sales et équipes commerciales en cycle de vente complexe.
             </p>
           </div>
         </div>
@@ -83,15 +88,15 @@ export default function Index() {
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-2 shrink-0" />
-                    Des deals critiques sans présence exécutive
+                    L'exec ne peut pas être sur tous les deals — les AE perdent en crédibilité
                   </li>
                   <li className="flex items-start gap-3 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-2 shrink-0" />
-                    Des messages non maîtrisés
+                    Les réponses RFP sont génériques, sans différenciation humaine
                   </li>
                   <li className="flex items-start gap-3 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-2 shrink-0" />
-                    Aucun contrôle ni traçabilité
+                    Aucune visibilité sur l'engagement réel des décideurs
                   </li>
                 </ul>
               </CardContent>
@@ -107,15 +112,15 @@ export default function Index() {
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
-                    Une présence humaine sur chaque deal clé
+                    Le CEO/VP est présent sur chaque deal critique, sans une seule réunion en plus
                   </li>
                   <li className="flex items-start gap-3 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
-                    Des messages validés et sécurisés
+                    Chaque RFP inclut une touche personnalisée qui fait la différence
                   </li>
                   <li className="flex items-start gap-3 text-muted-foreground">
                     <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
-                    Une traçabilité complète
+                    Vous mesurez l'impact de chaque intervention sur le deal
                   </li>
                 </ul>
               </CardContent>
@@ -129,29 +134,29 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-8 leading-tight">
-              Vos deals avancent.<br />
-              <span className="text-muted-foreground">Votre agenda est déjà plein.</span>
+              Votre pipeline grossit.<br />
+              <span className="text-muted-foreground">Votre présence ne scale pas.</span>
             </h2>
             <ul className="space-y-4 mb-8 text-lg text-muted-foreground">
               <li className="flex items-start gap-3">
                 <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                Impossible d'être présent sur chaque opportunité stratégique
+                Vos AE manquent de crédibilité face aux C-levels sans sponsor exécutif
               </li>
               <li className="flex items-start gap-3">
                 <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                Trop de réunions pour sécuriser les deals importants
+                Les réponses RFP restent des documents froids sans différenciation
               </li>
               <li className="flex items-start gap-3">
                 <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                Des messages envoyés sans validation claire
+                Les deals stagnent faute d'intimité et de confiance au bon moment
               </li>
               <li className="flex items-start gap-3">
                 <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                Aucune visibilité sur ce qui a été dit, à qui, et quand
+                Vous ne savez pas quels deals ont vraiment reçu l'attention qu'ils méritent
               </li>
             </ul>
             <p className="text-xl font-semibold text-foreground">
-              Résultat : des deals fragilisés et une perte de contrôle.
+              Résultat : un win ratio qui stagne et un revenue imprévisible.
             </p>
           </div>
         </div>
@@ -164,31 +169,32 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
-              La présence humaine à grande échelle.<br />
-              <span className="text-muted-foreground">Sans perte de contrôle.</span>
+              Scalez la présence humaine.<br />
+              <span className="text-muted-foreground">Augmentez le win ratio.</span>
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Ekko vous permet de déployer votre voix, votre image et votre autorité 
-              sur chaque deal stratégique, sans multiplier les réunions 
-              et sans déléguer votre crédibilité.
+              Ekko donne aux dirigeants et aux commerciaux la capacité d'être présents 
+              sur chaque deal stratégique — avec intimité, confiance et contrôle — 
+              sans multiplier les réunions.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Three Pillars Section */}
+      {/* Three Pillars Section — Revenue-first */}
       <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <Card className="border-0 shadow-sm">
               <CardContent className="p-8">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                  <Shield className="h-6 w-6 text-primary" />
+                  <Target className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Sécurisation des deals</h3>
+                <h3 className="text-xl font-semibold mb-4">Présence exécutive à l'échelle</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Aucune vidéo sans validation. Chaque message est approuvé, gouverné et conforme 
-                  aux règles internes de votre organisation.
+                  Votre voix et votre image sur chaque deal critique. 
+                  Les AE obtiennent un sponsor exécutif en vidéo personnalisée, 
+                  sans mobiliser l'agenda du leadership.
                 </p>
               </CardContent>
             </Card>
@@ -196,11 +202,13 @@ export default function Index() {
             <Card className="border-0 shadow-sm">
               <CardContent className="p-8">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                  <Users className="h-6 w-6 text-primary" />
+                  <Handshake className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Présence sur tous les deals</h3>
+                <h3 className="text-xl font-semibold mb-4">Différenciation commerciale</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Votre voix sur chaque opportunité clé, même lorsque vous ne pouvez pas être présent.
+                  Réponses RFP, follow-ups stratégiques, executive sponsorship : 
+                  chaque interaction devient personnalisée et mémorable. 
+                  Vos commerciaux se démarquent à chaque étape.
                 </p>
               </CardContent>
             </Card>
@@ -208,11 +216,13 @@ export default function Index() {
             <Card className="border-0 shadow-sm">
               <CardContent className="p-8">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                  <Clock className="h-6 w-6 text-primary" />
+                  <LineChart className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Gain de temps réel</h3>
+                <h3 className="text-xl font-semibold mb-4">Revenue prévisible</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Zéro réunion en plus. Zéro friction pour les équipes commerciales et les dirigeants.
+                  Mesurez l'engagement des décideurs, identifiez les deals à risque 
+                  et corrélez la présence exécutive avec le win ratio. 
+                  Votre pipeline devient prévisible.
                 </p>
               </CardContent>
             </Card>
@@ -232,26 +242,26 @@ export default function Index() {
                 {
                   step: 1,
                   icon: FileText,
-                  title: "Le message",
-                  description: "Vous rédigez un message personnalisé pour un deal précis."
+                  title: "Le deal",
+                  description: "Votre AE identifie un deal stratégique et prépare un message personnalisé pour le décideur."
                 },
                 {
                   step: 2,
                   icon: CheckSquare,
                   title: "La validation",
-                  description: "Le message est validé automatiquement ou manuellement selon vos règles internes."
+                  description: "L'exécutif approuve le message en un clic — via email, Slack ou WhatsApp. Aucun login requis."
                 },
                 {
                   step: 3,
                   icon: Send,
-                  title: "La diffusion",
-                  description: "Ekko génère et diffuse la vidéo de façon sécurisée et traçable."
+                  title: "La présence",
+                  description: "Ekko génère et diffuse la vidéo personnalisée. L'exécutif est présent sur le deal sans être en réunion."
                 },
                 {
                   step: 4,
                   icon: Eye,
-                  title: "Le contrôle",
-                  description: "Vous savez exactement qui a parlé, à qui, quand, et sur quel deal."
+                  title: "L'impact",
+                  description: "Mesurez qui a regardé, combien de temps, et l'impact sur l'avancement du deal."
                 }
               ].map((item) => (
                 <div key={item.step} className="text-center">
@@ -282,21 +292,21 @@ export default function Index() {
             <Card className="border shadow-sm">
               <CardContent className="p-8">
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
-                  <Building2 className="h-6 w-6 text-accent" />
+                  <TrendingUp className="h-6 w-6 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Dirigeants & Executives</h3>
+                <h3 className="text-xl font-semibold mb-4">CRO / VP Sales</h3>
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Être présent sur tous les deals stratégiques
+                    Rendre le revenue prévisible et maîtrisé
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Sans exploser l'agenda
+                    Déployer la présence exécutive comme levier de closing
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Sans perdre le contrôle de son image
+                    Mesurer l'impact sur le win ratio
                   </li>
                 </ul>
               </CardContent>
@@ -311,15 +321,15 @@ export default function Index() {
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Plus d'engagement sur les deals clés
+                    Se différencier dans les réponses RFP avec une vidéo personnalisée
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Une autorité renforcée dans les cycles longs
+                    Obtenir un executive sponsorship instantané sur les deals clés
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Aucun outil complexe à gérer
+                    Créer plus d'intimité et de confiance avec les décideurs
                   </li>
                 </ul>
               </CardContent>
@@ -328,21 +338,21 @@ export default function Index() {
             <Card className="border shadow-sm">
               <CardContent className="p-8">
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
-                  <Scale className="h-6 w-6 text-accent" />
+                  <Building2 className="h-6 w-6 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Legal / Comms / RevOps</h3>
+                <h3 className="text-xl font-semibold mb-4">Dirigeants & Executives</h3>
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Gouvernance claire
+                    Être présent sur chaque deal sans exploser l'agenda
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Audit exportable
+                    Garder le contrôle total sur son image et ses messages
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Traçabilité complète des communications vidéo
+                    Approuver en un clic, où qu'on soit
                   </li>
                 </ul>
               </CardContent>
@@ -360,14 +370,14 @@ export default function Index() {
             </h2>
             <p className="text-lg text-muted-foreground mb-10">
               Les autres outils font de la vidéo IA.<br />
-              <span className="font-semibold text-foreground">Ekko fait de la gouvernance de présence exécutive.</span>
+              <span className="font-semibold text-foreground">Ekko sécurise votre revenue en scalant la présence humaine sur chaque deal.</span>
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               {[
-                "Validation intégrée",
-                "Audit trail natif",
-                "Rôles et permissions",
-                "Sécurité enterprise",
+                "Présence exécutive scalable",
+                "Différenciation RFP",
+                "Engagement décideurs mesuré",
+                "Gouvernance intégrée",
                 "Conçu pour les cycles de vente complexes"
               ].map((item) => (
                 <span 
@@ -383,14 +393,52 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Evolution Note */}
-      <section className="py-12">
+      {/* Use Cases Section */}
+      <section className="py-24">
         <div className="container mx-auto px-4">
-          <p className="text-center text-sm text-muted-foreground max-w-2xl mx-auto">
-            Ekko est conçu pour s'étendre naturellement au recrutement, 
-            à la communication interne et au customer success, 
-            sans jamais compromettre la gouvernance.
-          </p>
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">
+              Cas d'usage
+            </h2>
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="border shadow-sm">
+                <CardContent className="p-8">
+                  <h3 className="text-lg font-semibold mb-3">Executive Sponsorship</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Le VP Sales envoie un message vidéo personnalisé au CEO du prospect 
+                    pour renforcer la relation au moment critique du deal.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border shadow-sm">
+                <CardContent className="p-8">
+                  <h3 className="text-lg font-semibold mb-3">Réponse RFP personnalisée</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    L'AE inclut une vidéo du CEO dans la réponse RFP. 
+                    Le prospect voit une entreprise qui s'engage personnellement.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border shadow-sm">
+                <CardContent className="p-8">
+                  <h3 className="text-lg font-semibold mb-3">Deal acceleration</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Un deal stagne ? L'exec intervient en 3 minutes avec un message vidéo 
+                    ciblé pour débloquer la situation — sans réunion.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border shadow-sm">
+                <CardContent className="p-8">
+                  <h3 className="text-lg font-semibold mb-3">Multi-threading exécutif</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Engagez plusieurs parties prenantes du buying committee 
+                    avec des messages personnalisés de votre leadership.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -398,9 +446,12 @@ export default function Index() {
       <section className="py-24 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-8">
-              Sécurisez vos deals dès maintenant.
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Sécurisez votre revenue.
             </h2>
+            <p className="text-lg mb-8 opacity-80">
+              Scalez la présence exécutive sur chaque deal stratégique.
+            </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg" 
@@ -439,14 +490,14 @@ export default function Index() {
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">E</div>
               <span className="font-semibold">Ekko</span>
-              <span className="text-muted-foreground text-sm ml-2">— Governed AI Video</span>
+              <span className="text-muted-foreground text-sm ml-2">— Executive Deal Presence</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span>Sécurité</span>
+              <span>Présence</span>
               <span>•</span>
-              <span>Gouvernance</span>
+              <span>Confiance</span>
               <span>•</span>
-              <span>Traçabilité</span>
+              <span>Revenue</span>
             </div>
             <div className="flex items-center gap-6 text-sm">
               <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -458,7 +509,7 @@ export default function Index() {
             </div>
           </div>
           <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p>© 2024 Ekko. Tous droits réservés.</p>
+            <p>© 2025 Ekko. Tous droits réservés.</p>
           </div>
         </div>
       </footer>

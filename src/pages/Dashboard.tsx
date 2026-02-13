@@ -129,7 +129,7 @@ export default function Dashboard() {
     <AppLayout>
       <PageHeader 
         title={`Bonjour, ${profile?.first_name || "utilisateur"} 👋`}
-        description="Voici un aperçu de votre activité Ekko"
+        description="Présence exécutive et impact sur vos deals"
         actions={
           <Button onClick={() => navigate("/app/campaigns/new")}>
             <Plus className="mr-2 h-4 w-4" />
@@ -143,12 +143,12 @@ export default function Dashboard() {
         <MetricCard
           icon={Video}
           value={stats.videosGenerated}
-          label="Vidéos générées"
+          label="Deals avec présence exécutive"
         />
         <MetricCard
           icon={Eye}
           value={stats.totalViews}
-          label="Vues totales"
+          label="Vues par les décideurs"
         />
         <MetricCard
           icon={CheckSquare}

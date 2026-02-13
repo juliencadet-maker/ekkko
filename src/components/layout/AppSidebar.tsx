@@ -39,6 +39,12 @@ const navigationItems = [
     roles: ["org_owner", "org_admin", "org_manager", "org_user"],
   },
   {
+    label: "Deal Intelligence",
+    href: "/app/deal-intelligence",
+    icon: LineChart,
+    roles: ["org_owner", "org_admin", "org_manager"],
+  },
+  {
     label: "Validations",
     href: "/app/approvals",
     icon: CheckSquare,
@@ -50,12 +56,6 @@ const navigationItems = [
     href: "/app/audit",
     icon: FileText,
     roles: ["org_owner", "org_admin"],
-  },
-  {
-    label: "Deal Intelligence",
-    href: "/app/deal-intelligence",
-    icon: LineChart,
-    roles: ["org_owner", "org_admin", "org_manager"],
   },
   {
     label: "Gouvernance",

@@ -3,7 +3,7 @@
 // =============================================
 
 export const APP_NAME = "Ekko";
-export const APP_DESCRIPTION = "Plateforme vidéo personnalisée sécurisée pour les entreprises";
+export const APP_DESCRIPTION = "Scalez la présence exécutive sur chaque deal. Sécurisez votre revenue.";
 
 // Onboarding
 export const ONBOARDING_STEPS = [
