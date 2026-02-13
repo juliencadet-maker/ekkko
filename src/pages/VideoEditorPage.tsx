@@ -8,7 +8,8 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import type { Campaign, Video } from "@/types/database";
 
-const FALLBACK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+const FALLBACK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+const DEMO_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 
 function getVideoUrl(video?: Video | null): string {
   if (!video) return FALLBACK_VIDEO_URL;
@@ -25,12 +26,15 @@ export default function VideoEditorPage() {
   const navigate = useNavigate();
   const { membership } = useAuthContext();
 
-  const [isLoading, setIsLoading] = useState(true);
+  const isDemo = !id;
+
+  const [isLoading, setIsLoading] = useState(!isDemo);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [videoUrl, setVideoUrl] = useState(FALLBACK_VIDEO_URL);
+  const [videoUrl, setVideoUrl] = useState(isDemo ? DEMO_VIDEO_URL : FALLBACK_VIDEO_URL);
   const [initialProject, setInitialProject] = useState<string | undefined>();
 
   useEffect(() => {
+    if (isDemo) return;
     const fetchData = async () => {
       if (!id || !membership?.org_id) return;
 
@@ -50,13 +54,11 @@ export default function VideoEditorPage() {
 
         setCampaign(campaignData as Campaign);
 
-        // Load editor config from metadata
         const metadata = campaignData.metadata as Record<string, unknown> | null;
         if (metadata?.editorProject) {
           setInitialProject(JSON.stringify(metadata.editorProject));
         }
 
-        // Fetch video
         const { data: videos } = await supabase
           .from("videos")
           .select("*")
@@ -74,9 +76,13 @@ export default function VideoEditorPage() {
     };
 
     fetchData();
-  }, [id, membership?.org_id, navigate]);
+  }, [id, membership?.org_id, navigate, isDemo]);
 
   const handleSave = async (projectJson: string) => {
+    if (isDemo) {
+      toast.success("Projet démo sauvegardé (local uniquement)");
+      return;
+    }
     if (!campaign || !membership?.org_id) return;
 
     try {
@@ -113,15 +119,15 @@ export default function VideoEditorPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="h-16 border-b flex items-center px-4 gap-3 bg-card">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/app/campaigns/${id}`)}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(isDemo ? "/app/campaigns" : `/app/campaigns/${id}`)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
           <h1 className="text-sm font-semibold truncate">
-            Éditeur — {campaign?.name}
+            Éditeur — {isDemo ? "Mode démo" : campaign?.name}
           </h1>
           <p className="text-xs text-muted-foreground">
-            {(campaign as any)?.identities?.display_name}
+            {isDemo ? "Vidéo de démonstration" : (campaign as any)?.identities?.display_name}
           </p>
         </div>
       </div>

@@ -17,7 +17,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Plus, Search, Video, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Video, MoreHorizontal, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Campaign } from "@/types/database";
@@ -69,10 +69,16 @@ export default function Campaigns() {
         title="Campagnes"
         description="Gérez vos campagnes vidéo personnalisées"
         actions={
-          <Button onClick={() => navigate("/app/campaigns/new")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle campagne
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/app/editor/demo")}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Tester l'éditeur
+            </Button>
+            <Button onClick={() => navigate("/app/campaigns/new")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouvelle campagne
+            </Button>
+          </div>
         }
       />
 
