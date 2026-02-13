@@ -19,6 +19,15 @@ import {
   Flame,
   Zap,
   BarChart3,
+  Play,
+  MessageSquare,
+  Phone,
+  Gift,
+  UserPlus,
+  AlertTriangle,
+  ChevronRight,
+  Video,
+  Target,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -279,6 +288,216 @@ export function PowerMapDetailPanel({
             </span>
           </div>
         </div>
+
+        <Separator />
+
+        {/* Next Best Actions */}
+        <NextBestActions entry={entry} />
+      </div>
+    </div>
+  );
+}
+
+// ---- Infer committee role from title ----
+type CommitteeRole = "champion" | "decision_maker" | "influencer" | "blocker" | "unknown";
+
+function inferRole(entry: PowerMapEntry): CommitteeRole {
+  if (entry.isChampion) return "champion";
+  const t = (entry.viewer_title || "").toLowerCase();
+  if (t.includes("dg") || t.includes("ceo") || t.includes("cto") || t.includes("cfo") || t.includes("daf") || t.includes("vp") || t.includes("président") || t.includes("directeur général") || t.includes("directrice générale")) return "decision_maker";
+  if (t.includes("directeur") || t.includes("directrice") || t.includes("responsable") || t.includes("head") || t.includes("manager") || t.includes("chef de projet")) return "influencer";
+  if (entry.interest === "low" && entry.max_percentage_reached < 15) return "blocker";
+  return "unknown";
+}
+
+// ---- Next Best Action Engine ----
+interface Action {
+  id: string;
+  icon: typeof Mail;
+  title: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+  type: "email" | "call" | "video" | "meeting" | "nurture";
+}
+
+function generateNextActions(entry: PowerMapEntry): Action[] {
+  const actions: Action[] = [];
+  const role = inferRole(entry);
+  const score = entry.leadScore.total;
+  const daysSinceLastWatch = Math.max(0, (Date.now() - new Date(entry.last_watched_at).getTime()) / (1000 * 60 * 60 * 24));
+  const isRecentlyActive = daysSinceLastWatch < 2;
+  const isStale = daysSinceLastWatch > 7;
+
+  // ---- HOT LEADS (score >= 75) ----
+  if (score >= 75) {
+    if (isRecentlyActive) {
+      actions.push({
+        id: "call-now",
+        icon: Phone,
+        title: "Appeler maintenant",
+        description: `${entry.displayName} est très engagé(e) et actif(ve). C'est le moment idéal pour un appel de qualification.`,
+        priority: "high",
+        type: "call",
+      });
+    }
+    if (role === "champion") {
+      actions.push({
+        id: "leverage-champion",
+        icon: UserPlus,
+        title: "Mobiliser le champion",
+        description: `Demandez à ${entry.displayName} de vous introduire auprès du décideur. Proposez un contenu exclusif à partager.`,
+        priority: "high",
+        type: "meeting",
+      });
+    }
+    if (role === "decision_maker") {
+      actions.push({
+        id: "propose-meeting",
+        icon: Target,
+        title: "Proposer un RDV décisionnel",
+        description: "Le décideur montre un fort intérêt. Proposez une démo personnalisée ou un call stratégique.",
+        priority: "high",
+        type: "meeting",
+      });
+    }
+    actions.push({
+      id: "send-case-study",
+      icon: Gift,
+      title: "Envoyer une étude de cas",
+      description: "Renforcez l'engagement avec un cas client pertinent pour son secteur/poste.",
+      priority: "medium",
+      type: "email",
+    });
+  }
+
+  // ---- WARM LEADS (score 50-74) ----
+  else if (score >= 50) {
+    actions.push({
+      id: "followup-video",
+      icon: Video,
+      title: "Vidéo de suivi personnalisée",
+      description: `Créez une courte vidéo personnalisée adressée à ${entry.displayName} pour approfondir le sujet qui l'intéresse.`,
+      priority: "high",
+      type: "video",
+    });
+    if (entry.session_count >= 2) {
+      actions.push({
+        id: "email-deepdive",
+        icon: MessageSquare,
+        title: "Email d'approfondissement",
+        description: `${entry.displayName} revient régulièrement (${entry.session_count} sessions). Envoyez du contenu technique détaillé.`,
+        priority: "medium",
+        type: "email",
+      });
+    }
+    if (role === "influencer") {
+      actions.push({
+        id: "arm-influencer",
+        icon: Target,
+        title: "Armer l'influenceur",
+        description: "Fournissez un comparatif ou ROI calculator que cette personne pourra présenter en interne.",
+        priority: "medium",
+        type: "email",
+      });
+    }
+  }
+
+  // ---- COLD LEADS (score 25-49) ----
+  else if (score >= 25) {
+    if (isStale) {
+      actions.push({
+        id: "re-engage",
+        icon: Play,
+        title: "Relance de ré-engagement",
+        description: `Pas d'activité depuis ${Math.round(daysSinceLastWatch)} jours. Envoyez un angle différent ou une nouveauté produit.`,
+        priority: "medium",
+        type: "email",
+      });
+    } else {
+      actions.push({
+        id: "nurture-content",
+        icon: MessageSquare,
+        title: "Séquence de nurturing",
+        description: "Intérêt modéré — intégrez dans une séquence automatique (3 emails sur 2 semaines).",
+        priority: "low",
+        type: "nurture",
+      });
+    }
+  }
+
+  // ---- BLOCKERS ----
+  if (role === "blocker") {
+    actions.push({
+      id: "address-blocker",
+      icon: AlertTriangle,
+      title: "Lever le blocage",
+      description: `${entry.displayName} montre peu d'intérêt (${entry.max_percentage_reached}%). Identifiez ses objections et préparez une réponse ciblée.`,
+      priority: "high",
+      type: "email",
+    });
+  }
+
+  // ---- INACTIVE (score < 25) ----
+  if (score < 25 && role !== "blocker") {
+    actions.push({
+      id: "last-chance",
+      icon: Mail,
+      title: "Email de dernière chance",
+      description: "Engagement très faible. Tentez un angle provocateur ou une question ouverte avant d'archiver.",
+      priority: "low",
+      type: "email",
+    });
+  }
+
+  return actions.slice(0, 3); // Max 3 actions
+}
+
+const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  high: { bg: "bg-orange-500/15", text: "text-orange-700", border: "border-orange-500/30", label: "Urgent" },
+  medium: { bg: "bg-blue-500/15", text: "text-blue-700", border: "border-blue-500/30", label: "Recommandé" },
+  low: { bg: "bg-muted", text: "text-muted-foreground", border: "border-border", label: "Optionnel" },
+};
+
+function NextBestActions({ entry }: { entry: PowerMapEntry }) {
+  const actions = generateNextActions(entry);
+
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+        <Zap className="h-3.5 w-3.5" />
+        Prochaines actions
+      </h4>
+      <div className="space-y-2">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          const prio = PRIORITY_STYLES[action.priority];
+          return (
+            <div
+              key={action.id}
+              className="p-3 rounded-lg border bg-card hover:shadow-sm transition-all"
+            >
+              <div className="flex items-start gap-2.5">
+                <div className={`p-1.5 rounded-md ${prio.bg} shrink-0 mt-0.5`}>
+                  <Icon className={`h-3.5 w-3.5 ${prio.text}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-xs font-semibold">{action.title}</p>
+                    <Badge variant="outline" className={`text-[9px] px-1 py-0 ${prio.bg} ${prio.text} ${prio.border}`}>
+                      {prio.label}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    {action.description}
+                  </p>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
