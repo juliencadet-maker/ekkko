@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
+import { PowerMap } from "@/components/campaign/PowerMap";
 import { 
   ArrowLeft, 
   Play, 
@@ -27,7 +28,8 @@ import {
   Download,
   BarChart3,
   Video,
-  Pencil
+  Pencil,
+  Map,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -238,6 +240,10 @@ export default function CampaignDetail() {
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="video">Vidéo</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="powermap">
+            <Map className="mr-1.5 h-4 w-4" />
+            Power Map
+          </TabsTrigger>
           <TabsTrigger value="sharing">Partage</TabsTrigger>
         </TabsList>
 
@@ -495,6 +501,13 @@ export default function CampaignDetail() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Power Map Tab */}
+        <TabsContent value="powermap" className="space-y-6">
+          {membership?.org_id && id && (
+            <PowerMap campaignId={id} orgId={membership.org_id} />
+          )}
         </TabsContent>
 
         {/* Sharing Tab */}

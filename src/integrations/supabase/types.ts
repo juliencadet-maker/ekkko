@@ -781,32 +781,106 @@ export type Database = {
           country_code: string | null
           id: string
           referer: string | null
+          referred_by_hash: string | null
           user_agent: string | null
           video_id: string
           viewed_at: string
+          viewer_email: string | null
           viewer_hash: string
+          viewer_name: string | null
         }
         Insert: {
           country_code?: string | null
           id?: string
           referer?: string | null
+          referred_by_hash?: string | null
           user_agent?: string | null
           video_id: string
           viewed_at?: string
+          viewer_email?: string | null
           viewer_hash: string
+          viewer_name?: string | null
         }
         Update: {
           country_code?: string | null
           id?: string
           referer?: string | null
+          referred_by_hash?: string | null
           user_agent?: string | null
           video_id?: string
           viewed_at?: string
+          viewer_email?: string | null
           viewer_hash?: string
+          viewer_name?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "view_events_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watch_progress: {
+        Row: {
+          created_at: string
+          first_watched_at: string
+          id: string
+          last_watched_at: string
+          max_percentage_reached: number
+          referred_by_hash: string | null
+          session_count: number
+          total_watch_seconds: number
+          updated_at: string
+          video_id: string
+          viewer_company: string | null
+          viewer_email: string | null
+          viewer_hash: string
+          viewer_name: string | null
+          viewer_title: string | null
+          watch_percentage: number
+        }
+        Insert: {
+          created_at?: string
+          first_watched_at?: string
+          id?: string
+          last_watched_at?: string
+          max_percentage_reached?: number
+          referred_by_hash?: string | null
+          session_count?: number
+          total_watch_seconds?: number
+          updated_at?: string
+          video_id: string
+          viewer_company?: string | null
+          viewer_email?: string | null
+          viewer_hash: string
+          viewer_name?: string | null
+          viewer_title?: string | null
+          watch_percentage?: number
+        }
+        Update: {
+          created_at?: string
+          first_watched_at?: string
+          id?: string
+          last_watched_at?: string
+          max_percentage_reached?: number
+          referred_by_hash?: string | null
+          session_count?: number
+          total_watch_seconds?: number
+          updated_at?: string
+          video_id?: string
+          viewer_company?: string | null
+          viewer_email?: string | null
+          viewer_hash?: string
+          viewer_name?: string | null
+          viewer_title?: string | null
+          watch_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_progress_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
