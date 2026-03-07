@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, Loader2, ExternalLink, Link2, Link2Off } from "lucide-react";
+import { Check, Loader2, ExternalLink, Link2, Link2Off, MessageSquare, Hash } from "lucide-react";
 
 export default function Settings() {
   const { profile, org, membership } = useAuthContext();
@@ -17,6 +17,11 @@ export default function Settings() {
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"unknown" | "connected" | "error">("unknown");
+
+  // Slack state
+  const [slackChannelId, setSlackChannelId] = useState("");
+  const [slackStatus, setSlackStatus] = useState<"unknown" | "connected" | "testing" | "error">("unknown");
+  const [isSavingSlack, setIsSavingSlack] = useState(false);
 
   const isOwnerOrAdmin = membership?.role === "org_owner" || membership?.role === "org_admin";
 
@@ -26,6 +31,10 @@ export default function Settings() {
       if (settings.hubspot_api_key) {
         setHubspotKey("••••••••••••" + String(settings.hubspot_api_key).slice(-4));
         setConnectionStatus("connected");
+      }
+      if (settings.slack_channel_id) {
+        setSlackChannelId(String(settings.slack_channel_id));
+        setSlackStatus("connected");
       }
     }
   }, [org]);
@@ -37,11 +46,8 @@ export default function Settings() {
       const currentSettings = (org.settings as Record<string, string | number | boolean | null>) || {};
       const { error } = await supabase
         .from("orgs")
-        .update({
-          settings: { ...currentSettings, hubspot_api_key: hubspotKey } as Record<string, string | number | boolean | null>,
-        })
+        .update({ settings: { ...currentSettings, hubspot_api_key: hubspotKey } as Record<string, string | number | boolean | null> })
         .eq("id", org.id);
-
       if (error) throw error;
       toast.success("Clé API HubSpot sauvegardée");
       setConnectionStatus("connected");
@@ -90,6 +96,63 @@ export default function Settings() {
     }
   };
 
+  const saveSlackChannel = async () => {
+    if (!org || !slackChannelId.trim()) return;
+    setIsSavingSlack(true);
+    try {
+      const currentSettings = (org.settings as Record<string, any>) || {};
+      const { error } = await supabase
+        .from("orgs")
+        .update({ settings: { ...currentSettings, slack_channel_id: slackChannelId.trim() } })
+        .eq("id", org.id);
+      if (error) throw error;
+      setSlackStatus("connected");
+      toast.success("Canal Slack configuré — les notifications d'approbation seront envoyées ici");
+    } catch (e) {
+      toast.error("Erreur lors de la sauvegarde");
+      console.error(e);
+    } finally {
+      setIsSavingSlack(false);
+    }
+  };
+
+  const testSlack = async () => {
+    if (!slackChannelId.trim()) return;
+    setSlackStatus("testing");
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/notify-approval`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ test_slack: true, channel_id: slackChannelId.trim() }),
+      });
+      if (res.ok) {
+        setSlackStatus("connected");
+        toast.success("Message test envoyé sur Slack ✓");
+      } else {
+        setSlackStatus("error");
+        toast.error("Échec de l'envoi du message test");
+      }
+    } catch {
+      setSlackStatus("error");
+      toast.error("Erreur de connexion");
+    }
+  };
+
+  const disconnectSlack = async () => {
+    if (!org) return;
+    try {
+      const currentSettings = (org.settings as Record<string, any>) || {};
+      const { slack_channel_id: _, ...rest } = currentSettings;
+      await supabase.from("orgs").update({ settings: rest }).eq("id", org.id);
+      setSlackChannelId("");
+      setSlackStatus("unknown");
+      toast.success("Slack déconnecté");
+    } catch {
+      toast.error("Erreur lors de la déconnexion");
+    }
+  };
+
   return (
     <AppLayout>
       <PageHeader title="Paramètres" description="Configuration de votre organisation" />
@@ -117,6 +180,80 @@ export default function Settings() {
 
         <Separator />
 
+        {/* Slack Integration */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Notifications Slack
+                  {slackStatus === "connected" && (
+                    <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30">
+                      <Check className="h-3 w-3 mr-1" /> Actif
+                    </Badge>
+                  )}
+                  {slackStatus === "error" && <Badge variant="destructive">Erreur</Badge>}
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  Envoyez les demandes d'approbation directement dans un canal Slack — vos execs approuvent en un tap depuis Slack.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 rounded-lg bg-muted/50 border text-sm space-y-2">
+              <p className="font-medium">Comment ça marche :</p>
+              <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                <li>Ajoutez le bot Ekko à votre workspace Slack</li>
+                <li>Copiez l'ID du canal où envoyer les notifications (clic droit sur le canal → Copier l'ID)</li>
+                <li>Collez l'ID ci-dessous</li>
+              </ol>
+              <p className="text-xs text-muted-foreground mt-2">
+                💡 Chaque demande d'approbation enverra un message riche avec un bouton « Relire et répondre » vers la page d'approbation mobile.
+              </p>
+            </div>
+
+            {isOwnerOrAdmin ? (
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="C0123456789"
+                      value={slackChannelId}
+                      onChange={(e) => {
+                        setSlackChannelId(e.target.value);
+                        if (slackStatus === "connected") setSlackStatus("unknown");
+                      }}
+                      className="pl-9 font-mono text-sm"
+                    />
+                  </div>
+                  <Button onClick={saveSlackChannel} disabled={isSavingSlack || !slackChannelId.trim()}>
+                    {isSavingSlack ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
+                    Sauvegarder
+                  </Button>
+                </div>
+                {slackStatus === "connected" && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={testSlack} disabled={slackStatus === "testing"}>
+                      {slackStatus === "testing" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                      Envoyer un message test
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={disconnectSlack}>
+                      <Link2Off className="h-3.5 w-3.5 mr-1" /> Déconnecter
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Seuls les administrateurs peuvent configurer Slack.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* HubSpot Integration */}
         <Card>
           <CardHeader>
@@ -129,9 +266,7 @@ export default function Settings() {
                       <Check className="h-3 w-3 mr-1" /> Connecté
                     </Badge>
                   )}
-                  {connectionStatus === "error" && (
-                    <Badge variant="destructive">Erreur</Badge>
-                  )}
+                  {connectionStatus === "error" && <Badge variant="destructive">Erreur</Badge>}
                 </CardTitle>
                 <CardDescription className="mt-1">
                   Synchronisez les données d'engagement vidéo vers votre CRM HubSpot
@@ -144,15 +279,10 @@ export default function Settings() {
               <p className="font-medium">Pour connecter HubSpot :</p>
               <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
                 <li>Allez dans <strong>HubSpot → Settings → Integrations → Private Apps</strong></li>
-                <li>Créez une nouvelle Private App avec les scopes : <code className="text-xs bg-muted px-1 py-0.5 rounded">crm.objects.contacts.write</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded">crm.objects.contacts.read</code></li>
-                <li>Copiez le token d'accès et collez-le ci-dessous</li>
+                <li>Créez une Private App avec les scopes : <code className="text-xs bg-muted px-1 py-0.5 rounded">crm.objects.contacts.write</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded">crm.objects.contacts.read</code></li>
+                <li>Copiez le token et collez-le ci-dessous</li>
               </ol>
-              <a
-                href="https://developers.hubspot.com/docs/guides/apps/private-apps/overview"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline mt-1"
-              >
+              <a href="https://developers.hubspot.com/docs/guides/apps/private-apps/overview" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline mt-1">
                 Documentation HubSpot <ExternalLink className="h-3 w-3" />
               </a>
             </div>
@@ -164,10 +294,7 @@ export default function Settings() {
                     type="password"
                     placeholder="pat-xx-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                     value={hubspotKey}
-                    onChange={(e) => {
-                      setHubspotKey(e.target.value);
-                      setConnectionStatus("unknown");
-                    }}
+                    onChange={(e) => { setHubspotKey(e.target.value); setConnectionStatus("unknown"); }}
                     className="font-mono text-sm"
                   />
                   <Button onClick={saveHubspotKey} disabled={isSaving || !hubspotKey || hubspotKey.startsWith("••••")}>
@@ -176,17 +303,8 @@ export default function Settings() {
                   </Button>
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={testConnection}
-                    disabled={isTestingConnection || connectionStatus === "unknown"}
-                  >
-                    {isTestingConnection ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                    ) : (
-                      <Check className="h-3.5 w-3.5 mr-1" />
-                    )}
+                  <Button variant="outline" size="sm" onClick={testConnection} disabled={isTestingConnection || connectionStatus === "unknown"}>
+                    {isTestingConnection ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
                     Tester la connexion
                   </Button>
                   {connectionStatus === "connected" && (
