@@ -122,6 +122,10 @@ export default function CampaignDetail() {
   const [landingPageConfig, setLandingPageConfig] = useState<LandingPageConfig | undefined>();
   const [viewEvents, setViewEvents] = useState<ViewEvent[]>([]);
   const [watchProgress, setWatchProgress] = useState<WatchProgressRow[]>([]);
+  const [rejectionComment, setRejectionComment] = useState<string | null>(null);
+  const [isEditingScript, setIsEditingScript] = useState(false);
+  const [editedScript, setEditedScript] = useState("");
+  const [isSavingScript, setIsSavingScript] = useState(false);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
