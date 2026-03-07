@@ -228,6 +228,14 @@ export default function CampaignDetail() {
             setRejectionComment(rejectionData[0].decision_comment);
           }
         }
+
+        // Fetch script versions
+        const { data: versionsData } = await supabase
+          .from("script_versions")
+          .select("*")
+          .eq("campaign_id", id)
+          .order("version_number", { ascending: false });
+        setScriptVersions(versionsData || []);
       } catch (error) {
         console.error("Fetch campaign error:", error);
         toast.error("Erreur lors du chargement de la campagne");
