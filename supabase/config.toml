@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.slack-helper]
 verify_jwt = false
+
+[functions.check-slack-replies]
+verify_jwt = false
+
+[functions.seed-demo]
+verify_jwt = false
