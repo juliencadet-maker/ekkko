@@ -22,32 +22,39 @@ serve(async (req) => {
       });
     }
 
-    const { action, channel_name } = await req.json();
+    const headers = {
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "X-Connection-Api-Key": SLACK_API_KEY,
+      "Content-Type": "application/json",
+    };
+
+    const { action, channel_name, channel_id } = await req.json();
 
     if (action === "list_channels") {
-      const res = await fetch(`${SLACK_GATEWAY_URL}/conversations.list?types=public_channel&limit=200`, {
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": SLACK_API_KEY,
-        },
-      });
+      const res = await fetch(`${SLACK_GATEWAY_URL}/conversations.list?types=public_channel&limit=200`, { headers });
       const data = await res.json();
-      const channels = (data.channels || []).map((c: any) => ({ id: c.id, name: c.name }));
-      return new Response(JSON.stringify({ channels }), {
+      return new Response(JSON.stringify({ channels: (data.channels || []).map((c: any) => ({ id: c.id, name: c.name })) }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "find_channel") {
-      const res = await fetch(`${SLACK_GATEWAY_URL}/conversations.list?types=public_channel&limit=200`, {
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": SLACK_API_KEY,
-        },
-      });
+      const res = await fetch(`${SLACK_GATEWAY_URL}/conversations.list?types=public_channel&limit=200`, { headers });
       const data = await res.json();
       const channel = (data.channels || []).find((c: any) => c.name === (channel_name || "general"));
       return new Response(JSON.stringify({ channel: channel ? { id: channel.id, name: channel.name } : null }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "join_channel") {
+      const res = await fetch(`${SLACK_GATEWAY_URL}/conversations.join`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ channel: channel_id }),
+      });
+      const data = await res.json();
+      return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
