@@ -626,6 +626,23 @@ export default function CampaignDetail() {
                 </div>
               </div>
             )}
+            {scriptSaved && !isEditingScript && (
+              <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                  Script modifié
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleResubmit}
+                  disabled={isResubmitting}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <Send className="mr-2 h-3.5 w-3.5" />
+                  {isResubmitting ? "Resoumission..." : "Resoumettre pour approbation"}
+                </Button>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}
