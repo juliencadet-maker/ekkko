@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.process-approval-decision]
 verify_jwt = false
+
+[functions.slack-helper]
+verify_jwt = false

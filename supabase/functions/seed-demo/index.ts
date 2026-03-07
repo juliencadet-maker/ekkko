@@ -399,7 +399,7 @@ serve(async (req) => {
     });
 
     // Approval assigned to EXEC user (not sales user)
-    await admin.from("approval_requests").insert({
+    const { data: approvalReq } = await admin.from("approval_requests").insert({
       org_id: orgId,
       campaign_id: execCampaign!.id,
       requested_by_user_id: salesUserId,
@@ -407,17 +407,48 @@ serve(async (req) => {
       approval_type: "script",
       script_snapshot: execCampaign!.script,
       status: "pending",
-    });
+    }).select().single();
+
+    // Configure Slack channel for the org (tous-getekko)
+    const currentOrgSettings = (await admin.from("orgs").select("settings").eq("id", orgId).single()).data?.settings || {};
+    await admin.from("orgs").update({
+      settings: { ...(currentOrgSettings as Record<string, any>), slack_channel_id: "C0AK31ESJJ1" },
+    }).eq("id", orgId);
+
+    // Update exec profile to receive notifications via slack + email
+    await admin.from("profiles").update({
+      notification_channels: ["email", "slack"],
+    }).eq("user_id", execUserId);
+
+    // Trigger Slack notification for the approval
+    let slackResult = null;
+    if (approvalReq) {
+      try {
+        const notifyRes = await fetch(`${supabaseUrl}/functions/v1/notify-approval`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${serviceRoleKey}`,
+          },
+          body: JSON.stringify({ approval_id: approvalReq.id }),
+        });
+        slackResult = await notifyRes.json();
+      } catch (e) {
+        console.error("Notify error:", e);
+        slackResult = { error: e.message };
+      }
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Comptes démo créés — structure hiérarchique multi-rôles",
+        message: "Comptes démo créés — notification Slack envoyée",
         accounts: {
           sales: { email: DEMO_SALES_EMAIL, password: DEMO_PASSWORD, role: "org_owner", name: "Jean Dupont — VP Sales" },
           exec: { email: DEMO_EXEC_EMAIL, password: DEMO_PASSWORD, role: "org_admin", name: "Marc Lefevre — CEO" },
         },
         org: { name: "Acme Corp", id: orgId },
+        notifications: slackResult,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
