@@ -23,7 +23,7 @@ interface RecipientInfo {
   last_name: string | null;
   company: string | null;
   email: string;
-  variables: Record<string, string> | null;
+  variables: any;
 }
 
 export default function ApprovalReview() {
