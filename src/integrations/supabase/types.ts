@@ -575,6 +575,57 @@ export type Database = {
           },
         ]
       }
+      script_versions: {
+        Row: {
+          campaign_id: string
+          change_reason: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          org_id: string
+          rejection_comment: string | null
+          script: string
+          version_number: number
+        }
+        Insert: {
+          campaign_id: string
+          change_reason?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          org_id: string
+          rejection_comment?: string | null
+          script: string
+          version_number?: number
+        }
+        Update: {
+          campaign_id?: string
+          change_reason?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          org_id?: string
+          rejection_comment?: string | null
+          script?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "script_versions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "script_versions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           created_at: string
