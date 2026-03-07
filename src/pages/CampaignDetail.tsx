@@ -279,6 +279,28 @@ export default function CampaignDetail() {
         .update({ script: editedScript })
         .eq("id", campaign.id);
       if (error) throw error;
+
+      // Save script version
+      const nextVersion = scriptVersions.length > 0
+        ? Math.max(...scriptVersions.map((v: any) => v.version_number)) + 1
+        : 1;
+      const { data: newVersion } = await supabase
+        .from("script_versions")
+        .insert({
+          campaign_id: campaign.id,
+          org_id: membership.org_id,
+          version_number: nextVersion,
+          script: editedScript,
+          change_reason: rejectionComment ? "rejection_revision" : "manual_edit",
+          rejection_comment: rejectionComment || null,
+          created_by_user_id: membership.user_id || null,
+        })
+        .select()
+        .single();
+      if (newVersion) {
+        setScriptVersions((prev) => [newVersion, ...prev]);
+      }
+
       setCampaign((prev) => (prev ? { ...prev, script: editedScript } : null));
       setIsEditingScript(false);
       setScriptSaved(true);
