@@ -526,6 +526,49 @@ export default function CampaignDetail() {
         })()}
       </div>
 
+      {/* Rejection Alert */}
+      {rejectionComment && campaign.status === "draft" && (
+        <Alert variant="destructive" className="mb-6 border-destructive/30 bg-destructive/5">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle className="font-semibold">Campagne refusée par l'exécutif</AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="text-sm italic mb-3">« {rejectionComment} »</p>
+            {!isEditingScript ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                onClick={() => {
+                  setEditedScript(campaign.script);
+                  setIsEditingScript(true);
+                }}
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Modifier le script
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <Textarea
+                  value={editedScript}
+                  onChange={(e) => setEditedScript(e.target.value)}
+                  className="min-h-[120px] bg-background"
+                  placeholder="Modifiez votre script ici..."
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveScript} disabled={isSavingScript}>
+                    <Save className="mr-2 h-3.5 w-3.5" />
+                    {isSavingScript ? "Enregistrement..." : "Enregistrer"}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditingScript(false)}>
+                    Annuler
+                  </Button>
+                </div>
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
