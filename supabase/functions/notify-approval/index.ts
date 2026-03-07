@@ -30,7 +30,7 @@ serve(async (req) => {
     // Fetch approval with related data
     const { data: approval, error } = await admin
       .from("approval_requests")
-      .select("*, campaigns(name, script, identities(display_name, owner_user_id))")
+      .select("*, campaigns(name, script, description, identities(display_name, owner_user_id))")
       .eq("id", approval_id)
       .single();
 
@@ -39,6 +39,19 @@ serve(async (req) => {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Fetch recipients for context
+    const { data: recipients } = await admin
+      .from("recipients")
+      .select("first_name, last_name, company, email, variables")
+      .eq("campaign_id", approval.campaign_id);
+
+    const targetCompanies = [...new Set((recipients || []).map((r: any) => r.company).filter(Boolean))];
+    const recipientLines = (recipients || []).map((r: any) => {
+      const name = [r.first_name, r.last_name].filter(Boolean).join(" ");
+      const title = r.variables?.title || "";
+      return `${name}${title ? ` (${title})` : ""}`;
+    });
 
     // Fetch exec profile
     const { data: execProfile } = await admin
@@ -67,9 +80,12 @@ serve(async (req) => {
     const approvalToken = approval.approval_token;
     const baseUrl = req.headers.get("origin") || "https://ekkko.lovable.app";
     const reviewUrl = `${baseUrl}/approve/${approvalToken}`;
-    const campaignName = (approval as any).campaigns?.name || "Campagne";
-    const identityName = (approval as any).campaigns?.identities?.display_name || "";
-    const scriptPreview = (approval.script_snapshot || (approval as any).campaigns?.script || "").slice(0, 300);
+    const campaignName = approval.campaigns?.name || "Campagne";
+    const campaignDescription = approval.campaigns?.description || "";
+    const identityName = approval.campaigns?.identities?.display_name || "";
+    const fullScript = approval.script_snapshot || approval.campaigns?.script || "";
+    const scriptPreview = fullScript.slice(0, 300);
+    const companyLabel = targetCompanies.length > 0 ? targetCompanies.join(", ") : "";
 
     const channels = execProfile.notification_channels || ["email"];
     const results: Record<string, string> = {};
@@ -86,6 +102,10 @@ serve(async (req) => {
     if (channels.includes("email")) {
       const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
       if (RESEND_API_KEY) {
+        const recipientHtml = recipientLines.length > 0
+          ? `<p style="margin:8px 0 0;color:#555;font-size:13px;"><strong>Destinataire(s) :</strong> ${recipientLines.join(", ")}${companyLabel ? ` — ${companyLabel}` : ""}</p>`
+          : "";
+
         const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f8f9fa;">
   <div style="background:white;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
@@ -94,10 +114,11 @@ serve(async (req) => {
       <h2 style="margin:8px 0 0;color:#1a2744;">Validation requise</h2>
     </div>
     <p style="color:#333;font-size:15px;">Bonjour ${execProfile.first_name || ""},</p>
-    <p style="color:#555;font-size:14px;"><strong>${requesterName}</strong> souhaite utiliser votre identité « <strong>${identityName}</strong> » pour « <strong>${campaignName}</strong> ».</p>
+    <p style="color:#555;font-size:14px;"><strong>${requesterName}</strong> souhaite utiliser votre identité « <strong>${identityName}</strong> » pour la campagne « <strong>${campaignName}</strong> »${companyLabel ? ` ciblant <strong>${companyLabel}</strong>` : ""}.</p>
+    ${recipientHtml}
     <div style="background:#f1f3f5;border-radius:8px;padding:16px;margin:20px 0;">
       <p style="margin:0 0 8px;font-weight:600;color:#333;font-size:13px;">SCRIPT :</p>
-      <p style="margin:0;color:#555;font-size:13px;white-space:pre-wrap;">${scriptPreview}${scriptPreview.length >= 300 ? "..." : ""}</p>
+      <p style="margin:0;color:#555;font-size:13px;white-space:pre-wrap;">${fullScript}</p>
     </div>
     <div style="text-align:center;margin:28px 0;">
       <a href="${reviewUrl}" style="display:inline-block;background:#1a2744;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Relire et répondre</a>
@@ -106,13 +127,17 @@ serve(async (req) => {
   </div>
 </body></html>`;
 
+        const emailSubject = companyLabel
+          ? `🎬 Validation requise : ${campaignName} → ${companyLabel}`
+          : `🎬 Validation requise : ${campaignName}`;
+
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             from: "Ekko <onboarding@resend.dev>",
             to: [execProfile.email],
-            subject: `🎬 Validation requise : ${campaignName}`,
+            subject: emailSubject,
             html: emailHtml,
           }),
         });
@@ -130,44 +155,79 @@ serve(async (req) => {
 
       if (LOVABLE_API_KEY && SLACK_API_KEY && slackChannel) {
         try {
+          // Build recipient context block
+          const recipientContext = recipientLines.length > 0
+            ? `*Destinataire(s) :*\n${recipientLines.map(r => `• ${r}`).join("\n")}`
+            : "";
+
+          const slackBlocks: any[] = [
+            {
+              type: "header",
+              text: { type: "plain_text", text: `🎬 Validation requise${companyLabel ? ` — ${companyLabel}` : ""}`, emoji: true },
+            },
+            {
+              type: "section",
+              fields: [
+                { type: "mrkdwn", text: `*Campagne :*\n${campaignName}` },
+                { type: "mrkdwn", text: `*Identité :*\n${identityName}` },
+              ],
+            },
+          ];
+
+          if (companyLabel) {
+            slackBlocks.push({
+              type: "section",
+              fields: [
+                { type: "mrkdwn", text: `*Entreprise cible :*\n🏢 ${companyLabel}` },
+                { type: "mrkdwn", text: `*Demandé par :*\n${requesterName}` },
+              ],
+            });
+          } else {
+            slackBlocks.push({
+              type: "section",
+              text: { type: "mrkdwn", text: `*Demandé par :* ${requesterName}` },
+            });
+          }
+
+          if (recipientContext) {
+            slackBlocks.push({
+              type: "section",
+              text: { type: "mrkdwn", text: recipientContext },
+            });
+          }
+
+          // Full script (Slack blocks text limit is 3000 chars)
+          const scriptForSlack = fullScript.length > 2900 ? fullScript.slice(0, 2900) + "…" : fullScript;
+          slackBlocks.push(
+            { type: "divider" },
+            {
+              type: "section",
+              text: { type: "mrkdwn", text: `*📝 Script complet :*\n\n${scriptForSlack}` },
+            },
+            { type: "divider" },
+            {
+              type: "context",
+              elements: [
+                { type: "mrkdwn", text: "💬 *Répondre dans ce thread :* `ok` / `approuvé` pour approuver · `non` / `à modifier` pour demander des modifications" },
+              ],
+            },
+            {
+              type: "actions",
+              elements: [
+                {
+                  type: "button",
+                  text: { type: "plain_text", text: "✏️ Modifier et répondre sur Ekko", emoji: true },
+                  url: reviewUrl,
+                  style: "primary",
+                },
+              ],
+            },
+          );
+
           const slackPayload = {
             channel: slackChannel,
-            text: `🎬 Validation Ekko requise — ${campaignName}`,
-            blocks: [
-              {
-                type: "header",
-                text: { type: "plain_text", text: "🎬 Validation requise", emoji: true },
-              },
-              {
-                type: "section",
-                fields: [
-                  { type: "mrkdwn", text: `*Campagne :*\n${campaignName}` },
-                  { type: "mrkdwn", text: `*Identité :*\n${identityName}` },
-                ],
-              },
-              {
-                type: "section",
-                text: { type: "mrkdwn", text: `*Demandé par :* ${requesterName}` },
-              },
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: `*Script :*\n>${scriptPreview.slice(0, 200).replace(/\n/g, "\n>")}${scriptPreview.length > 200 ? "..." : ""}`,
-                },
-              },
-              {
-                type: "actions",
-                elements: [
-                  {
-                    type: "button",
-                    text: { type: "plain_text", text: "✅ Relire et répondre", emoji: true },
-                    url: reviewUrl,
-                    style: "primary",
-                  },
-                ],
-              },
-            ],
+            text: `🎬 Validation Ekko requise — ${campaignName}${companyLabel ? ` → ${companyLabel}` : ""}`,
+            blocks: slackBlocks,
           };
 
           const slackRes = await fetch(`${SLACK_GATEWAY_URL}/chat.postMessage`, {
@@ -182,6 +242,17 @@ serve(async (req) => {
 
           const slackData = await slackRes.json();
           results.slack = slackData.ok ? "sent" : `failed: ${slackData.error || "unknown"}`;
+
+          // Store Slack message metadata for thread polling
+          if (slackData.ok && slackData.ts) {
+            await admin.from("approval_requests").update({
+              slack_metadata: {
+                channel_id: slackChannel,
+                message_ts: slackData.ts,
+                posted_at: new Date().toISOString(),
+              },
+            }).eq("id", approval_id);
+          }
         } catch (e) {
           console.error("Slack notification error:", e);
           results.slack = "error";
@@ -200,7 +271,7 @@ serve(async (req) => {
 
       if (twilioSid && twilioToken && twilioFrom && execPhone) {
         try {
-          const message = `🎬 *Validation Ekko requise*\n\nCampagne: ${campaignName}\nIdentité: ${identityName}\nDemandé par: ${requesterName}\n\nScript:\n${scriptPreview.slice(0, 200)}${scriptPreview.length > 200 ? "..." : ""}\n\n👉 ${reviewUrl}`;
+          const message = `🎬 *Validation Ekko requise*\n\n${companyLabel ? `🏢 ${companyLabel}\n` : ""}Campagne: ${campaignName}\nIdentité: ${identityName}\nDemandé par: ${requesterName}\n\nScript:\n${fullScript.slice(0, 500)}${fullScript.length > 500 ? "..." : ""}\n\n👉 ${reviewUrl}`;
           const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
           const body = new URLSearchParams();
           body.append("From", twilioFrom);

@@ -12,14 +12,25 @@ import {
   AlertTriangle,
   Edit3,
   X,
+  Building2,
+  User,
 } from "lucide-react";
 
 type ReviewState = "loading" | "ready" | "done" | "error";
+
+interface RecipientInfo {
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+  email: string;
+  variables: Record<string, string> | null;
+}
 
 export default function ApprovalReview() {
   const { token } = useParams<{ token: string }>();
   const [state, setState] = useState<ReviewState>("loading");
   const [approval, setApproval] = useState<any>(null);
+  const [recipients, setRecipients] = useState<RecipientInfo[]>([]);
   const [editedScript, setEditedScript] = useState("");
   const [comment, setComment] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -33,19 +44,27 @@ export default function ApprovalReview() {
     const fetchApproval = async () => {
       const { data, error } = await supabase
         .from("approval_requests")
-        .select("*, campaigns(name, script, identities(display_name))")
+        .select("*, campaigns(name, script, description, identities(display_name))")
         .eq("approval_token", token)
         .maybeSingle();
 
       if (error || !data) { setState("error"); return; }
       if (data.status !== "pending") {
         setApproval(data);
-        setDecision(data.status);
+        setDecision(data.status as "approved" | "rejected");
         setState("done");
         return;
       }
+
+      // Fetch recipients for this campaign
+      const { data: recipientData } = await supabase
+        .from("recipients")
+        .select("first_name, last_name, company, email, variables")
+        .eq("campaign_id", data.campaign_id);
+
       setApproval(data);
-      setEditedScript(data.script_snapshot || data.campaigns?.script || "");
+      setRecipients(recipientData || []);
+      setEditedScript(data.script_snapshot || (data as any).campaigns?.script || "");
       setState("ready");
     };
     fetchApproval();
@@ -89,7 +108,16 @@ export default function ApprovalReview() {
   };
 
   const campaignName = approval?.campaigns?.name || "Campagne";
+  const campaignDescription = approval?.campaigns?.description || "";
   const identityName = approval?.campaigns?.identities?.display_name || "";
+
+  // Derive target companies
+  const targetCompanies = [...new Set(recipients.map(r => r.company).filter(Boolean))];
+  const targetRecipients = recipients.map(r => {
+    const title = (r.variables as any)?.title || "";
+    const name = [r.first_name, r.last_name].filter(Boolean).join(" ");
+    return { name, title, company: r.company };
+  });
 
   // ── LOADING ──
   if (state === "loading") {
@@ -140,7 +168,7 @@ export default function ApprovalReview() {
     );
   }
 
-  // ── READY — Ultra-simplified exec view ──
+  // ── READY — Exec review view ──
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Minimal header */}
@@ -150,7 +178,7 @@ export default function ApprovalReview() {
 
       <div className="flex-1 flex flex-col px-5 py-6 max-w-md mx-auto w-full">
         {/* Hero question */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Validation requise</p>
           <h1 className="text-2xl font-bold leading-tight mb-4">
             Approuvez-vous ce message en votre nom ?
@@ -161,6 +189,32 @@ export default function ApprovalReview() {
             <span className="text-muted-foreground">{campaignName}</span>
           </div>
         </div>
+
+        {/* Target company & recipients */}
+        {(targetCompanies.length > 0 || targetRecipients.length > 0) && (
+          <div className="bg-card border rounded-xl p-4 mb-4">
+            {targetCompanies.length > 0 && (
+              <div className="flex items-center gap-2 mb-3">
+                <Building2 className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-semibold">
+                  {targetCompanies.join(", ")}
+                </span>
+              </div>
+            )}
+            {campaignDescription && (
+              <p className="text-xs text-muted-foreground mb-3">{campaignDescription}</p>
+            )}
+            <div className="space-y-1.5">
+              {targetRecipients.map((r, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="font-medium">{r.name}</span>
+                  {r.title && <span className="text-muted-foreground">— {r.title}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Script card */}
         <div className="flex-1 mb-6">
@@ -202,7 +256,7 @@ export default function ApprovalReview() {
           />
         </div>
 
-        {/* Action buttons — prominent, thumb-friendly */}
+        {/* Action buttons */}
         <div className="space-y-3 pb-6">
           <Button
             size="lg"
