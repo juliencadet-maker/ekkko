@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
 import { PowerMap } from "@/components/campaign/PowerMap";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft,
   Play,
@@ -37,6 +39,8 @@ import {
   Layers,
   ChevronRight,
   Plus,
+  AlertTriangle,
+  Save,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -118,6 +122,10 @@ export default function CampaignDetail() {
   const [landingPageConfig, setLandingPageConfig] = useState<LandingPageConfig | undefined>();
   const [viewEvents, setViewEvents] = useState<ViewEvent[]>([]);
   const [watchProgress, setWatchProgress] = useState<WatchProgressRow[]>([]);
+  const [rejectionComment, setRejectionComment] = useState<string | null>(null);
+  const [isEditingScript, setIsEditingScript] = useState(false);
+  const [editedScript, setEditedScript] = useState("");
+  const [isSavingScript, setIsSavingScript] = useState(false);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
@@ -198,6 +206,20 @@ export default function CampaignDetail() {
             setSubAnalytics(subRecord);
           }
         }
+
+        // Fetch rejection comment if campaign is draft (was rejected)
+        if (campaignData.status === "draft") {
+          const { data: rejectionData } = await supabase
+            .from("approval_requests")
+            .select("decision_comment, decided_at")
+            .eq("campaign_id", id)
+            .eq("status", "rejected")
+            .order("decided_at", { ascending: false })
+            .limit(1);
+          if (rejectionData && rejectionData.length > 0 && rejectionData[0].decision_comment) {
+            setRejectionComment(rejectionData[0].decision_comment);
+          }
+        }
       } catch (error) {
         console.error("Fetch campaign error:", error);
         toast.error("Erreur lors du chargement de la campagne");
@@ -231,6 +253,28 @@ export default function CampaignDetail() {
       toast.error("Erreur lors de la sauvegarde");
     }
   };
+
+  const handleSaveScript = async () => {
+    if (!campaign || !membership?.org_id || !editedScript.trim()) return;
+    setIsSavingScript(true);
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ script: editedScript })
+        .eq("id", campaign.id);
+      if (error) throw error;
+      setCampaign((prev) => (prev ? { ...prev, script: editedScript } : null));
+      setIsEditingScript(false);
+      setRejectionComment(null);
+      toast.success("Script mis à jour avec succès");
+    } catch (error) {
+      console.error("Save script error:", error);
+      toast.error("Erreur lors de la sauvegarde du script");
+    } finally {
+      setIsSavingScript(false);
+    }
+  };
+
 
   const landingPageUrl = id ? `${window.location.origin}/lp/${id}` : "";
 
@@ -481,6 +525,49 @@ export default function CampaignDetail() {
           );
         })()}
       </div>
+
+      {/* Rejection Alert */}
+      {rejectionComment && campaign.status === "draft" && (
+        <Alert variant="destructive" className="mb-6 border-destructive/30 bg-destructive/5">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle className="font-semibold">Campagne refusée par l'exécutif</AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="text-sm italic mb-3">« {rejectionComment} »</p>
+            {!isEditingScript ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                onClick={() => {
+                  setEditedScript(campaign.script);
+                  setIsEditingScript(true);
+                }}
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Modifier le script
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <Textarea
+                  value={editedScript}
+                  onChange={(e) => setEditedScript(e.target.value)}
+                  className="min-h-[120px] bg-background"
+                  placeholder="Modifiez votre script ici..."
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveScript} disabled={isSavingScript}>
+                    <Save className="mr-2 h-3.5 w-3.5" />
+                    {isSavingScript ? "Enregistrement..." : "Enregistrer"}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditingScript(false)}>
+                    Annuler
+                  </Button>
+                </div>
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
