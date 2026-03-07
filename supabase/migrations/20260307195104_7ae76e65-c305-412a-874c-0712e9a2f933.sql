@@ -1,0 +1,1 @@
+ALTER TABLE public.approval_requests ADD COLUMN IF NOT EXISTS slack_metadata jsonb DEFAULT '{}'::jsonb;
