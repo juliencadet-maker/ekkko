@@ -43,6 +43,9 @@ import {
   Save,
   Send,
   CheckCircle2,
+  History,
+  FileText,
+  MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
