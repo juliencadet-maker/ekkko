@@ -254,6 +254,28 @@ export default function CampaignDetail() {
     }
   };
 
+  const handleSaveScript = async () => {
+    if (!campaign || !membership?.org_id || !editedScript.trim()) return;
+    setIsSavingScript(true);
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ script: editedScript })
+        .eq("id", campaign.id);
+      if (error) throw error;
+      setCampaign((prev) => (prev ? { ...prev, script: editedScript } : null));
+      setIsEditingScript(false);
+      setRejectionComment(null);
+      toast.success("Script mis à jour avec succès");
+    } catch (error) {
+      console.error("Save script error:", error);
+      toast.error("Erreur lors de la sauvegarde du script");
+    } finally {
+      setIsSavingScript(false);
+    }
+  };
+
+
   const landingPageUrl = id ? `${window.location.origin}/lp/${id}` : "";
 
   const generateShareLink = (videoId?: string) => {
