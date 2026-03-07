@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
 import { PowerMap } from "@/components/campaign/PowerMap";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft,
   Play,
@@ -37,6 +39,8 @@ import {
   Layers,
   ChevronRight,
   Plus,
+  AlertTriangle,
+  Save,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
