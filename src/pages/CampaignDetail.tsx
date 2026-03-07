@@ -133,6 +133,7 @@ export default function CampaignDetail() {
   const [isSavingScript, setIsSavingScript] = useState(false);
   const [scriptSaved, setScriptSaved] = useState(false);
   const [isResubmitting, setIsResubmitting] = useState(false);
+  const [scriptVersions, setScriptVersions] = useState<any[]>([]);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
