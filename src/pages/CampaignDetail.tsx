@@ -206,6 +206,20 @@ export default function CampaignDetail() {
             setSubAnalytics(subRecord);
           }
         }
+
+        // Fetch rejection comment if campaign is draft (was rejected)
+        if (campaignData.status === "draft") {
+          const { data: rejectionData } = await supabase
+            .from("approval_requests")
+            .select("decision_comment, decided_at")
+            .eq("campaign_id", id)
+            .eq("status", "rejected")
+            .order("decided_at", { ascending: false })
+            .limit(1);
+          if (rejectionData && rejectionData.length > 0 && rejectionData[0].decision_comment) {
+            setRejectionComment(rejectionData[0].decision_comment);
+          }
+        }
       } catch (error) {
         console.error("Fetch campaign error:", error);
         toast.error("Erreur lors du chargement de la campagne");
