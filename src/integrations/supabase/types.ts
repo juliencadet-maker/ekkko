@@ -28,6 +28,7 @@ export type Database = {
           org_id: string
           requested_by_user_id: string | null
           script_snapshot: string | null
+          slack_metadata: Json | null
           status: Database["public"]["Enums"]["approval_status"]
           updated_at: string
         }
@@ -44,6 +45,7 @@ export type Database = {
           org_id: string
           requested_by_user_id?: string | null
           script_snapshot?: string | null
+          slack_metadata?: Json | null
           status?: Database["public"]["Enums"]["approval_status"]
           updated_at?: string
         }
@@ -60,6 +62,7 @@ export type Database = {
           org_id?: string
           requested_by_user_id?: string | null
           script_snapshot?: string | null
+          slack_metadata?: Json | null
           status?: Database["public"]["Enums"]["approval_status"]
           updated_at?: string
         }
