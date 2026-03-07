@@ -763,6 +763,89 @@ export default function CampaignDetail() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Script Version History */}
+          {scriptVersions.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Historique des versions du script
+                </CardTitle>
+                <CardDescription>
+                  {scriptVersions.length} version{scriptVersions.length > 1 ? "s" : ""} enregistrée{scriptVersions.length > 1 ? "s" : ""}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
+                  
+                  <div className="space-y-6">
+                    {scriptVersions.map((version, idx) => {
+                      const isLatest = idx === 0;
+                      const isRejectionRevision = version.change_reason === "rejection_revision";
+                      return (
+                        <div key={version.id} className="relative pl-10">
+                          {/* Timeline dot */}
+                          <div className={cn(
+                            "absolute left-[8px] top-1 h-[15px] w-[15px] rounded-full border-2",
+                            isLatest
+                              ? "bg-primary border-primary"
+                              : isRejectionRevision
+                                ? "bg-destructive/20 border-destructive/50"
+                                : "bg-muted border-muted-foreground/30"
+                          )} />
+                          
+                          <div className={cn(
+                            "rounded-lg border p-4",
+                            isLatest && "border-primary/30 bg-primary/5"
+                          )}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant={isLatest ? "default" : "secondary"} className="text-xs">
+                                  v{version.version_number}
+                                </Badge>
+                                {isLatest && (
+                                  <span className="text-xs font-medium text-primary">Version actuelle</span>
+                                )}
+                                {isRejectionRevision && (
+                                  <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
+                                    <MessageSquare className="mr-1 h-3 w-3" />
+                                    Révision après rejet
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(version.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
+                              </span>
+                            </div>
+                            
+                            {/* Rejection comment */}
+                            {version.rejection_comment && (
+                              <div className="mb-3 p-2.5 rounded-md bg-destructive/5 border border-destructive/15">
+                                <p className="text-xs font-medium text-destructive mb-0.5">Commentaire de l'exécutif :</p>
+                                <p className="text-sm italic text-destructive/80">« {version.rejection_comment} »</p>
+                              </div>
+                            )}
+                            
+                            {/* Script preview */}
+                            <div className="bg-muted/50 rounded-md p-3">
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground">Script</span>
+                              </div>
+                              <p className="text-sm whitespace-pre-wrap line-clamp-4">{version.script}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Video Tab */}
