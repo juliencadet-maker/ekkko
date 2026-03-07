@@ -6,8 +6,57 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const DEMO_EMAIL = "demo@ekko.app";
+const DEMO_SALES_EMAIL = "demo@ekko.app";
+const DEMO_EXEC_EMAIL = "exec@ekko.app";
 const DEMO_PASSWORD = "Demo2024!";
+
+async function deleteUserAndData(admin: any, email: string) {
+  const { data: existingUsers } = await admin.auth.admin.listUsers();
+  const existing = existingUsers?.users?.find((u: any) => u.email === email);
+  if (!existing) return null;
+
+  const { data: membership } = await admin
+    .from("org_memberships")
+    .select("org_id")
+    .eq("user_id", existing.id)
+    .maybeSingle();
+
+  // Only delete org data if this is the sales account (org creator)
+  if (membership && email === DEMO_SALES_EMAIL) {
+    const orgId = membership.org_id;
+    const { data: campaigns } = await admin.from("campaigns").select("id").eq("org_id", orgId);
+    const campaignIds = campaigns?.map((c: any) => c.id) || [];
+
+    if (campaignIds.length > 0) {
+      const { data: videos } = await admin.from("videos").select("id").in("campaign_id", campaignIds);
+      const videoIds = videos?.map((v: any) => v.id) || [];
+      if (videoIds.length > 0) {
+        await admin.from("watch_progress").delete().in("video_id", videoIds);
+        await admin.from("view_events").delete().in("video_id", videoIds);
+      }
+      await admin.from("videos").delete().in("campaign_id", campaignIds);
+      await admin.from("video_jobs").delete().in("campaign_id", campaignIds);
+      await admin.from("approval_requests").delete().in("campaign_id", campaignIds);
+      await admin.from("recipients").delete().in("campaign_id", campaignIds);
+    }
+    await admin.from("campaigns").delete().eq("org_id", orgId);
+    await admin.from("identities").delete().eq("org_id", orgId);
+    await admin.from("providers").delete().eq("org_id", orgId);
+    await admin.from("policies").delete().eq("org_id", orgId);
+    await admin.from("audit_logs").delete().eq("org_id", orgId);
+    await admin.from("templates").delete().eq("org_id", orgId);
+    // Delete all memberships for this org (including exec)
+    await admin.from("org_memberships").delete().eq("org_id", orgId);
+    await admin.from("orgs").delete().eq("id", orgId);
+  } else if (membership && email === DEMO_EXEC_EMAIL) {
+    // Just remove exec's membership, profile — org data cleaned by sales account
+    await admin.from("org_memberships").delete().eq("user_id", existing.id);
+  }
+
+  await admin.from("profiles").delete().eq("user_id", existing.id);
+  await admin.auth.admin.deleteUser(existing.id);
+  return existing.id;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,64 +70,58 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // 1. Delete existing demo user if exists
-    const { data: existingUsers } = await admin.auth.admin.listUsers();
-    const existingDemo = existingUsers?.users?.find((u: any) => u.email === DEMO_EMAIL);
-    if (existingDemo) {
-      const { data: membership } = await admin
-        .from("org_memberships")
-        .select("org_id")
-        .eq("user_id", existingDemo.id)
-        .maybeSingle();
+    // 1. Clean up both demo accounts
+    await deleteUserAndData(admin, DEMO_EXEC_EMAIL);
+    await deleteUserAndData(admin, DEMO_SALES_EMAIL);
 
-      if (membership) {
-        const orgId = membership.org_id;
-        const { data: campaigns } = await admin.from("campaigns").select("id").eq("org_id", orgId);
-        const campaignIds = campaigns?.map((c: any) => c.id) || [];
-
-        if (campaignIds.length > 0) {
-          const { data: videos } = await admin.from("videos").select("id").in("campaign_id", campaignIds);
-          const videoIds = videos?.map((v: any) => v.id) || [];
-          if (videoIds.length > 0) {
-            await admin.from("watch_progress").delete().in("video_id", videoIds);
-            await admin.from("view_events").delete().in("video_id", videoIds);
-          }
-          await admin.from("videos").delete().in("campaign_id", campaignIds);
-          await admin.from("video_jobs").delete().in("campaign_id", campaignIds);
-          await admin.from("approval_requests").delete().in("campaign_id", campaignIds);
-          await admin.from("recipients").delete().in("campaign_id", campaignIds);
-        }
-        await admin.from("campaigns").delete().eq("org_id", orgId);
-        await admin.from("identities").delete().eq("org_id", orgId);
-        await admin.from("providers").delete().eq("org_id", orgId);
-        await admin.from("policies").delete().eq("org_id", orgId);
-        await admin.from("audit_logs").delete().eq("org_id", orgId);
-        await admin.from("org_memberships").delete().eq("org_id", orgId);
-        await admin.from("profiles").delete().eq("user_id", existingDemo.id);
-        await admin.from("orgs").delete().eq("id", orgId);
-      }
-      await admin.auth.admin.deleteUser(existingDemo.id);
-    }
-
-    // 2. Create demo user
-    const { data: newUser, error: userError } = await admin.auth.admin.createUser({
-      email: DEMO_EMAIL,
+    // 2. Create sales demo user
+    const { data: salesUser, error: salesError } = await admin.auth.admin.createUser({
+      email: DEMO_SALES_EMAIL,
       password: DEMO_PASSWORD,
       email_confirm: true,
     });
-    if (userError) throw userError;
-    const userId = newUser.user.id;
+    if (salesError) throw salesError;
+    const salesUserId = salesUser.user.id;
 
-    // 3. Create org via handle_user_signup
+    // 3. Create exec demo user
+    const { data: execUser, error: execError } = await admin.auth.admin.createUser({
+      email: DEMO_EXEC_EMAIL,
+      password: DEMO_PASSWORD,
+      email_confirm: true,
+    });
+    if (execError) throw execError;
+    const execUserId = execUser.user.id;
+
+    // 4. Create org via handle_user_signup (for sales user)
     const { data: signupResult, error: signupError } = await admin.rpc("handle_user_signup", {
-      p_user_id: userId,
-      p_email: DEMO_EMAIL,
+      p_user_id: salesUserId,
+      p_email: DEMO_SALES_EMAIL,
       p_org_name: "Acme Corp",
     });
     if (signupError) throw signupError;
     const orgId = (signupResult as any).org_id;
 
-    // 4. Update profile
+    // 5. Add exec user to same org as org_admin
+    await admin.from("org_memberships").insert({
+      org_id: orgId,
+      user_id: execUserId,
+      role: "org_admin",
+      is_active: true,
+    });
+
+    // 6. Create exec profile
+    await admin.from("profiles").insert({
+      user_id: execUserId,
+      email: DEMO_EXEC_EMAIL,
+      first_name: "Marc",
+      last_name: "Lefevre",
+      title: "CEO",
+      company: "Acme Corp",
+      onboarding_completed: true,
+      onboarding_step: 5,
+    });
+
+    // 7. Update sales profile
     await admin.from("profiles").update({
       first_name: "Jean",
       last_name: "Dupont",
@@ -86,13 +129,13 @@ serve(async (req) => {
       company: "Acme Corp",
       onboarding_completed: false,
       onboarding_step: 0,
-    }).eq("user_id", userId);
+    }).eq("user_id", salesUserId);
 
-    // 5. Create sales identity
-    const { data: identity } = await admin.from("identities").insert({
+    // 8. Create sales identity
+    const { data: salesIdentity } = await admin.from("identities").insert({
       org_id: orgId,
-      owner_user_id: userId,
-      display_name: "Jean Dupont",
+      owner_user_id: salesUserId,
+      display_name: "Jean Dupont — VP Sales",
       type: "sales_rep",
       status: "ready",
       consent_given: true,
@@ -101,14 +144,14 @@ serve(async (req) => {
       is_shareable: false,
       metadata: { title: "VP Sales", company: "Acme Corp" },
     }).select().single();
-    const identityId = identity!.id;
+    const salesIdentityId = salesIdentity!.id;
 
-    await admin.from("profiles").update({ default_identity_id: identityId }).eq("user_id", userId);
+    await admin.from("profiles").update({ default_identity_id: salesIdentityId }).eq("user_id", salesUserId);
 
-    // 5b. Create exec identity (shareable — "Executive Presence as a Service")
+    // 9. Create exec identity (shareable, owned by exec user)
     const { data: execIdentity } = await admin.from("identities").insert({
       org_id: orgId,
-      owner_user_id: userId, // In demo, same user plays both roles
+      owner_user_id: execUserId,
       display_name: "Marc Lefevre — CEO",
       type: "executive",
       status: "ready",
@@ -119,6 +162,8 @@ serve(async (req) => {
       metadata: { title: "CEO", company: "Acme Corp" },
     }).select().single();
     const execIdentityId = execIdentity!.id;
+
+    await admin.from("profiles").update({ default_identity_id: execIdentityId }).eq("user_id", execUserId);
 
     const { data: provider } = await admin.from("providers").select("id").eq("org_id", orgId).single();
     const providerId = provider!.id;
@@ -137,8 +182,8 @@ serve(async (req) => {
 
     const { data: tvParent } = await admin.from("campaigns").insert({
       org_id: orgId,
-      identity_id: identityId,
-      created_by_user_id: userId,
+      identity_id: salesIdentityId,
+      created_by_user_id: salesUserId,
       name: "TechVision",
       description: "Compte stratégique — Infrastructure cloud & data analytics. Décision attendue Q2 2026.",
       script: "",
@@ -152,9 +197,10 @@ serve(async (req) => {
     const subCampaigns = [
       {
         name: "Réponse RFP — Infrastructure Cloud",
-        description: "Vidéo personnalisée accompagnant notre réponse à l'appel d'offres infrastructure. Ciblage CTO et VP Eng.",
-        script: "Bonjour {{first_name}}, suite à votre RFP sur l'infrastructure cloud, j'ai souhaité vous adresser ce message personnel. Notre plateforme répond précisément à vos 3 critères clés : scalabilité, sécurité zero-trust, et réduction des coûts de 40%. J'aimerais vous en faire la démonstration.",
+        description: "Vidéo personnalisée accompagnant notre réponse à l'appel d'offres infrastructure.",
+        script: "Bonjour Sophie, suite à votre RFP sur l'infrastructure cloud, j'ai souhaité vous adresser ce message personnel. Notre plateforme répond précisément à vos 3 critères clés : scalabilité, sécurité zero-trust, et réduction des coûts de 40%.",
         status: "completed" as const,
+        identity_id: salesIdentityId,
         recipients: [
           { first_name: "Sophie", last_name: "Martin", email: "sophie.martin@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CTO" } },
           { first_name: "Pierre", last_name: "Lefebvre", email: "pierre.lefebvre@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "VP Engineering" } },
@@ -162,32 +208,33 @@ serve(async (req) => {
       },
       {
         name: "Relance décideurs Q1",
-        description: "Relance personnalisée pour les décideurs qui n'ont pas encore répondu après la démo initiale.",
-        script: "Bonjour {{first_name}}, je me permets de revenir vers vous suite à notre échange du mois dernier. Nous avons depuis lancé une nouvelle fonctionnalité de monitoring IA qui pourrait particulièrement intéresser {{company}}. Seriez-vous disponible pour un point de 15 minutes ?",
+        description: "Relance personnalisée pour les décideurs qui n'ont pas encore répondu.",
+        script: "Bonjour Thomas, je me permets de revenir vers vous suite à notre échange du mois dernier. Nous avons depuis lancé une nouvelle fonctionnalité de monitoring IA qui pourrait particulièrement intéresser TechVision.",
         status: "completed" as const,
+        identity_id: salesIdentityId,
         recipients: [
           { first_name: "Thomas", last_name: "Dubois", email: "thomas.dubois@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "Head of Sales" } },
-          { first_name: "Marie", last_name: "Bernard", email: "marie.bernard@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CEO" } },
         ],
       },
       {
-        name: "Mot de notre président",
-        description: "Message du président d'Acme Corp pour renforcer la relation au niveau C-Level.",
-        script: "Bonjour {{first_name}}, je suis Jean Dupont, président d'Acme Corp. Je tenais personnellement à vous remercier pour la confiance que TechVision nous accorde. Notre partenariat est stratégique et je m'engage à ce que nos équipes vous offrent le meilleur service possible.",
+        name: "Mot du CEO — Sponsor Deal",
+        description: "Message du CEO pour renforcer la relation au niveau C-Level.",
+        script: "Bonjour Marie, je suis Marc Lefevre, CEO d'Acme Corp. Je tenais personnellement à vous remercier pour la confiance que TechVision nous accorde. Notre partenariat est stratégique.",
         status: "completed" as const,
+        identity_id: execIdentityId,
         recipients: [
           { first_name: "Marie", last_name: "Bernard", email: "marie.bernard@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CEO" } },
         ],
       },
       {
         name: "Invitation Tech Summit 2026",
-        description: "Invitation VIP à notre événement annuel Tech Summit pour les clients premium.",
-        script: "Bonjour {{first_name}}, nous organisons le Tech Summit 2026 le 15 mars à Paris. En tant que partenaire privilégié, nous vous offrons une invitation VIP incluant l'accès aux keynotes, ateliers exclusifs et dîner networking. Confirmez votre présence !",
+        description: "Invitation VIP à notre événement annuel pour les clients premium.",
+        script: "Bonjour Sophie, nous organisons le Tech Summit 2026 le 15 mars à Paris. En tant que partenaire privilégié, nous vous offrons une invitation VIP.",
         status: "generating" as const,
+        identity_id: salesIdentityId,
         recipients: [
           { first_name: "Sophie", last_name: "Martin", email: "sophie.martin@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CTO" } },
           { first_name: "Camille", last_name: "Moreau", email: "camille.moreau@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "COO" } },
-          { first_name: "Thomas", last_name: "Dubois", email: "thomas.dubois@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "Head of Sales" } },
         ],
       },
     ];
@@ -197,8 +244,8 @@ serve(async (req) => {
     for (const sub of subCampaigns) {
       const { data: subCampaign } = await admin.from("campaigns").insert({
         org_id: orgId,
-        identity_id: identityId,
-        created_by_user_id: userId,
+        identity_id: sub.identity_id,
+        created_by_user_id: salesUserId,
         parent_campaign_id: tvParentId,
         name: sub.name,
         description: sub.description,
@@ -208,22 +255,20 @@ serve(async (req) => {
         metadata: techVisionMeta,
         completed_at: sub.status === "completed" ? new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString() : null,
       }).select().single();
-      
+
       createdSubIds.push(subCampaign!.id);
 
-      // Create recipients
       const { data: recipients } = await admin.from("recipients").insert(
         sub.recipients.map((r) => ({ ...r, campaign_id: subCampaign!.id, org_id: orgId }))
       ).select();
 
-      // Create video jobs & videos & analytics for completed sub-campaigns
       if (sub.status === "completed") {
         for (const recipient of recipients!) {
           const { data: job } = await admin.from("video_jobs").insert({
             org_id: orgId,
             campaign_id: subCampaign!.id,
             recipient_id: recipient.id,
-            identity_id: identityId,
+            identity_id: sub.identity_id,
             provider_id: providerId,
             status: "completed",
             started_at: new Date(Date.now() - 8 * 24 * 3600 * 1000).toISOString(),
@@ -246,7 +291,6 @@ serve(async (req) => {
 
           const videoId = video!.id;
 
-          // Fake analytics
           const viewerProfiles = [
             {
               name: recipient.first_name + " " + recipient.last_name,
@@ -304,11 +348,11 @@ serve(async (req) => {
       }
     }
 
-    // ── ACCOUNT 2: DataFlow (smaller, for variety) ──────────────────
+    // ── ACCOUNT 2: DataFlow ──────────────────────────────────────
     const { data: dfParent } = await admin.from("campaigns").insert({
       org_id: orgId,
-      identity_id: identityId,
-      created_by_user_id: userId,
+      identity_id: salesIdentityId,
+      created_by_user_id: salesUserId,
       name: "DataFlow",
       description: "Prospect mid-market — Data analytics & BI. Premier contact initié via LinkedIn.",
       script: "",
@@ -319,26 +363,26 @@ serve(async (req) => {
 
     await admin.from("campaigns").insert({
       org_id: orgId,
-      identity_id: identityId,
-      created_by_user_id: userId,
+      identity_id: salesIdentityId,
+      created_by_user_id: salesUserId,
       parent_campaign_id: dfParent!.id,
       name: "Introduction produit",
       description: "Première prise de contact vidéo personnalisée pour DataFlow.",
-      script: "Bonjour {{first_name}}, je me permets de vous contacter car j'ai vu que DataFlow cherchait à moderniser sa stack data. Notre solution pourrait vous intéresser.",
+      script: "Bonjour Alex, je me permets de vous contacter car j'ai vu que DataFlow cherchait à moderniser sa stack data.",
       status: "draft",
       is_self_campaign: false,
       metadata: {},
     });
 
-    // ── Pending approval request (exec flow demo) ──────────────────
+    // ── Pending approval request (exec must approve) ──────────────
     const { data: execCampaign } = await admin.from("campaigns").insert({
       org_id: orgId,
       identity_id: execIdentityId,
-      created_by_user_id: userId,
+      created_by_user_id: salesUserId,
       parent_campaign_id: tvParentId,
       name: "Engagement CEO — Sponsor Deal",
       description: "Message personnalisé du CEO pour réaffirmer l'engagement d'Acme Corp sur le deal TechVision.",
-      script: "Bonjour {{first_name}}, je suis Marc Lefevre, CEO d'Acme Corp. Je souhaitais personnellement vous assurer de notre engagement total sur ce partenariat stratégique avec TechVision. Nos équipes sont mobilisées pour garantir le succès de cette collaboration.",
+      script: "Bonjour Marie, je suis Marc Lefevre, CEO d'Acme Corp. Je souhaitais personnellement vous assurer de notre engagement total sur ce partenariat stratégique avec TechVision. Nos équipes sont mobilisées pour garantir le succès de cette collaboration.",
       status: "pending_approval",
       is_self_campaign: false,
       metadata: techVisionMeta,
@@ -354,11 +398,12 @@ serve(async (req) => {
       variables: { title: "CEO" },
     });
 
+    // Approval assigned to EXEC user (not sales user)
     await admin.from("approval_requests").insert({
       org_id: orgId,
       campaign_id: execCampaign!.id,
-      requested_by_user_id: userId,
-      assigned_to_user_id: userId, // Same user in demo
+      requested_by_user_id: salesUserId,
+      assigned_to_user_id: execUserId,
       approval_type: "script",
       script_snapshot: execCampaign!.script,
       status: "pending",
@@ -367,12 +412,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Compte démo créé avec succès — structure hiérarchique",
-        credentials: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
-        accounts: [
-          { name: "TechVision", id: tvParentId, sub_campaigns: createdSubIds.length },
-          { name: "DataFlow", id: dfParent!.id, sub_campaigns: 1 },
-        ],
+        message: "Comptes démo créés — structure hiérarchique multi-rôles",
+        accounts: {
+          sales: { email: DEMO_SALES_EMAIL, password: DEMO_PASSWORD, role: "org_owner", name: "Jean Dupont — VP Sales" },
+          exec: { email: DEMO_EXEC_EMAIL, password: DEMO_PASSWORD, role: "org_admin", name: "Marc Lefevre — CEO" },
+        },
+        org: { name: "Acme Corp", id: orgId },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
