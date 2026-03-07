@@ -41,6 +41,8 @@ import {
   Plus,
   AlertTriangle,
   Save,
+  Send,
+  CheckCircle2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -126,6 +128,8 @@ export default function CampaignDetail() {
   const [isEditingScript, setIsEditingScript] = useState(false);
   const [editedScript, setEditedScript] = useState("");
   const [isSavingScript, setIsSavingScript] = useState(false);
+  const [scriptSaved, setScriptSaved] = useState(false);
+  const [isResubmitting, setIsResubmitting] = useState(false);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
@@ -265,8 +269,8 @@ export default function CampaignDetail() {
       if (error) throw error;
       setCampaign((prev) => (prev ? { ...prev, script: editedScript } : null));
       setIsEditingScript(false);
-      setRejectionComment(null);
-      toast.success("Script mis à jour avec succès");
+      setScriptSaved(true);
+      toast.success("Script mis à jour — vous pouvez maintenant resoumettre");
     } catch (error) {
       console.error("Save script error:", error);
       toast.error("Erreur lors de la sauvegarde du script");
@@ -275,6 +279,63 @@ export default function CampaignDetail() {
     }
   };
 
+  const handleResubmit = async () => {
+    if (!campaign || !membership?.org_id) return;
+    setIsResubmitting(true);
+    try {
+      // Update campaign status to pending_approval
+      const { error: statusError } = await supabase
+        .from("campaigns")
+        .update({ status: "pending_approval" })
+        .eq("id", campaign.id);
+      if (statusError) throw statusError;
+
+      // Create new approval request
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("user_id", membership.user_id || "")
+        .single();
+
+      // Find the identity owner (exec) to assign approval
+      const { data: identity } = await supabase
+        .from("identities")
+        .select("owner_user_id")
+        .eq("id", campaign.identity_id)
+        .single();
+
+      const { error: approvalError } = await supabase
+        .from("approval_requests")
+        .insert({
+          org_id: membership.org_id,
+          campaign_id: campaign.id,
+          requested_by_user_id: membership.user_id || null,
+          assigned_to_user_id: identity?.owner_user_id || null,
+          status: "pending",
+          script_snapshot: campaign.script,
+        });
+      if (approvalError) throw approvalError;
+
+      // Trigger notification
+      try {
+        await supabase.functions.invoke("notify-approval", {
+          body: { campaign_id: campaign.id },
+        });
+      } catch (notifyErr) {
+        console.warn("Notification error (non-blocking):", notifyErr);
+      }
+
+      setCampaign((prev) => (prev ? { ...prev, status: "pending_approval" } : null));
+      setRejectionComment(null);
+      setScriptSaved(false);
+      toast.success("Campagne resoumise pour approbation");
+    } catch (error) {
+      console.error("Resubmit error:", error);
+      toast.error("Erreur lors de la resoumission");
+    } finally {
+      setIsResubmitting(false);
+    }
+  };
 
   const landingPageUrl = id ? `${window.location.origin}/lp/${id}` : "";
 
@@ -563,6 +624,23 @@ export default function CampaignDetail() {
                     Annuler
                   </Button>
                 </div>
+              </div>
+            )}
+            {scriptSaved && !isEditingScript && (
+              <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                  Script modifié
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleResubmit}
+                  disabled={isResubmitting}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <Send className="mr-2 h-3.5 w-3.5" />
+                  {isResubmitting ? "Resoumission..." : "Resoumettre pour approbation"}
+                </Button>
               </div>
             )}
           </AlertDescription>
