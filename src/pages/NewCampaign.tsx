@@ -274,7 +274,8 @@ export default function NewCampaign() {
     }
   };
 
-  const otherIdentities = identities.filter(i => i.owner_user_id !== user.id && i.is_shareable);
+  // Show all shareable identities (excluding user's default/own non-shareable ones)
+  const otherIdentities = identities.filter(i => i.is_shareable && i.id !== myIdentity?.id);
 
   return (
     <AppLayout>
