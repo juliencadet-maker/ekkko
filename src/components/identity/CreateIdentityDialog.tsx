@@ -177,8 +177,8 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
       handleClose();
       onIdentityCreated();
       await refreshUser();
-    } catch (error) {
-      console.error("Create identity error:", error);
+    } catch {
+      console.error("Create identity failed");
       toast({
         title: "Erreur",
         description: "Impossible de créer l'identité",

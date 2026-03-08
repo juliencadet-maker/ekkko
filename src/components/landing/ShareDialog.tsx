@@ -117,8 +117,8 @@ export function ShareDialog({
       );
       setOpen(false);
       setCollaborators([emptyCollaborator()]);
-    } catch (err) {
-      console.error("Share error:", err);
+    } catch {
+      console.error("Share failed");
       toast.error("Erreur lors de l'envoi des invitations");
     } finally {
       setIsSending(false);

@@ -62,8 +62,8 @@ export default function Governance() {
           activeAlerts: 0,
           approvalRate: apprRate,
         });
-      } catch (e) {
-        console.error("Governance fetch error:", e);
+      } catch {
+        console.error("Governance fetch failed");
       } finally {
         setIsLoading(false);
       }

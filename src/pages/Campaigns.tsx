@@ -36,8 +36,8 @@ export default function Campaigns() {
 
         if (error) throw error;
         setCampaigns((data as Campaign[]) || []);
-      } catch (error) {
-        console.error("Fetch campaigns error:", error);
+      } catch {
+        console.error("Fetch campaigns failed");
       } finally {
         setIsLoading(false);
       }

@@ -366,8 +366,8 @@ export default function CampaignDetail() {
       setRejectionComment(null);
       setScriptSaved(false);
       toast.success("Campagne resoumise pour approbation");
-    } catch (error) {
-      console.error("Resubmit error:", error);
+    } catch {
+      console.error("Resubmit failed");
       toast.error("Erreur lors de la resoumission");
     } finally {
       setIsResubmitting(false);
