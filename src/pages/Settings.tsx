@@ -125,7 +125,7 @@ export default function Settings() {
         body: { test_slack: true, channel_id: slackChannelId.trim() },
         headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
       });
-      if (res.ok) {
+      if (!res.error) {
         setSlackStatus("connected");
         toast.success("Message test envoyé sur Slack ✓");
       } else {
