@@ -6,6 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function sanitizeString(val: unknown, maxLen: number): string | null {
+  if (typeof val !== "string") return null;
+  return val.trim().slice(0, maxLen) || null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -20,11 +28,38 @@ serve(async (req) => {
     const body = await req.json();
     const { video_id, viewer_hash, watch_percentage, total_watch_seconds, viewer_name, viewer_email, viewer_title, viewer_company, referred_by_hash } = body;
 
-    if (!video_id || !viewer_hash) {
-      return new Response(JSON.stringify({ error: "video_id and viewer_hash required" }), {
+    // Validate required fields
+    if (!video_id || typeof video_id !== "string" || !UUID_REGEX.test(video_id)) {
+      return new Response(JSON.stringify({ error: "Valid video_id (UUID) required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (!viewer_hash || typeof viewer_hash !== "string" || viewer_hash.length > 50) {
+      return new Response(JSON.stringify({ error: "Valid viewer_hash required (max 50 chars)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate optional numeric fields
+    const safePercentage = typeof watch_percentage === "number" ? Math.max(0, Math.min(100, Math.round(watch_percentage))) : 0;
+    const safeWatchSeconds = typeof total_watch_seconds === "number" ? Math.max(0, Math.min(86400, Math.round(total_watch_seconds))) : 0;
+
+    // Validate optional string fields
+    const safeName = sanitizeString(viewer_name, 100);
+    const safeTitle = sanitizeString(viewer_title, 100);
+    const safeCompany = sanitizeString(viewer_company, 100);
+    const safeRefHash = sanitizeString(referred_by_hash, 50);
+
+    // Validate email format if provided
+    let safeEmail: string | null = null;
+    if (viewer_email && typeof viewer_email === "string") {
+      const trimmed = viewer_email.trim().slice(0, 255);
+      if (EMAIL_REGEX.test(trimmed)) {
+        safeEmail = trimmed;
+      }
     }
 
     // Upsert watch progress
@@ -37,17 +72,16 @@ serve(async (req) => {
 
     if (existing) {
       const updates: Record<string, unknown> = {
-        watch_percentage: watch_percentage ?? existing.max_percentage_reached,
-        total_watch_seconds: total_watch_seconds ?? 0,
-        max_percentage_reached: Math.max(watch_percentage ?? 0, existing.max_percentage_reached ?? 0),
+        watch_percentage: safePercentage,
+        total_watch_seconds: safeWatchSeconds,
+        max_percentage_reached: Math.max(safePercentage, existing.max_percentage_reached ?? 0),
         last_watched_at: new Date().toISOString(),
       };
 
-      // Only update viewer info if provided and not already set
-      if (viewer_name && !existing.viewer_name) updates.viewer_name = viewer_name;
-      if (viewer_email && !existing.viewer_email) updates.viewer_email = viewer_email;
-      if (viewer_title) updates.viewer_title = viewer_title;
-      if (viewer_company) updates.viewer_company = viewer_company;
+      if (safeName && !existing.viewer_name) updates.viewer_name = safeName;
+      if (safeEmail && !existing.viewer_email) updates.viewer_email = safeEmail;
+      if (safeTitle) updates.viewer_title = safeTitle;
+      if (safeCompany) updates.viewer_company = safeCompany;
 
       await supabase
         .from("watch_progress")
@@ -59,14 +93,14 @@ serve(async (req) => {
         .insert({
           video_id,
           viewer_hash,
-          watch_percentage: watch_percentage ?? 0,
-          total_watch_seconds: total_watch_seconds ?? 0,
-          max_percentage_reached: watch_percentage ?? 0,
-          viewer_name: viewer_name ?? null,
-          viewer_email: viewer_email ?? null,
-          viewer_title: viewer_title ?? null,
-          viewer_company: viewer_company ?? null,
-          referred_by_hash: referred_by_hash ?? null,
+          watch_percentage: safePercentage,
+          total_watch_seconds: safeWatchSeconds,
+          max_percentage_reached: safePercentage,
+          viewer_name: safeName,
+          viewer_email: safeEmail,
+          viewer_title: safeTitle,
+          viewer_company: safeCompany,
+          referred_by_hash: safeRefHash,
         });
     }
 
@@ -75,7 +109,7 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("Error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
