@@ -267,8 +267,8 @@ export default function CampaignDetail() {
       if (error) throw error;
       setLandingPageConfig(config);
       setCampaign((prev) => (prev ? { ...prev, metadata: updatedMetadata } : null));
-    } catch (error) {
-      console.error("Save landing page config error:", error);
+    } catch {
+      console.error("Save landing page config failed");
       toast.error("Erreur lors de la sauvegarde");
     }
   };
