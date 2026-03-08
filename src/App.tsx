@@ -8,6 +8,7 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import ApprovalReview from "./pages/ApprovalReview";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import AuthDemo from "./pages/AuthDemo";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
