@@ -358,8 +358,8 @@ export default function CampaignDetail() {
         await supabase.functions.invoke("notify-approval", {
           body: { campaign_id: campaign.id },
         });
-      } catch (notifyErr) {
-        console.warn("Notification error (non-blocking):", notifyErr);
+      } catch {
+        console.warn("Notification failed (non-blocking)");
       }
 
       setCampaign((prev) => (prev ? { ...prev, status: "pending_approval" } : null));
