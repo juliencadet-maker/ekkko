@@ -239,8 +239,8 @@ export default function CampaignDetail() {
           .eq("campaign_id", id)
           .order("version_number", { ascending: false });
         setScriptVersions(versionsData || []);
-      } catch (error) {
-        console.error("Fetch campaign error:", error);
+      } catch {
+        console.error("Fetch campaign failed");
         toast.error("Erreur lors du chargement de la campagne");
       } finally {
         setIsLoading(false);
@@ -267,8 +267,8 @@ export default function CampaignDetail() {
       if (error) throw error;
       setLandingPageConfig(config);
       setCampaign((prev) => (prev ? { ...prev, metadata: updatedMetadata } : null));
-    } catch (error) {
-      console.error("Save landing page config error:", error);
+    } catch {
+      console.error("Save landing page config failed");
       toast.error("Erreur lors de la sauvegarde");
     }
   };
@@ -308,8 +308,8 @@ export default function CampaignDetail() {
       setIsEditingScript(false);
       setScriptSaved(true);
       toast.success("Script mis à jour — vous pouvez maintenant resoumettre");
-    } catch (error) {
-      console.error("Save script error:", error);
+    } catch {
+      console.error("Save script failed");
       toast.error("Erreur lors de la sauvegarde du script");
     } finally {
       setIsSavingScript(false);
@@ -358,16 +358,16 @@ export default function CampaignDetail() {
         await supabase.functions.invoke("notify-approval", {
           body: { campaign_id: campaign.id },
         });
-      } catch (notifyErr) {
-        console.warn("Notification error (non-blocking):", notifyErr);
+      } catch {
+        console.warn("Notification failed (non-blocking)");
       }
 
       setCampaign((prev) => (prev ? { ...prev, status: "pending_approval" } : null));
       setRejectionComment(null);
       setScriptSaved(false);
       toast.success("Campagne resoumise pour approbation");
-    } catch (error) {
-      console.error("Resubmit error:", error);
+    } catch {
+      console.error("Resubmit failed");
       toast.error("Erreur lors de la resoumission");
     } finally {
       setIsResubmitting(false);

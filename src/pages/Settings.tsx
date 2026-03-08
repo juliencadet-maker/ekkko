@@ -53,7 +53,7 @@ export default function Settings() {
       setConnectionStatus("connected");
     } catch (e) {
       toast.error("Erreur lors de la sauvegarde");
-      console.error(e);
+      console.error("Save failed");
     } finally {
       setIsSaving(false);
     }
@@ -110,7 +110,7 @@ export default function Settings() {
       toast.success("Canal Slack configuré — les notifications d'approbation seront envoyées ici");
     } catch (e) {
       toast.error("Erreur lors de la sauvegarde");
-      console.error(e);
+      console.error("Save failed");
     } finally {
       setIsSavingSlack(false);
     }

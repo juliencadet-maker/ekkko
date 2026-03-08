@@ -93,8 +93,8 @@ export default function Dashboard() {
 
         setPendingApprovals(approvals as ApprovalRequest[] || []);
 
-      } catch (error) {
-        console.error("Dashboard fetch error:", error);
+      } catch {
+        console.error("Dashboard fetch failed");
       } finally {
         setIsLoading(false);
       }

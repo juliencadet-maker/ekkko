@@ -43,8 +43,8 @@ export function useAuditLog() {
         new_values: (newValues as Json) || null,
         metadata: (metadata as Json) || null,
       });
-    } catch (error) {
-      console.error("Failed to log audit event:", error);
+    } catch {
+      console.error("Failed to log audit event");
     }
   }, []);
 

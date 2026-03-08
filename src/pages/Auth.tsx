@@ -106,8 +106,8 @@ export default function Auth() {
         title: "Connexion réussie",
         description: "Bienvenue sur Ekko !",
       });
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch {
+      console.error("Login failed");
       toast({
         title: "Erreur",
         description: "Une erreur est survenue",
@@ -177,7 +177,7 @@ export default function Auth() {
         });
 
         if (signupError) {
-          console.error("Signup handler error:", signupError);
+          console.error("Signup handler failed");
           toast({
             title: "Erreur",
             description: "Erreur lors de la création de l'organisation",
@@ -186,7 +186,7 @@ export default function Auth() {
           return;
         }
 
-        console.log("Signup successful:", signupResult);
+        // Signup successful
 
         toast({
           title: "Compte créé !",
@@ -196,8 +196,8 @@ export default function Auth() {
         // Navigate directly to onboarding for new users
         navigate("/app/onboarding", { replace: true });
       }
-    } catch (error) {
-      console.error("Signup error:", error);
+    } catch {
+      console.error("Signup failed");
       toast({
         title: "Erreur",
         description: "Une erreur est survenue",

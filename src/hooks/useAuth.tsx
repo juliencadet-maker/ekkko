@@ -51,8 +51,8 @@ export function useAuth(): UserContext & {
         setOrg(null);
         setPolicy(null);
       }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
+    } catch {
+      console.error("Failed to fetch user data");
     }
   }, []);
 

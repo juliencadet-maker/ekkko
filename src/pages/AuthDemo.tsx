@@ -35,8 +35,8 @@ export default function AuthDemo() {
       } else {
         toast({ title: "Connexion réussie", description: `Connecté en tant que ${email}` });
       }
-    } catch (error) {
-      console.error("Demo login error:", error);
+    } catch {
+      console.error("Demo login failed");
     } finally {
       setIsLoading(false);
     }
