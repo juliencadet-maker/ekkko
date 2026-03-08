@@ -614,8 +614,8 @@ Merci de votre attention !`;
 
       toast({ title: "Configuration terminée ! 🎉", description: "Votre avatar vidéo est en cours de création." });
       setCurrentStep("complete");
-    } catch (error) {
-      console.error("Completion error:", error);
+    } catch {
+      console.error("Completion failed");
       toast({
         title: "Erreur",
         description: "Impossible de finaliser la configuration",

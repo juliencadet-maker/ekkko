@@ -196,8 +196,8 @@ export default function Auth() {
         // Navigate directly to onboarding for new users
         navigate("/app/onboarding", { replace: true });
       }
-    } catch (error) {
-      console.error("Signup error:", error);
+    } catch {
+      console.error("Signup failed");
       toast({
         title: "Erreur",
         description: "Une erreur est survenue",

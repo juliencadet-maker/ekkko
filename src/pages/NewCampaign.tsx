@@ -262,8 +262,8 @@ export default function NewCampaign() {
       }
 
       navigate("/app/campaigns");
-    } catch (error) {
-      console.error("Submit error:", error);
+    } catch {
+      console.error("Submit failed");
       toast({
         title: "Erreur",
         description: "Impossible de créer la campagne",
