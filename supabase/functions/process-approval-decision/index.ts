@@ -6,20 +6,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_ACTIONS = ["approved", "rejected"];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { approval_id, action, edited_script, comment } = await req.json();
+    const body = await req.json();
+    const { approval_id, action, edited_script, comment } = body;
 
-    if (!approval_id || !action) {
+    // Validate inputs
+    if (!approval_id || typeof approval_id !== "string" || !UUID_REGEX.test(approval_id)) {
       return new Response(
-        JSON.stringify({ error: "Missing approval_id or action" }),
+        JSON.stringify({ error: "Valid approval_id (UUID) required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(
+        JSON.stringify({ error: "action must be 'approved' or 'rejected'" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate optional string fields
+    const safeScript = typeof edited_script === "string" ? edited_script.slice(0, 50000) : null;
+    const safeComment = typeof comment === "string" ? comment.slice(0, 2000) : null;
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -44,18 +60,16 @@ serve(async (req) => {
     const campaignId = approval.campaign_id;
 
     if (action === "approved") {
-      // Update campaign
       const campaignUpdate: Record<string, unknown> = {
         status: "approved",
         approved_at: new Date().toISOString(),
         approved_by_user_id: approval.assigned_to_user_id,
       };
-      if (edited_script) {
-        campaignUpdate.script = edited_script;
+      if (safeScript) {
+        campaignUpdate.script = safeScript;
       }
       await admin.from("campaigns").update(campaignUpdate).eq("id", campaignId);
 
-      // Audit log - approval
       await admin.from("audit_logs").insert({
         org_id: approval.org_id,
         user_id: approval.assigned_to_user_id,
@@ -64,12 +78,11 @@ serve(async (req) => {
         entity_id: approval.id,
         metadata: {
           channel: "external_link",
-          script_modified: !!edited_script,
-          comment: comment || null,
+          script_modified: !!safeScript,
+          comment: safeComment,
         },
       });
 
-      // Audit log - campaign approved
       await admin.from("audit_logs").insert({
         org_id: approval.org_id,
         user_id: approval.assigned_to_user_id,
@@ -92,10 +105,9 @@ serve(async (req) => {
           body: JSON.stringify({ campaign_id: campaignId }),
         });
       } catch (genError) {
-        console.error("Auto video generation trigger error:", genError);
+        console.error("Auto video generation trigger failed");
       }
     } else {
-      // Rejected
       await admin.from("campaigns").update({ status: "draft" }).eq("id", campaignId);
 
       await admin.from("audit_logs").insert({
@@ -106,7 +118,7 @@ serve(async (req) => {
         entity_id: approval.id,
         metadata: {
           channel: "external_link",
-          comment: comment || null,
+          comment: safeComment,
         },
       });
 
@@ -124,9 +136,9 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Process approval error:", error);
+    console.error("Process approval error");
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

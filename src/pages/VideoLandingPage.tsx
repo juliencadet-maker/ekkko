@@ -89,16 +89,17 @@ export default function VideoLandingPage() {
           setConfig(metadata.landingPageConfig as LandingPageConfig);
         }
 
-        // Fetch video for this campaign
-        const { data: videos } = await supabase
-          .from("videos")
-          .select("id")
-          .eq("campaign_id", campaignId)
-          .eq("is_active", true)
-          .limit(1);
-
-        if (videos?.length) {
-          setVideoId(videos[0].id);
+        // Fetch video via secure edge function (no direct DB access)
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const videoRes = await fetch(`${supabaseUrl}/functions/v1/get-public-video`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+          body: JSON.stringify({ campaign_id: campaignId }),
+        });
+        const videoData = await videoRes.json();
+        if (videoData?.video_id) {
+          setVideoId(videoData.video_id);
         }
       } catch (err) {
         console.error("Fetch error:", err);
