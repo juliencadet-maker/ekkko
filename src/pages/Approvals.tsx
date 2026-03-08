@@ -178,6 +178,9 @@ export default function Approvals() {
   const pendingApprovals = approvals.filter(a => a.status === "pending");
   const processedApprovals = approvals.filter(a => a.status !== "pending");
 
+  // Only the assigned user can take action
+  const canActOn = (approval: ApprovalRequest) => approval.assigned_to_user_id === user.id;
+
   const campaign = selectedApproval ? (selectedApproval as any).campaigns : null;
   const requesterName = "le demandeur";
 
@@ -240,22 +243,30 @@ export default function Approvals() {
                               Demandé le {format(new Date(approval.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
                             </p>
                           </div>
-                          <div className="flex gap-2 ml-4 flex-shrink-0">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => openRejectDialog(approval)}
-                            >
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Refuser
-                            </Button>
-                            <Button 
-                              size="sm"
-                              onClick={() => openReviewDialog(approval)}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Relire & Approuver
-                            </Button>
+                          <div className="flex flex-col gap-2 ml-4 flex-shrink-0 items-end">
+                            {canActOn(approval) ? (
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => openRejectDialog(approval)}
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Refuser
+                                </Button>
+                                <Button 
+                                  size="sm"
+                                  onClick={() => openReviewDialog(approval)}
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Relire & Approuver
+                                </Button>
+                              </>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic max-w-[180px] text-right">
+                                Seul(e) {c?.identities?.display_name || "le propriétaire de l'identité"} peut approuver
+                              </p>
+                            )}
                           </div>
                         </div>
                       </CardContent>
