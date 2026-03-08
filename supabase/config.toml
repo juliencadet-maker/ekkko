@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.seed-demo]
 verify_jwt = false
+
+[functions.get-public-video]
+verify_jwt = false
