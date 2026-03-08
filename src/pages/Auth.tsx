@@ -177,7 +177,7 @@ export default function Auth() {
         });
 
         if (signupError) {
-          console.error("Signup handler error:", signupError);
+          console.error("Signup handler failed");
           toast({
             title: "Erreur",
             description: "Erreur lors de la création de l'organisation",
