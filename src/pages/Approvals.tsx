@@ -178,6 +178,9 @@ export default function Approvals() {
   const pendingApprovals = approvals.filter(a => a.status === "pending");
   const processedApprovals = approvals.filter(a => a.status !== "pending");
 
+  // Only the assigned user can take action
+  const canActOn = (approval: ApprovalRequest) => approval.assigned_to_user_id === user.id;
+
   const campaign = selectedApproval ? (selectedApproval as any).campaigns : null;
   const requesterName = "le demandeur";
 
