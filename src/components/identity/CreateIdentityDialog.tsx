@@ -166,8 +166,8 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
           title: "Identité créée avec succès ! 🎉",
           description: "L'entraînement de votre avatar vidéo est en cours. Cela prend quelques minutes.",
         });
-      } catch (tavusError) {
-        console.error("Tavus replica creation error:", tavusError);
+      } catch {
+        console.error("Replica creation failed");
         toast({ 
           title: "Identité créée avec succès ! 🎉",
           description: "Note : l'avatar vidéo n'a pas pu être créé automatiquement. Vous pourrez le relancer depuis les paramètres.",
