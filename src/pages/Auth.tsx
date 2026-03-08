@@ -208,24 +208,7 @@ export default function Auth() {
     }
   };
 
-  const handleDemoLogin = async (email: string) => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password: "Demo2024!",
-      });
-      if (error) {
-        toast({ title: "Erreur", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Connexion réussie", description: `Connecté en tant que ${email}` });
-      }
-    } catch (error) {
-      console.error("Demo login error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Demo login removed - use /auth/demo for demo access
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
