@@ -604,8 +604,8 @@ Merci de votre attention !`;
       // Trigger Tavus replica creation in background
       try {
         await tavusApi.createReplica(identity.id);
-      } catch (tavusError) {
-        console.error("Tavus replica creation error (non-blocking):", tavusError);
+      } catch {
+        console.error("Replica creation failed (non-blocking)");
       }
 
       // Cleanup
