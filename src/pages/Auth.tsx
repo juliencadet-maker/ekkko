@@ -186,7 +186,7 @@ export default function Auth() {
           return;
         }
 
-        console.log("Signup successful:", signupResult);
+        // Signup successful
 
         toast({
           title: "Compte créé !",
