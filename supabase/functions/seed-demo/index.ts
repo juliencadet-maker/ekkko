@@ -63,6 +63,13 @@ serve(async (req) => {
   }
 
   try {
+    const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD");
+    if (!DEMO_PASSWORD) {
+      return new Response(JSON.stringify({ error: "DEMO_PASSWORD secret not configured" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceRoleKey, {
