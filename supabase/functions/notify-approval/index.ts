@@ -14,9 +14,10 @@ serve(async (req) => {
   }
 
   try {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const { approval_id } = await req.json();
-    if (!approval_id) {
-      return new Response(JSON.stringify({ error: "Missing approval_id" }), {
+    if (!approval_id || typeof approval_id !== "string" || !UUID_REGEX.test(approval_id)) {
+      return new Response(JSON.stringify({ error: "Valid approval_id (UUID) required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
