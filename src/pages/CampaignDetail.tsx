@@ -18,6 +18,7 @@ import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/Land
 import { PowerMap } from "@/components/campaign/PowerMap";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
+import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
 import {
   ArrowLeft,
   Play,
@@ -46,6 +47,7 @@ import {
   History,
   FileText,
   MessageSquare,
+  GitCompareArrows,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
