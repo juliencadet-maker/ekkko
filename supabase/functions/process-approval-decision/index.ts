@@ -78,6 +78,22 @@ serve(async (req) => {
         entity_id: campaignId,
         metadata: { approved_via: "external_link" },
       });
+
+      // Auto-trigger video generation
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/tavus-generate-video`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify({ campaign_id: campaignId }),
+        });
+      } catch (genError) {
+        console.error("Auto video generation trigger error:", genError);
+      }
     } else {
       // Rejected
       await admin.from("campaigns").update({ status: "draft" }).eq("id", campaignId);
