@@ -308,8 +308,8 @@ export default function CampaignDetail() {
       setIsEditingScript(false);
       setScriptSaved(true);
       toast.success("Script mis à jour — vous pouvez maintenant resoumettre");
-    } catch (error) {
-      console.error("Save script error:", error);
+    } catch {
+      console.error("Save script failed");
       toast.error("Erreur lors de la sauvegarde du script");
     } finally {
       setIsSavingScript(false);
