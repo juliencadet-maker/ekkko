@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ROLE_LABELS } from "@/lib/constants";
+import { NotificationBell } from "./NotificationBell";
 
 const navigationItems = [
   {
