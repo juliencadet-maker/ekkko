@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock, User, Building2 } from "lucide-react";
+import { Loader2, Mail, Lock, Building2 } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
