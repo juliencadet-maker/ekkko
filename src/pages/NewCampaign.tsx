@@ -251,8 +251,8 @@ export default function NewCampaign() {
             title: "Campagne créée",
             description: "La génération vidéo est en cours via Tavus.",
           });
-        } catch (genError) {
-          console.error("Tavus generation error:", genError);
+        } catch {
+          console.error("Video generation failed");
           toast({
             title: "Campagne créée",
             description: "La campagne a été approuvée mais la génération vidéo a rencontré une erreur.",
