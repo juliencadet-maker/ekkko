@@ -224,7 +224,7 @@ export default function NewCampaign() {
         if (approvalData?.id) {
           supabase.functions.invoke("notify-approval", {
             body: { approval_id: approvalData.id },
-          }).catch(err => console.error("Notification error:", err));
+          }).catch(() => console.error("Notification failed"));
         }
 
         await logEvent({

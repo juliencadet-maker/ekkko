@@ -439,9 +439,9 @@ serve(async (req) => {
           body: JSON.stringify({ approval_id: approvalReq.id }),
         });
         slackResult = await notifyRes.json();
-      } catch (e) {
-        console.error("Notify error:", e);
-        slackResult = { error: e.message };
+      } catch {
+        console.error("Notify failed");
+        slackResult = { error: "notification failed" };
       }
     }
 
