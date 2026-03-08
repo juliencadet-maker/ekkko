@@ -53,7 +53,7 @@ export default function Settings() {
       setConnectionStatus("connected");
     } catch (e) {
       toast.error("Erreur lors de la sauvegarde");
-      console.error(e);
+      console.error("Save failed");
     } finally {
       setIsSaving(false);
     }
