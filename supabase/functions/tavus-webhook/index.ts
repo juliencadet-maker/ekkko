@@ -99,6 +99,67 @@ serve(async (req) => {
           .eq("id", videoJob.campaign_id);
 
         console.log("Campaign completed:", videoJob.campaign_id);
+
+        // Notify campaign creator
+        const { data: campaign } = await supabase
+          .from("campaigns")
+          .select("name, created_by_user_id, org_id")
+          .eq("id", videoJob.campaign_id)
+          .single();
+
+        if (campaign?.created_by_user_id) {
+          // In-app notification
+          await supabase
+            .from("notifications")
+            .insert({
+              org_id: campaign.org_id,
+              user_id: campaign.created_by_user_id,
+              title: "Vidéos prêtes 🎬",
+              message: `Les vidéos de la campagne "${campaign.name}" sont prêtes à être partagées.`,
+              type: "campaign_completed",
+              entity_type: "campaign",
+              entity_id: videoJob.campaign_id,
+            });
+
+          // Email notification via Resend
+          const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+          if (RESEND_API_KEY) {
+            const { data: creatorProfile } = await supabase
+              .from("profiles")
+              .select("email, first_name")
+              .eq("user_id", campaign.created_by_user_id)
+              .single();
+
+            if (creatorProfile?.email) {
+              try {
+                await fetch("https://api.resend.com/emails", {
+                  method: "POST",
+                  headers: {
+                    "Authorization": `Bearer ${RESEND_API_KEY}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    from: "Ekko <notifications@ekko.app>",
+                    to: [creatorProfile.email],
+                    subject: `🎬 Vidéos prêtes — ${campaign.name}`,
+                    html: `
+                      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2>Bonjour ${creatorProfile.first_name || ""} 👋</h2>
+                        <p>Les vidéos de votre campagne <strong>"${campaign.name}"</strong> sont prêtes !</p>
+                        <p>Connectez-vous à Ekko pour les visualiser et les partager avec vos destinataires.</p>
+                        <br/>
+                        <p style="color: #666; font-size: 12px;">— L'équipe Ekko</p>
+                      </div>
+                    `,
+                  }),
+                });
+                console.log("Email notification sent to:", creatorProfile.email);
+              } catch (emailError) {
+                console.error("Email notification error:", emailError);
+              }
+            }
+          }
+        }
       }
     } else if (status === "error" || status === "deleted") {
       console.error("Video generation failed:", tavusVideoId, payload);
