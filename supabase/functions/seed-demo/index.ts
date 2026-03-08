@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const DEMO_SALES_EMAIL = "demo@ekko.app";
 const DEMO_EXEC_EMAIL = "exec@ekko.app";
-const DEMO_PASSWORD = "Demo2024!";
 
 async function deleteUserAndData(admin: any, email: string) {
   const { data: existingUsers } = await admin.auth.admin.listUsers();
