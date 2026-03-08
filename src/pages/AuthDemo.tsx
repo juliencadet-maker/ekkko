@@ -26,12 +26,24 @@ export default function AuthDemo() {
   const handleDemoLogin = async (email: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password: "Demo2024!",
+      // Call edge function to get session tokens (password never leaves server)
+      const { data, error } = await supabase.functions.invoke("demo-login", {
+        body: { email },
       });
-      if (error) {
-        toast({ title: "Erreur", description: error.message, variant: "destructive" });
+
+      if (error || !data?.access_token) {
+        toast({ title: "Erreur", description: "Connexion démo échouée", variant: "destructive" });
+        return;
+      }
+
+      // Set the session using returned tokens
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+
+      if (sessionError) {
+        toast({ title: "Erreur", description: "Impossible d'établir la session", variant: "destructive" });
       } else {
         toast({ title: "Connexion réussie", description: `Connecté en tant que ${email}` });
       }

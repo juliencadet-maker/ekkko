@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const DEMO_SALES_EMAIL = "demo@ekko.app";
 const DEMO_EXEC_EMAIL = "exec@ekko.app";
-const DEMO_PASSWORD = "Demo2024!";
 
 async function deleteUserAndData(admin: any, email: string) {
   const { data: existingUsers } = await admin.auth.admin.listUsers();
@@ -64,6 +63,13 @@ serve(async (req) => {
   }
 
   try {
+    const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD");
+    if (!DEMO_PASSWORD) {
+      return new Response(JSON.stringify({ error: "DEMO_PASSWORD secret not configured" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -433,9 +439,9 @@ serve(async (req) => {
           body: JSON.stringify({ approval_id: approvalReq.id }),
         });
         slackResult = await notifyRes.json();
-      } catch (e) {
-        console.error("Notify error:", e);
-        slackResult = { error: e.message };
+      } catch {
+        console.error("Notify failed");
+        slackResult = { error: "notification failed" };
       }
     }
 

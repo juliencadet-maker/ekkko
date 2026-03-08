@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.get-public-video]
 verify_jwt = false
+
+[functions.demo-login]
+verify_jwt = false

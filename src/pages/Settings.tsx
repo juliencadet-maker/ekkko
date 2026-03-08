@@ -120,13 +120,12 @@ export default function Settings() {
     if (!slackChannelId.trim()) return;
     setSlackStatus("testing");
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/notify-approval`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ test_slack: true, channel_id: slackChannelId.trim() }),
+      const { data: sessionData } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("notify-approval", {
+        body: { test_slack: true, channel_id: slackChannelId.trim() },
+        headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
       });
-      if (res.ok) {
+      if (!res.error) {
         setSlackStatus("connected");
         toast.success("Message test envoyé sur Slack ✓");
       } else {
