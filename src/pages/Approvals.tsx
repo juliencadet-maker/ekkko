@@ -116,6 +116,14 @@ export default function Approvals() {
           entityType: "campaign",
           entityId: selectedApproval.campaign_id,
         });
+
+        // Auto-trigger video generation
+        try {
+          await tavusApi.generateVideo(selectedApproval.campaign_id);
+        } catch (genError) {
+          console.error("Video generation trigger error:", genError);
+          // Don't block approval if generation fails to start
+        }
       } else {
         await supabase
           .from("campaigns")
