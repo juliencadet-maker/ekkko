@@ -106,8 +106,8 @@ export default function Auth() {
         title: "Connexion réussie",
         description: "Bienvenue sur Ekko !",
       });
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch {
+      console.error("Login failed");
       toast({
         title: "Erreur",
         description: "Une erreur est survenue",
