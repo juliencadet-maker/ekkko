@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock, User, Building2 } from "lucide-react";
+import { Loader2, Mail, Lock, Building2 } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -208,24 +208,7 @@ export default function Auth() {
     }
   };
 
-  const handleDemoLogin = async (email: string) => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password: "Demo2024!",
-      });
-      if (error) {
-        toast({ title: "Erreur", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Connexion réussie", description: `Connecté en tant que ${email}` });
-      }
-    } catch (error) {
-      console.error("Demo login error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Demo login removed - use /auth/demo for demo access
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -243,45 +226,7 @@ export default function Auth() {
           </p>
         </div>
 
-        {/* Demo Quick Login */}
-        <Card className="mb-4 border-primary/30 bg-primary/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Comptes démo</CardTitle>
-            <CardDescription className="text-xs">
-              Testez les deux rôles pour voir le flux complet
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-auto py-3"
-              onClick={() => handleDemoLogin("demo@ekko.app")}
-              disabled={isLoading}
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <User className="h-4 w-4 text-primary" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-medium">Jean Dupont — VP Sales</p>
-                <p className="text-xs text-muted-foreground">demo@ekko.app · Propriétaire</p>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-auto py-3"
-              onClick={() => handleDemoLogin("exec@ekko.app")}
-              disabled={isLoading}
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10">
-                <Building2 className="h-4 w-4 text-accent-foreground" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-medium">Marc Lefevre — CEO</p>
-                <p className="text-xs text-muted-foreground">exec@ekko.app · Administrateur</p>
-              </div>
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Auth Form */}
 
         <Card>
           <CardHeader>

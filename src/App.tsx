@@ -8,6 +8,7 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import ApprovalReview from "./pages/ApprovalReview";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import AuthDemo from "./pages/AuthDemo";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
@@ -35,6 +36,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/demo" element={<AuthDemo />} />
             <Route path="/lp/:campaignId" element={<VideoLandingPage />} />
             <Route path="/approve/:token" element={<ApprovalReview />} />
             <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
