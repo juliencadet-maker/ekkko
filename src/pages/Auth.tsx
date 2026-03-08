@@ -226,45 +226,7 @@ export default function Auth() {
           </p>
         </div>
 
-        {/* Demo Quick Login */}
-        <Card className="mb-4 border-primary/30 bg-primary/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Comptes démo</CardTitle>
-            <CardDescription className="text-xs">
-              Testez les deux rôles pour voir le flux complet
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-auto py-3"
-              onClick={() => handleDemoLogin("demo@ekko.app")}
-              disabled={isLoading}
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <User className="h-4 w-4 text-primary" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-medium">Jean Dupont — VP Sales</p>
-                <p className="text-xs text-muted-foreground">demo@ekko.app · Propriétaire</p>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-auto py-3"
-              onClick={() => handleDemoLogin("exec@ekko.app")}
-              disabled={isLoading}
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10">
-                <Building2 className="h-4 w-4 text-accent-foreground" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-medium">Marc Lefevre — CEO</p>
-                <p className="text-xs text-muted-foreground">exec@ekko.app · Administrateur</p>
-              </div>
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Auth Form */}
 
         <Card>
           <CardHeader>
