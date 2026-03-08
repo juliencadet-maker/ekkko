@@ -912,6 +912,13 @@ export default function CampaignDetail() {
           onSave={handleSaveLandingPageConfig}
         />
       )}
+      {scriptVersions.length >= 2 && (
+        <ScriptDiffDialog
+          open={showDiffDialog}
+          onOpenChange={setShowDiffDialog}
+          versions={scriptVersions}
+        />
+      )}
     </AppLayout>
   );
 }
