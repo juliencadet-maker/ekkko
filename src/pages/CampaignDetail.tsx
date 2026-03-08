@@ -239,8 +239,8 @@ export default function CampaignDetail() {
           .eq("campaign_id", id)
           .order("version_number", { ascending: false });
         setScriptVersions(versionsData || []);
-      } catch (error) {
-        console.error("Fetch campaign error:", error);
+      } catch {
+        console.error("Fetch campaign failed");
         toast.error("Erreur lors du chargement de la campagne");
       } finally {
         setIsLoading(false);
