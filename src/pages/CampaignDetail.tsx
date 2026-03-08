@@ -770,14 +770,22 @@ export default function CampaignDetail() {
           {/* Script Version History */}
           {scriptVersions.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Historique des versions du script
-                </CardTitle>
-                <CardDescription>
-                  {scriptVersions.length} version{scriptVersions.length > 1 ? "s" : ""} enregistrée{scriptVersions.length > 1 ? "s" : ""}
-                </CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    Historique des versions du script
+                  </CardTitle>
+                  <CardDescription className="mt-1.5">
+                    {scriptVersions.length} version{scriptVersions.length > 1 ? "s" : ""} enregistrée{scriptVersions.length > 1 ? "s" : ""}
+                  </CardDescription>
+                </div>
+                {scriptVersions.length >= 2 && (
+                  <Button variant="outline" size="sm" onClick={() => setShowDiffDialog(true)}>
+                    <GitCompareArrows className="mr-2 h-4 w-4" />
+                    Comparer
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="relative">
