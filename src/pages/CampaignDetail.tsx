@@ -15,7 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
 import {
@@ -122,8 +121,7 @@ export default function CampaignDetail() {
   const [subCampaigns, setSubCampaigns] = useState<Campaign[]>([]);
   const [videos, setVideos] = useState<(VideoType & { recipient?: Recipient })[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showLandingPageEditor, setShowLandingPageEditor] = useState(false);
-  const [landingPageConfig, setLandingPageConfig] = useState<LandingPageConfig | undefined>();
+  const [landingPageConfig, setLandingPageConfig] = useState<Record<string, unknown> | undefined>();
   const [viewEvents, setViewEvents] = useState<ViewEvent[]>([]);
   const [watchProgress, setWatchProgress] = useState<WatchProgressRow[]>([]);
   const [rejectionComment, setRejectionComment] = useState<string | null>(null);
@@ -159,7 +157,7 @@ export default function CampaignDetail() {
 
         const metadata = campaignData.metadata as Record<string, unknown> | null;
         if (metadata?.landingPageConfig) {
-          setLandingPageConfig(metadata.landingPageConfig as LandingPageConfig);
+          setLandingPageConfig(metadata.landingPageConfig as Record<string, unknown>);
         }
 
         // Fetch sub-campaigns
@@ -249,7 +247,7 @@ export default function CampaignDetail() {
 
   const kpis = useMemo(() => computeKpis(viewEvents, watchProgress), [viewEvents, watchProgress]);
 
-  const handleSaveLandingPageConfig = async (config: LandingPageConfig) => {
+  const handleSaveLandingPageConfig = async (config: Record<string, unknown>) => {
     if (!campaign || !membership?.org_id) return;
     try {
       const currentMetadata = (campaign.metadata || {}) as Record<string, unknown>;
@@ -468,10 +466,6 @@ export default function CampaignDetail() {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-            <TabsTrigger value="powermap">
-              <Map className="mr-1.5 h-4 w-4" />
-              Power Map
-            </TabsTrigger>
           </TabsList>
 
           {/* Overview: Aggregated KPIs + Sub-campaign cards */}
@@ -557,11 +551,6 @@ export default function CampaignDetail() {
             </div>
           </TabsContent>
 
-
-          {/* Power Map (aggregated across all sub-campaigns) */}
-          <TabsContent value="powermap" className="space-y-6">
-            {membership?.org_id && id && <PowerMap campaignId={id} orgId={membership.org_id} />}
-          </TabsContent>
         </Tabs>
       </AppLayout>
     );
@@ -685,10 +674,6 @@ export default function CampaignDetail() {
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="video">Vidéo</TabsTrigger>
-          <TabsTrigger value="powermap">
-            <Map className="mr-1.5 h-4 w-4" />
-            Power Map
-          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -890,25 +875,9 @@ export default function CampaignDetail() {
           </Card>
         </TabsContent>
 
-        {/* Power Map Tab */}
-        <TabsContent value="powermap" className="space-y-6">
-          {membership?.org_id && id && <PowerMap campaignId={id} orgId={membership.org_id} />}
-        </TabsContent>
 
       </Tabs>
 
-      {/* Landing Page Editor */}
-      {campaign && (
-        <LandingPageEditor
-          open={showLandingPageEditor}
-          onOpenChange={setShowLandingPageEditor}
-          campaignId={campaign.id}
-          campaignName={campaign.name}
-          videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id))}
-          initialConfig={landingPageConfig}
-          onSave={handleSaveLandingPageConfig}
-        />
-      )}
       {scriptVersions.length >= 2 && (
         <ScriptDiffDialog
           open={showDiffDialog}
