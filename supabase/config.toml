@@ -1,5 +1,8 @@
 project_id = "kqpbsznldzrklnnbqtwq"
 
+[functions.heygen-avatar-webhook]
+verify_jwt = false
+
 [functions.heygen-create-avatar]
 verify_jwt = false
 
