@@ -238,7 +238,7 @@ export default function NewCampaign() {
           description: "La demande de validation a été envoyée.",
         });
       } else {
-        // Auto-approved - trigger Tavus video generation
+        // Auto-approved - trigger HeyGen video generation
         await logEvent({
           eventType: "campaign_approved",
           entityType: "campaign",
@@ -246,10 +246,10 @@ export default function NewCampaign() {
         });
 
         try {
-          await tavusApi.generateVideo(campaign.id);
+          await heygenApi.generateVideo(campaign.id);
           toast({
             title: "Campagne créée",
-            description: "La génération vidéo est en cours via Tavus.",
+            description: "La génération vidéo est en cours.",
           });
         } catch {
           console.error("Video generation failed");
