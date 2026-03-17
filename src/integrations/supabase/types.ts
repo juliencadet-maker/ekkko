@@ -230,6 +230,7 @@ export type Database = {
       }
       identities: {
         Row: {
+          clone_status: string | null
           consent_given: boolean | null
           consent_given_at: string | null
           created_at: string
@@ -248,6 +249,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          clone_status?: string | null
           consent_given?: boolean | null
           consent_given_at?: string | null
           created_at?: string
@@ -266,6 +268,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          clone_status?: string | null
           consent_given?: boolean | null
           consent_given_at?: string | null
           created_at?: string
