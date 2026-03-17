@@ -117,21 +117,36 @@ serve(async (req) => {
 
       console.log(`Generating HeyGen video for recipient: ${recipient.email}`);
 
+      // Get voice_id from identity metadata or use avatar's default voice
+      const identityMetadata = identity?.metadata as Record<string, unknown> || {};
+      const voiceId = identityMetadata.heygen_voice_id as string || undefined;
+
+      const voiceConfig: Record<string, unknown> = voiceId
+        ? { type: "text", input_text: personalizedScript, voice_id: voiceId }
+        : { type: "text", input_text: personalizedScript };
+
+      // First try with explicit voice, if no voice_id use the avatar's cloned voice via "silence" workaround
+      const videoPayload: Record<string, unknown> = {
+        video_inputs: [{
+          character: { type: "avatar", avatar_id: avatarId, scale: 1 },
+          voice: voiceId 
+            ? { type: "text", input_text: personalizedScript, voice_id: voiceId }
+            : { type: "audio", audio_type: "tts", input_text: personalizedScript, voice_id: avatarId },
+        }],
+        dimension: { width: 1280, height: 720 },
+        callback_id: `${campaign.id}|${recipient.id}`,
+        callback_url: callbackUrl,
+      };
+
+      console.log("HeyGen payload:", JSON.stringify(videoPayload));
+
       const heygenResponse = await fetch(`${HEYGEN_API_URL}/v2/video/generate`, {
         method: "POST",
         headers: {
           "X-Api-Key": HEYGEN_API_KEY,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          video_inputs: [{
-            character: { type: "avatar", avatar_id: avatarId },
-            voice: { type: "text", input_text: personalizedScript },
-          }],
-          dimension: { width: 1280, height: 720 },
-          callback_id: `${campaign.id}|${recipient.id}`,
-          callback_url: callbackUrl,
-        }),
+        body: JSON.stringify(videoPayload),
       });
 
       const heygenData = await heygenResponse.json();
