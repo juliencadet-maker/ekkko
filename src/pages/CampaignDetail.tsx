@@ -551,11 +551,6 @@ export default function CampaignDetail() {
             </div>
           </TabsContent>
 
-
-          {/* Power Map (aggregated across all sub-campaigns) */}
-          <TabsContent value="powermap" className="space-y-6">
-            {membership?.org_id && id && <PowerMap campaignId={id} orgId={membership.org_id} />}
-          </TabsContent>
         </Tabs>
       </AppLayout>
     );
