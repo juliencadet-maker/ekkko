@@ -5,20 +5,20 @@
 export const APP_NAME = "Ekko";
 export const APP_DESCRIPTION = "Scalez la présence exécutive sur chaque deal. Sécurisez votre revenue.";
 
-// Onboarding
+// Onboarding (4 steps now)
 export const ONBOARDING_STEPS = [
   { id: 1, label: "Bienvenue", key: "welcome" },
   { id: 2, label: "Profil", key: "profile" },
-  { id: 3, label: "Vidéo de référence", key: "facecam" },
-  { id: 4, label: "Identité", key: "identity" },
-  { id: 5, label: "Terminé", key: "complete" },
+  { id: 3, label: "Identité", key: "identity" },
+  { id: 4, label: "Terminé", key: "complete" },
 ] as const;
 
-// Video Recording
+// Video Upload Constraints
 export const VIDEO_CONSTRAINTS = {
-  MIN_DURATION_SECONDS: 30,
-  MAX_DURATION_SECONDS: 90,
-  RECOMMENDED_DURATION_SECONDS: 60,
+  MIN_DURATION_SECONDS: 120, // 2 minutes minimum for HeyGen
+  MAX_DURATION_SECONDS: 600, // 10 minutes max
+  RECOMMENDED_DURATION_SECONDS: 180, // 3 minutes ideal
+  MAX_FILE_SIZE_MB: 500,
 } as const;
 
 export const SUGGESTED_SCRIPT = `Bonjour, je suis [votre prénom] [votre nom].
