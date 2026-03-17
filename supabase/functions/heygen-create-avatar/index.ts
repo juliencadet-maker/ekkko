@@ -108,6 +108,10 @@ serve(async (req) => {
 
     console.log("Creating HeyGen digital twin for identity:", identity_id);
 
+    // Build callback URL for avatar status updates
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const callbackUrl = `${supabaseUrl}/functions/v1/heygen-avatar-webhook`;
+
     // Create digital twin on HeyGen
     const heygenResponse = await fetch(`${HEYGEN_API_URL}/v2/digital_twin`, {
       method: "POST",
@@ -119,6 +123,7 @@ serve(async (req) => {
         training_footage_url: trainingUrl,
         consent_video_url: consentUrl,
         avatar_name: avatar_name || identity.display_name,
+        callback_url: callbackUrl,
       }),
     });
 
@@ -133,7 +138,7 @@ serve(async (req) => {
     }
 
     const avatarId = heygenData.data?.avatar_id || heygenData.avatar_id;
-    console.log("HeyGen digital twin created:", avatarId);
+    console.log("HeyGen digital twin created:", avatarId, "callback:", callbackUrl);
 
     // Update identity with HeyGen avatar ID
     await supabase
@@ -149,15 +154,12 @@ serve(async (req) => {
       })
       .eq("id", identity_id);
 
-    // Start polling for status in background
-    pollAvatarStatus(HEYGEN_API_KEY, avatarId, identity_id, serviceClient);
-
     return new Response(
       JSON.stringify({
         success: true,
         avatar_id: avatarId,
         status: "training",
-        message: "Clone en cours de création. Le processus prend généralement quelques minutes.",
+        message: "Clone en cours de création. Vous serez notifié quand il sera prêt.",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
