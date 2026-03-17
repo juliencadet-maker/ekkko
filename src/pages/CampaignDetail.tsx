@@ -674,10 +674,6 @@ export default function CampaignDetail() {
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="video">Vidéo</TabsTrigger>
-          <TabsTrigger value="powermap">
-            <Map className="mr-1.5 h-4 w-4" />
-            Power Map
-          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
