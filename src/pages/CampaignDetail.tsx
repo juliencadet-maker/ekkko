@@ -466,10 +466,6 @@ export default function CampaignDetail() {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-            <TabsTrigger value="powermap">
-              <Map className="mr-1.5 h-4 w-4" />
-              Power Map
-            </TabsTrigger>
           </TabsList>
 
           {/* Overview: Aggregated KPIs + Sub-campaign cards */}
