@@ -63,12 +63,12 @@ export default function NewCampaign() {
 
       setIsLoading(true);
       try {
-        // Fetch all identities in org first
+        // Fetch all identities in org — only those with clone ready
         const { data: allIdentities } = await supabase
           .from("identities")
           .select("*")
           .eq("org_id", membership.org_id)
-          .eq("status", "ready")
+          .eq("clone_status", "ready")
           .order("created_at", { ascending: false });
 
         const typedIdentities = (allIdentities || []) as Identity[];
