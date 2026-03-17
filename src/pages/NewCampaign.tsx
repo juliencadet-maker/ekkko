@@ -117,8 +117,8 @@ export default function NewCampaign() {
       setCurrentStep("select-identity");
     } else if (selectedMode === "self" && !myIdentity) {
       toast({
-        title: "Identité non disponible",
-        description: "Vous n'avez pas d'identité prête. Veuillez d'abord compléter votre profil.",
+        title: "Clone non disponible",
+        description: "Votre clone est en cours de création. Vous pourrez créer un deal dès qu'il sera prêt.",
         variant: "destructive",
       });
     }
