@@ -121,8 +121,7 @@ export default function CampaignDetail() {
   const [subCampaigns, setSubCampaigns] = useState<Campaign[]>([]);
   const [videos, setVideos] = useState<(VideoType & { recipient?: Recipient })[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showLandingPageEditor, setShowLandingPageEditor] = useState(false);
-  const [landingPageConfig, setLandingPageConfig] = useState<LandingPageConfig | undefined>();
+  const [landingPageConfig, setLandingPageConfig] = useState<Record<string, unknown> | undefined>();
   const [viewEvents, setViewEvents] = useState<ViewEvent[]>([]);
   const [watchProgress, setWatchProgress] = useState<WatchProgressRow[]>([]);
   const [rejectionComment, setRejectionComment] = useState<string | null>(null);
