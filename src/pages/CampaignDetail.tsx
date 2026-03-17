@@ -875,10 +875,6 @@ export default function CampaignDetail() {
           </Card>
         </TabsContent>
 
-        {/* Power Map Tab */}
-        <TabsContent value="powermap" className="space-y-6">
-          {membership?.org_id && id && <PowerMap campaignId={id} orgId={membership.org_id} />}
-        </TabsContent>
 
       </Tabs>
 
