@@ -157,7 +157,7 @@ export default function CampaignDetail() {
 
         const metadata = campaignData.metadata as Record<string, unknown> | null;
         if (metadata?.landingPageConfig) {
-          setLandingPageConfig(metadata.landingPageConfig as LandingPageConfig);
+          setLandingPageConfig(metadata.landingPageConfig as Record<string, unknown>);
         }
 
         // Fetch sub-campaigns
