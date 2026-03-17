@@ -878,18 +878,6 @@ export default function CampaignDetail() {
 
       </Tabs>
 
-      {/* Landing Page Editor */}
-      {campaign && (
-        <LandingPageEditor
-          open={showLandingPageEditor}
-          onOpenChange={setShowLandingPageEditor}
-          campaignId={campaign.id}
-          campaignName={campaign.name}
-          videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id))}
-          initialConfig={landingPageConfig}
-          onSave={handleSaveLandingPageConfig}
-        />
-      )}
       {scriptVersions.length >= 2 && (
         <ScriptDiffDialog
           open={showDiffDialog}
