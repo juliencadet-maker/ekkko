@@ -1,15 +1,12 @@
 project_id = "kqpbsznldzrklnnbqtwq"
 
-[functions.tavus-create-replica]
+[functions.heygen-create-avatar]
 verify_jwt = false
 
-[functions.tavus-generate-video]
+[functions.heygen-generate-video]
 verify_jwt = false
 
-[functions.tavus-check-status]
-verify_jwt = false
-
-[functions.tavus-webhook]
+[functions.heygen-webhook]
 verify_jwt = false
 
 [functions.track-watch-progress]
@@ -40,4 +37,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.demo-login]
+verify_jwt = false
+
+[functions.generate-script]
 verify_jwt = false

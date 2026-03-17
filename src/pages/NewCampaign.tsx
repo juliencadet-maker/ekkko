@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { tavusApi } from "@/lib/api/tavus";
+import { heygenApi } from "@/lib/api/heygen";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
@@ -63,12 +63,12 @@ export default function NewCampaign() {
 
       setIsLoading(true);
       try {
-        // Fetch all identities in org first
+        // Fetch all identities in org — only those with clone ready
         const { data: allIdentities } = await supabase
           .from("identities")
           .select("*")
           .eq("org_id", membership.org_id)
-          .eq("status", "ready")
+          .eq("clone_status", "ready")
           .order("created_at", { ascending: false });
 
         const typedIdentities = (allIdentities || []) as Identity[];
@@ -117,8 +117,8 @@ export default function NewCampaign() {
       setCurrentStep("select-identity");
     } else if (selectedMode === "self" && !myIdentity) {
       toast({
-        title: "Identité non disponible",
-        description: "Vous n'avez pas d'identité prête. Veuillez d'abord compléter votre profil.",
+        title: "Clone non disponible",
+        description: "Votre clone est en cours de création. Vous pourrez créer un deal dès qu'il sera prêt.",
         variant: "destructive",
       });
     }
@@ -238,7 +238,7 @@ export default function NewCampaign() {
           description: "La demande de validation a été envoyée.",
         });
       } else {
-        // Auto-approved - trigger Tavus video generation
+        // Auto-approved - trigger HeyGen video generation
         await logEvent({
           eventType: "campaign_approved",
           entityType: "campaign",
@@ -246,10 +246,10 @@ export default function NewCampaign() {
         });
 
         try {
-          await tavusApi.generateVideo(campaign.id);
+          await heygenApi.generateVideo(campaign.id);
           toast({
             title: "Campagne créée",
-            description: "La génération vidéo est en cours via Tavus.",
+            description: "La génération vidéo est en cours.",
           });
         } catch {
           console.error("Video generation failed");

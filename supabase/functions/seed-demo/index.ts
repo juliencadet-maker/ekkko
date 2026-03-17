@@ -450,8 +450,8 @@ serve(async (req) => {
         success: true,
         message: "Comptes démo créés — notification Slack envoyée",
         accounts: {
-          sales: { email: DEMO_SALES_EMAIL, password: DEMO_PASSWORD, role: "org_owner", name: "Jean Dupont — VP Sales" },
-          exec: { email: DEMO_EXEC_EMAIL, password: DEMO_PASSWORD, role: "org_admin", name: "Marc Lefevre — CEO" },
+          sales: { email: DEMO_SALES_EMAIL, role: "org_owner", name: "Jean Dupont — VP Sales" },
+          exec: { email: DEMO_EXEC_EMAIL, role: "org_admin", name: "Marc Lefevre — CEO" },
         },
         org: { name: "Acme Corp", id: orgId },
         notifications: slackResult,

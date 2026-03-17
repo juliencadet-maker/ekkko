@@ -14,8 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
-import { PowerMap } from "@/components/campaign/PowerMap";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
@@ -32,10 +31,8 @@ import {
   TrendingUp,
   Share2,
   Download,
-  BarChart3,
   Video,
   Pencil,
-  Map,
   Building2,
   Layers,
   ChevronRight,
