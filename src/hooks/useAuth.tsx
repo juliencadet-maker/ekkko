@@ -125,7 +125,9 @@ export function useAuth(): UserContext & {
   }, [user?.email, user?.id]);
 
   const isAuthenticated = !!user && !!session;
-  const needsOnboarding = isAuthenticated && profile && !profile.onboarding_completed;
+  // If authenticated but profile not yet loaded, we're still loading
+  const profileLoading = isAuthenticated && !profile;
+  const needsOnboarding = isAuthenticated && profile ? !profile.onboarding_completed : false;
 
   return {
     user: user ? { id: user.id, email: user.email || "" } : { id: "", email: "" },
