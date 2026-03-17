@@ -247,7 +247,7 @@ export default function CampaignDetail() {
 
   const kpis = useMemo(() => computeKpis(viewEvents, watchProgress), [viewEvents, watchProgress]);
 
-  const handleSaveLandingPageConfig = async (config: LandingPageConfig) => {
+  const handleSaveLandingPageConfig = async (config: Record<string, unknown>) => {
     if (!campaign || !membership?.org_id) return;
     try {
       const currentMetadata = (campaign.metadata || {}) as Record<string, unknown>;
