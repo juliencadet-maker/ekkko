@@ -135,7 +135,7 @@ export function useAuth(): UserContext & {
     membership,
     org,
     policy,
-    isLoading,
+    isLoading: isLoading || profileLoading,
     isAuthenticated,
     needsOnboarding: needsOnboarding || false,
     signOut,
