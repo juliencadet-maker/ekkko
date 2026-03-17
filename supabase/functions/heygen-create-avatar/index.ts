@@ -108,6 +108,10 @@ serve(async (req) => {
 
     console.log("Creating HeyGen digital twin for identity:", identity_id);
 
+    // Build callback URL for avatar status updates
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const callbackUrl = `${supabaseUrl}/functions/v1/heygen-avatar-webhook`;
+
     // Create digital twin on HeyGen
     const heygenResponse = await fetch(`${HEYGEN_API_URL}/v2/digital_twin`, {
       method: "POST",
@@ -119,6 +123,7 @@ serve(async (req) => {
         training_footage_url: trainingUrl,
         consent_video_url: consentUrl,
         avatar_name: avatar_name || identity.display_name,
+        callback_url: callbackUrl,
       }),
     });
 
@@ -133,7 +138,7 @@ serve(async (req) => {
     }
 
     const avatarId = heygenData.data?.avatar_id || heygenData.avatar_id;
-    console.log("HeyGen digital twin created:", avatarId);
+    console.log("HeyGen digital twin created:", avatarId, "callback:", callbackUrl);
 
     // Update identity with HeyGen avatar ID
     await supabase
@@ -149,15 +154,12 @@ serve(async (req) => {
       })
       .eq("id", identity_id);
 
-    // Start polling for status in background
-    pollAvatarStatus(HEYGEN_API_KEY, avatarId, identity_id, serviceClient);
-
     return new Response(
       JSON.stringify({
         success: true,
         avatar_id: avatarId,
         status: "training",
-        message: "Clone en cours de création. Le processus prend généralement quelques minutes.",
+        message: "Clone en cours de création. Vous serez notifié quand il sera prêt.",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -169,47 +171,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Poll HeyGen for avatar status every 30 seconds
-async function pollAvatarStatus(apiKey: string, avatarId: string, identityId: string, serviceClient: any) {
-  const maxAttempts = 60; // 30 minutes max
-  let attempts = 0;
-
-  const poll = async () => {
-    attempts++;
-    if (attempts > maxAttempts) {
-      await serviceClient.from("identities").update({ clone_status: "error" }).eq("id", identityId);
-      return;
-    }
-
-    try {
-      const response = await fetch(`https://api.heygen.com/v2/digital_twin/status/${avatarId}`, {
-        headers: { "X-Api-Key": apiKey },
-      });
-      const data = await response.json();
-      const status = data.data?.status || data.status;
-
-      if (status === "complete" || status === "ready") {
-        await serviceClient.from("identities").update({
-          clone_status: "ready",
-          status: "ready",
-        }).eq("id", identityId);
-        console.log("Avatar ready:", avatarId);
-        return;
-      } else if (status === "error" || status === "failed") {
-        await serviceClient.from("identities").update({ clone_status: "error" }).eq("id", identityId);
-        console.error("Avatar training failed:", avatarId);
-        return;
-      }
-
-      // Still training, poll again in 30 seconds
-      setTimeout(poll, 30000);
-    } catch (error) {
-      console.error("Poll error:", error);
-      setTimeout(poll, 30000);
-    }
-  };
-
-  // Start polling after 30 seconds
-  setTimeout(poll, 30000);
-}
