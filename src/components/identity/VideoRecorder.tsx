@@ -394,7 +394,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const isDurationValid = recordingDuration >= VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS;
+  const isDurationValid = minDuration === 0 || recordingDuration >= minDuration;
 
   return (
     <div className="space-y-4">
