@@ -530,10 +530,10 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
               onClick={stopRecording} 
               variant="destructive" 
               size="lg"
-              disabled={recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS}
+              disabled={minDuration > 0 && recordingDuration < minDuration}
             >
               <Square className="h-5 w-5 mr-2" />
-              Arrêter ({VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS}s min)
+              Arrêter{minDuration > 0 ? ` (${minDuration}s min)` : ""}
             </Button>
           )}
         </div>
