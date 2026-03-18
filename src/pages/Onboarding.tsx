@@ -19,17 +19,29 @@ import {
   Video, 
   User, 
   Sparkles,
-  Upload,
   AlertCircle,
   ArrowRight,
-  FileVideo,
+  ArrowLeft,
 } from "lucide-react";
 import { ONBOARDING_STEPS, VIDEO_CONSTRAINTS, IDENTITY_TYPES } from "@/lib/constants";
+import { VideoRecorder } from "@/components/identity/VideoRecorder";
+import { RecordingGuide } from "@/components/identity/RecordingGuide";
 
 type OnboardingStep = "welcome" | "profile" | "identity" | "complete";
+type IdentitySubStep = "guide-training" | "record-training" | "guide-consent" | "record-consent" | "review";
+
+// Generate consent script with unique code
+function generateConsentScript(firstName: string, lastName: string): { script: string; code: string } {
+  const code = Math.floor(10 + Math.random() * 90).toString();
+  return {
+    code,
+    script: `Je m'appelle ${firstName} ${lastName}. J'autorise la création d'un clone numérique de mon apparence et de ma voix. Ce clone sera utilisé exclusivement dans le cadre de communications professionnelles via la plateforme Ekko. Pour des raisons de sécurité, mon code unique est ${code}.`,
+  };
+}
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome");
+  const [identitySubStep, setIdentitySubStep] = useState<IdentitySubStep>("guide-training");
   const [isLoading, setIsLoading] = useState(false);
 
   // Profile form
@@ -43,15 +55,13 @@ export default function Onboarding() {
   const [identityType, setIdentityType] = useState<string>("other");
   const [consentGiven, setConsentGiven] = useState(false);
   
-  // Video uploads
-  const [trainingVideo, setTrainingVideo] = useState<File | null>(null);
-  const [consentVideo, setConsentVideo] = useState<File | null>(null);
-  const [trainingVideoPreview, setTrainingVideoPreview] = useState<string | null>(null);
-  const [consentVideoPreview, setConsentVideoPreview] = useState<string | null>(null);
+  // Video recordings
+  const [trainingBlob, setTrainingBlob] = useState<Blob | null>(null);
+  const [trainingDuration, setTrainingDuration] = useState(0);
+  const [consentBlob, setConsentBlob] = useState<Blob | null>(null);
+  const [consentDuration, setConsentDuration] = useState(0);
+  const [consentScriptData, setConsentScriptData] = useState<{ script: string; code: string } | null>(null);
   const [cloneStatus, setCloneStatus] = useState<"idle" | "uploading" | "creating" | "pending">("idle");
-  
-  const trainingInputRef = useRef<HTMLInputElement>(null);
-  const consentInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
   const { user, profile, refreshUser } = useAuthContext();
@@ -64,33 +74,6 @@ export default function Onboarding() {
 
   const stepIndex = ONBOARDING_STEPS.findIndex(s => s.key === currentStep);
   const progress = ((stepIndex + 1) / ONBOARDING_STEPS.length) * 100;
-
-  const handleFileSelect = (type: "training" | "consent") => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("video/")) {
-      toast({ title: "Format invalide", description: "Veuillez sélectionner un fichier vidéo (MP4, WebM, MOV).", variant: "destructive" });
-      return;
-    }
-
-    const maxSize = VIDEO_CONSTRAINTS.MAX_FILE_SIZE_MB * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast({ title: "Fichier trop volumineux", description: `La taille maximale est de ${VIDEO_CONSTRAINTS.MAX_FILE_SIZE_MB} Mo.`, variant: "destructive" });
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    if (type === "training") {
-      setTrainingVideo(file);
-      setTrainingVideoPreview(url);
-    } else {
-      setConsentVideo(file);
-      setConsentVideoPreview(url);
-    }
-
-    toast({ title: "Vidéo importée ✓" });
-  };
 
   const handleProfileSubmit = async () => {
     if (!firstName || !lastName || !title) {
@@ -109,6 +92,7 @@ export default function Onboarding() {
       await logEvent({ eventType: "onboarding_profile_completed", newValues: { firstName, lastName, title } });
       toast({ title: "Profil enregistré ✓" });
       setCurrentStep("identity");
+      setIdentitySubStep("guide-training");
     } catch {
       toast({ title: "Erreur", description: "Impossible d'enregistrer le profil", variant: "destructive" });
     } finally {
@@ -116,11 +100,48 @@ export default function Onboarding() {
     }
   };
 
+  const handleTrainingVideoReady = useCallback((blob: Blob, duration: number) => {
+    setTrainingBlob(blob);
+    setTrainingDuration(duration);
+  }, []);
+
+  const handleConsentVideoReady = useCallback((blob: Blob, duration: number) => {
+    setConsentBlob(blob);
+    setConsentDuration(duration);
+  }, []);
+
+  const handleStartTrainingRecording = () => {
+    setIdentitySubStep("record-training");
+  };
+
+  const handleStartConsentRecording = () => {
+    // Generate consent script with unique code
+    const data = generateConsentScript(firstName, lastName);
+    setConsentScriptData(data);
+    setIdentitySubStep("record-consent");
+  };
+
+  const handleTrainingDone = () => {
+    if (!trainingBlob) {
+      toast({ title: "Vidéo requise", description: "Veuillez d'abord enregistrer votre vidéo de présentation.", variant: "destructive" });
+      return;
+    }
+    setIdentitySubStep("guide-consent");
+  };
+
+  const handleConsentDone = () => {
+    if (!consentBlob) {
+      toast({ title: "Vidéo requise", description: "Veuillez d'abord enregistrer votre vidéo de consentement.", variant: "destructive" });
+      return;
+    }
+    setIdentitySubStep("review");
+  };
+
   const isDemoAccount = profile?.email === "demo@ekko.app";
 
   const handleComplete = async () => {
-    if (!isDemoAccount && (!trainingVideo || !consentVideo)) {
-      toast({ title: "Vidéos requises", description: "Veuillez importer les deux vidéos pour continuer.", variant: "destructive" });
+    if (!isDemoAccount && (!trainingBlob || !consentBlob)) {
+      toast({ title: "Vidéos requises", description: "Veuillez enregistrer les deux vidéos pour continuer.", variant: "destructive" });
       return;
     }
 
@@ -142,7 +163,7 @@ export default function Onboarding() {
 
       if (!membership) throw new Error("No org membership found");
 
-      // Demo account: skip real uploads and HeyGen, create mock identity
+      // Demo account: skip real uploads and HeyGen
       if (isDemoAccount) {
         setCloneStatus("creating");
 
@@ -189,14 +210,14 @@ export default function Onboarding() {
         return;
       }
 
-      // Real account flow
+      // Real account flow: upload recordings
       const timestamp = Date.now();
-      const trainingPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_training.mp4`;
-      const consentPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_consent.mp4`;
+      const trainingPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_training.webm`;
+      const consentPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_consent.webm`;
 
       const [trainingUpload, consentUpload] = await Promise.all([
-        supabase.storage.from("identity_assets").upload(trainingPath, trainingVideo!, { contentType: trainingVideo!.type, upsert: true }),
-        supabase.storage.from("identity_assets").upload(consentPath, consentVideo!, { contentType: consentVideo!.type, upsert: true }),
+        supabase.storage.from("identity_assets").upload(trainingPath, trainingBlob!, { contentType: "video/webm", upsert: true }),
+        supabase.storage.from("identity_assets").upload(consentPath, consentBlob!, { contentType: "video/webm", upsert: true }),
       ]);
 
       if (trainingUpload.error) throw trainingUpload.error;
@@ -228,7 +249,7 @@ export default function Onboarding() {
           reference_video_path: trainingPath,
           consent_given: true,
           consent_given_at: new Date().toISOString(),
-          metadata: { consent_video_path: consentPath, title, company },
+          metadata: { consent_video_path: consentPath, title, company, consent_code: consentScriptData?.code },
         })
         .select()
         .single();
@@ -358,7 +379,7 @@ export default function Onboarding() {
             </>
           )}
 
-          {/* IDENTITY CREATION (with video uploads) */}
+          {/* IDENTITY CREATION */}
           {currentStep === "identity" && (
             <>
               <CardHeader>
@@ -369,123 +390,189 @@ export default function Onboarding() {
                 <CardDescription>
                   {isDemoAccount
                     ? "En mode démo, votre identité sera créée automatiquement sans vidéo."
-                    : "Importez deux vidéos pour créer votre avatar HeyGen. Votre clone sera prêt en quelques minutes."}
+                    : identitySubStep === "guide-training" || identitySubStep === "record-training"
+                      ? "Étape 1/2 — Enregistrez votre vidéo de présentation (minimum 2 minutes)"
+                      : identitySubStep === "guide-consent" || identitySubStep === "record-consent"
+                        ? "Étape 2/2 — Enregistrez votre déclaration de consentement"
+                        : "Vérifiez vos enregistrements et finalisez"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {!isDemoAccount && (
+                {isDemoAccount ? (
                   <>
-                    {/* Training Video Upload */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold">Votre vidéo de présentation *</Label>
-                      <p className="text-xs text-muted-foreground">
-                        MP4 ou WebM, minimum 2 minutes, résolution 720p minimum. Parlez naturellement face caméra.
-                      </p>
-                      <input ref={trainingInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileSelect("training")} />
-                      {trainingVideoPreview ? (
-                        <div className="space-y-2">
-                          <video src={trainingVideoPreview} controls className="w-full aspect-video rounded-lg bg-muted object-cover" />
-                          <Button variant="outline" size="sm" onClick={() => { setTrainingVideo(null); setTrainingVideoPreview(null); }}>
-                            Changer la vidéo
-                          </Button>
-                        </div>
-                      ) : (
-                        <div
-                          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
-                          onClick={() => trainingInputRef.current?.click()}
-                        >
-                          <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                          <p className="text-sm font-medium">Cliquez pour importer votre vidéo de présentation</p>
-                          <p className="text-xs text-muted-foreground mt-1">MP4, WebM • Min. 2 min • 720p+</p>
-                        </div>
-                      )}
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Mode démo : les vidéos ne sont pas nécessaires. Une identité simulée sera créée automatiquement.
+                      </AlertDescription>
+                    </Alert>
+
+                    {/* Identity Type */}
+                    <div className="space-y-2">
+                      <Label>Type d'identité</Label>
+                      <Select value={identityType} onValueChange={setIdentityType}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {IDENTITY_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    {/* Consent Video Upload */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold">Votre déclaration de consentement HeyGen *</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Vidéo courte où vous déclarez consentir à la création de votre clone numérique.
-                      </p>
-                      <input ref={consentInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileSelect("consent")} />
-                      {consentVideoPreview ? (
-                        <div className="space-y-2">
-                          <video src={consentVideoPreview} controls className="w-full aspect-video rounded-lg bg-muted object-cover" />
-                          <Button variant="outline" size="sm" onClick={() => { setConsentVideo(null); setConsentVideoPreview(null); }}>
-                            Changer la vidéo
+                    {/* Consent */}
+                    <div className="flex items-start space-x-3 p-4 bg-muted/50 rounded-lg border">
+                      <Checkbox id="consent" checked={consentGiven} onCheckedChange={(c) => setConsentGiven(!!c)} className="mt-1" />
+                      <label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
+                        J'autorise la création d'un clone numérique de mon apparence et de ma voix, conformément aux{" "}
+                        <span className="text-primary underline">conditions d'utilisation</span>.
+                      </label>
+                    </div>
+
+                    <Button onClick={handleComplete} className="w-full" size="lg" disabled={isLoading || !consentGiven}>
+                      {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création en cours...</> : <>Créer mon identité démo<ArrowRight className="ml-2 h-4 w-4" /></>}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {/* Sub-step: Training Guide */}
+                    {identitySubStep === "guide-training" && (
+                      <RecordingGuide videoType="training" onStartRecording={handleStartTrainingRecording} />
+                    )}
+
+                    {/* Sub-step: Training Recording */}
+                    {identitySubStep === "record-training" && (
+                      <div className="space-y-4">
+                        <VideoRecorder
+                          onVideoReady={handleTrainingVideoReady}
+                          consentGiven={true}
+                          onConsentChange={() => {}}
+                          userInfo={{ firstName, lastName, company, title }}
+                        />
+                        <div className="flex justify-between pt-2">
+                          <Button variant="outline" onClick={() => setIdentitySubStep("guide-training")}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Retour aux conseils
+                          </Button>
+                          <Button onClick={handleTrainingDone} disabled={!trainingBlob}>
+                            Continuer
+                            <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                         </div>
-                      ) : (
-                        <div
-                          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
-                          onClick={() => consentInputRef.current?.click()}
-                        >
-                          <FileVideo className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                          <p className="text-sm font-medium">Cliquez pour importer votre vidéo de consentement</p>
-                          <p className="text-xs text-muted-foreground mt-1">MP4, WebM</p>
+                      </div>
+                    )}
+
+                    {/* Sub-step: Consent Guide */}
+                    {identitySubStep === "guide-consent" && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                          <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                          <span className="text-sm font-medium">Vidéo de présentation enregistrée ✓ ({trainingDuration}s)</span>
                         </div>
-                      )}
-                    </div>
+                        <RecordingGuide videoType="consent" onStartRecording={handleStartConsentRecording} />
+                        <div className="bg-muted/50 rounded-lg p-4 border">
+                          <p className="text-sm font-medium mb-2">📝 Texte à lire pendant l'enregistrement :</p>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {consentScriptData?.script || generateConsentScript(firstName, lastName).script}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sub-step: Consent Recording */}
+                    {identitySubStep === "record-consent" && (
+                      <div className="space-y-4">
+                        {/* Consent teleprompter script overlay - shown as reference */}
+                        <div className="bg-muted/50 rounded-lg p-4 border">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Script de consentement à lire :</p>
+                          <p className="text-sm leading-relaxed font-medium">{consentScriptData?.script}</p>
+                        </div>
+                        <VideoRecorder
+                          onVideoReady={handleConsentVideoReady}
+                          consentGiven={true}
+                          onConsentChange={() => {}}
+                          userInfo={{ firstName, lastName, company, title }}
+                        />
+                        <div className="flex justify-between pt-2">
+                          <Button variant="outline" onClick={() => setIdentitySubStep("guide-consent")}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Retour
+                          </Button>
+                          <Button onClick={handleConsentDone} disabled={!consentBlob}>
+                            Continuer
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sub-step: Review */}
+                    {identitySubStep === "review" && (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                            <span className="text-sm font-medium">Vidéo de présentation — {trainingDuration}s</span>
+                          </div>
+                          <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                            <span className="text-sm font-medium">Vidéo de consentement — {consentDuration}s</span>
+                          </div>
+                        </div>
+
+                        {/* Identity Type */}
+                        <div className="space-y-2">
+                          <Label>Type d'identité</Label>
+                          <Select value={identityType} onValueChange={setIdentityType}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {IDENTITY_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Consent Checkbox */}
+                        <div className="flex items-start space-x-3 p-4 bg-muted/50 rounded-lg border">
+                          <Checkbox id="consent" checked={consentGiven} onCheckedChange={(c) => setConsentGiven(!!c)} className="mt-1" />
+                          <label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
+                            J'autorise la création d'un clone numérique de mon apparence et de ma voix à partir de ces vidéos, conformément aux{" "}
+                            <span className="text-primary underline">conditions d'utilisation</span>.
+                          </label>
+                        </div>
+
+                        {/* Status Messages */}
+                        {cloneStatus === "uploading" && (
+                          <Alert>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <AlertDescription>Upload des vidéos en cours...</AlertDescription>
+                          </Alert>
+                        )}
+                        {cloneStatus === "creating" && (
+                          <Alert>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <AlertDescription>Création du clone en cours...</AlertDescription>
+                          </Alert>
+                        )}
+
+                        <div className="flex justify-between pt-2">
+                          <Button variant="outline" onClick={() => setIdentitySubStep("guide-consent")}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Refaire les vidéos
+                          </Button>
+                          <Button onClick={handleComplete} size="lg" disabled={isLoading || !consentGiven}>
+                            {isLoading ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création en cours...</>
+                            ) : (
+                              <>Créer mon clone<ArrowRight className="ml-2 h-4 w-4" /></>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
-
-                {isDemoAccount && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Mode démo : les vidéos ne sont pas nécessaires. Une identité simulée sera créée automatiquement.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Identity Type */}
-                <div className="space-y-2">
-                  <Label>Type d'identité</Label>
-                  <Select value={identityType} onValueChange={setIdentityType}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {IDENTITY_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Consent Checkbox */}
-                <div className="flex items-start space-x-3 p-4 bg-muted/50 rounded-lg border">
-                  <Checkbox id="consent" checked={consentGiven} onCheckedChange={(c) => setConsentGiven(!!c)} className="mt-1" />
-                  <label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
-                    J'autorise la création d'un clone numérique de mon apparence et de ma voix à partir de ces vidéos, conformément aux{" "}
-                    <span className="text-primary underline">conditions d'utilisation</span>.
-                  </label>
-                </div>
-
-                {/* Status Messages */}
-                {cloneStatus === "uploading" && (
-                  <Alert>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <AlertDescription>Upload des vidéos en cours...</AlertDescription>
-                  </Alert>
-                )}
-                {cloneStatus === "creating" && (
-                  <Alert>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <AlertDescription>Création du clone en cours...</AlertDescription>
-                  </Alert>
-                )}
-
-                <Button
-                  onClick={handleComplete}
-                  className="w-full"
-                  size="lg"
-                  disabled={isLoading || (!isDemoAccount && (!trainingVideo || !consentVideo)) || !consentGiven}
-                >
-                  {isLoading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création en cours...</>
-                  ) : (
-                    <>{isDemoAccount ? "Créer mon identité démo" : "Créer mon clone et terminer"}<ArrowRight className="ml-2 h-4 w-4" /></>
-                  )}
-                </Button>
               </CardContent>
             </>
           )}
