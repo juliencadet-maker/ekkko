@@ -49,7 +49,7 @@ serve(async (req) => {
       });
     }
 
-    if (status === "completed" || status === "ready" || eventType === "video.completed") {
+    if (eventType === "avatar_video.success" || eventType === "video.completed" || status === "completed" || status === "ready") {
       console.log("Video ready:", videoId, "url:", videoUrl);
 
       // Update video_job to completed
