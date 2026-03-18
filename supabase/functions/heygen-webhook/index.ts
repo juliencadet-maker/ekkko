@@ -27,6 +27,7 @@ serve(async (req) => {
     const videoUrl = ed.url || ed.video_url || payload.video_url;
     const callbackId = ed.callback_id || payload.callback_id;
     const errorMsg = ed.msg || ed.error || payload.message;
+    const status = ed.status || payload.status;
 
     if (!videoId) {
       console.log("No video_id in webhook payload, ignoring");
