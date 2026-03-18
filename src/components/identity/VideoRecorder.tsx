@@ -549,11 +549,11 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
       )}
 
       {/* Duration validation */}
-      {recordedUrl && !isDurationValid && (
+      {recordedUrl && !isDurationValid && minDuration > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            La vidéo doit faire au moins {VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS} secondes. 
+            La vidéo doit faire au moins {minDuration} secondes. 
             Durée actuelle : {recordingDuration}s
           </AlertDescription>
         </Alert>
