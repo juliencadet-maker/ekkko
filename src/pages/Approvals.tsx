@@ -119,7 +119,7 @@ export default function Approvals() {
 
         // Auto-trigger video generation
         try {
-          await tavusApi.generateVideo(selectedApproval.campaign_id);
+          await heygenApi.generateVideo(selectedApproval.campaign_id);
         } catch (genError) {
           console.error("Video generation trigger error:", genError);
           // Don't block approval if generation fails to start
