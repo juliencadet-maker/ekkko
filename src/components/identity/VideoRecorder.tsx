@@ -467,21 +467,21 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
               <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
               {formatTime(recordingDuration)} / {formatTime(VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS)}
             </div>
-            {recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS && (
+            {minDuration > 0 && recordingDuration < minDuration && (
               <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2">
                 <div className="flex items-center justify-between text-xs text-white/80 mb-1">
                   <span>Durée minimum requise</span>
-                  <span>{formatTime(recordingDuration)} / {formatTime(VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS)}</span>
+                  <span>{formatTime(recordingDuration)} / {formatTime(minDuration)}</span>
                 </div>
                 <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${Math.min(100, (recordingDuration / VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (recordingDuration / minDuration) * 100)}%` }}
                   />
                 </div>
               </div>
             )}
-            {recordingDuration >= VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS && (
+            {minDuration > 0 && recordingDuration >= minDuration && (
               <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-xs text-emerald-400 w-fit">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Durée minimum atteinte — vous pouvez arrêter
