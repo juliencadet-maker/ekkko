@@ -367,61 +367,76 @@ export default function Onboarding() {
                   Créez votre clone vidéo
                 </CardTitle>
                 <CardDescription>
-                  Importez deux vidéos pour créer votre avatar HeyGen. Votre clone sera prêt en quelques minutes.
+                  {isDemoAccount
+                    ? "En mode démo, votre identité sera créée automatiquement sans vidéo."
+                    : "Importez deux vidéos pour créer votre avatar HeyGen. Votre clone sera prêt en quelques minutes."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Training Video Upload */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold">Votre vidéo de présentation *</Label>
-                  <p className="text-xs text-muted-foreground">
-                    MP4 ou WebM, minimum 2 minutes, résolution 720p minimum. Parlez naturellement face caméra.
-                  </p>
-                  <input ref={trainingInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileSelect("training")} />
-                  {trainingVideoPreview ? (
-                    <div className="space-y-2">
-                      <video src={trainingVideoPreview} controls className="w-full aspect-video rounded-lg bg-muted object-cover" />
-                      <Button variant="outline" size="sm" onClick={() => { setTrainingVideo(null); setTrainingVideoPreview(null); }}>
-                        Changer la vidéo
-                      </Button>
+                {!isDemoAccount && (
+                  <>
+                    {/* Training Video Upload */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold">Votre vidéo de présentation *</Label>
+                      <p className="text-xs text-muted-foreground">
+                        MP4 ou WebM, minimum 2 minutes, résolution 720p minimum. Parlez naturellement face caméra.
+                      </p>
+                      <input ref={trainingInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileSelect("training")} />
+                      {trainingVideoPreview ? (
+                        <div className="space-y-2">
+                          <video src={trainingVideoPreview} controls className="w-full aspect-video rounded-lg bg-muted object-cover" />
+                          <Button variant="outline" size="sm" onClick={() => { setTrainingVideo(null); setTrainingVideoPreview(null); }}>
+                            Changer la vidéo
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
+                          onClick={() => trainingInputRef.current?.click()}
+                        >
+                          <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                          <p className="text-sm font-medium">Cliquez pour importer votre vidéo de présentation</p>
+                          <p className="text-xs text-muted-foreground mt-1">MP4, WebM • Min. 2 min • 720p+</p>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div
-                      className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
-                      onClick={() => trainingInputRef.current?.click()}
-                    >
-                      <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm font-medium">Cliquez pour importer votre vidéo de présentation</p>
-                      <p className="text-xs text-muted-foreground mt-1">MP4, WebM • Min. 2 min • 720p+</p>
-                    </div>
-                  )}
-                </div>
 
-                {/* Consent Video Upload */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold">Votre déclaration de consentement HeyGen *</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Vidéo courte où vous déclarez consentir à la création de votre clone numérique.
-                  </p>
-                  <input ref={consentInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileSelect("consent")} />
-                  {consentVideoPreview ? (
-                    <div className="space-y-2">
-                      <video src={consentVideoPreview} controls className="w-full aspect-video rounded-lg bg-muted object-cover" />
-                      <Button variant="outline" size="sm" onClick={() => { setConsentVideo(null); setConsentVideoPreview(null); }}>
-                        Changer la vidéo
-                      </Button>
+                    {/* Consent Video Upload */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold">Votre déclaration de consentement HeyGen *</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Vidéo courte où vous déclarez consentir à la création de votre clone numérique.
+                      </p>
+                      <input ref={consentInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileSelect("consent")} />
+                      {consentVideoPreview ? (
+                        <div className="space-y-2">
+                          <video src={consentVideoPreview} controls className="w-full aspect-video rounded-lg bg-muted object-cover" />
+                          <Button variant="outline" size="sm" onClick={() => { setConsentVideo(null); setConsentVideoPreview(null); }}>
+                            Changer la vidéo
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
+                          onClick={() => consentInputRef.current?.click()}
+                        >
+                          <FileVideo className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                          <p className="text-sm font-medium">Cliquez pour importer votre vidéo de consentement</p>
+                          <p className="text-xs text-muted-foreground mt-1">MP4, WebM</p>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div
-                      className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
-                      onClick={() => consentInputRef.current?.click()}
-                    >
-                      <FileVideo className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm font-medium">Cliquez pour importer votre vidéo de consentement</p>
-                      <p className="text-xs text-muted-foreground mt-1">MP4, WebM</p>
-                    </div>
-                  )}
-                </div>
+                  </>
+                )}
+
+                {isDemoAccount && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Mode démo : les vidéos ne sont pas nécessaires. Une identité simulée sera créée automatiquement.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 {/* Identity Type */}
                 <div className="space-y-2">
@@ -463,12 +478,12 @@ export default function Onboarding() {
                   onClick={handleComplete}
                   className="w-full"
                   size="lg"
-                  disabled={isLoading || !trainingVideo || !consentVideo || !consentGiven}
+                  disabled={isLoading || (!isDemoAccount && (!trainingVideo || !consentVideo)) || !consentGiven}
                 >
                   {isLoading ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création en cours...</>
                   ) : (
-                    <>Créer mon clone et terminer<ArrowRight className="ml-2 h-4 w-4" /></>
+                    <>{isDemoAccount ? "Créer mon identité démo" : "Créer mon clone et terminer"}<ArrowRight className="ml-2 h-4 w-4" /></>
                   )}
                 </Button>
               </CardContent>
