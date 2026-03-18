@@ -482,16 +482,12 @@ export default function Onboarding() {
                     {/* Sub-step: Consent Recording */}
                     {identitySubStep === "record-consent" && (
                       <div className="space-y-4">
-                        {/* Consent teleprompter script overlay - shown as reference */}
-                        <div className="bg-muted/50 rounded-lg p-4 border">
-                          <p className="text-xs font-medium text-muted-foreground mb-1">Script de consentement à lire :</p>
-                          <p className="text-sm leading-relaxed font-medium">{consentScriptData?.script}</p>
-                        </div>
                         <VideoRecorder
                           onVideoReady={handleConsentVideoReady}
                           consentGiven={true}
                           onConsentChange={() => {}}
                           userInfo={{ firstName, lastName, company, title }}
+                          customScript={consentScriptData?.script}
                         />
                         <div className="flex justify-between pt-2">
                           <Button variant="outline" onClick={() => setIdentitySubStep("guide-consent")}>

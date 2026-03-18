@@ -84,9 +84,11 @@ interface VideoRecorderProps {
   consentGiven: boolean;
   onConsentChange: (checked: boolean) => void;
   userInfo?: VideoRecorderUserInfo;
+  /** Custom teleprompter script (e.g. consent text). Overrides the default generated script. */
+  customScript?: string;
 }
 
-export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo }: VideoRecorderProps) {
+export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo, customScript }: VideoRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
@@ -474,7 +476,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
               className="h-24 overflow-hidden text-white text-center"
             >
             <div className="space-y-3 py-2">
-                {generateTeleprompterScript(userInfo).split('\n\n').map((paragraph, index) => (
+                {(customScript || generateTeleprompterScript(userInfo)).split('\n\n').map((paragraph, index) => (
                   <p 
                     key={index} 
                     className="text-sm md:text-base leading-relaxed font-medium"
