@@ -238,7 +238,7 @@ export default function NewCampaign() {
           description: "La demande de validation a été envoyée.",
         });
       } else {
-        // Auto-approved - trigger HeyGen video generation
+        // Auto-approved - trigger Tavus video generation
         await logEvent({
           eventType: "campaign_approved",
           entityType: "campaign",
