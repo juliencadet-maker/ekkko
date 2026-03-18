@@ -91,7 +91,8 @@ interface VideoRecorderProps {
   minDurationSeconds?: number;
 }
 
-export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo, customScript }: VideoRecorderProps) {
+export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo, customScript, minDurationSeconds }: VideoRecorderProps) {
+  const minDuration = minDurationSeconds ?? VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS;
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);

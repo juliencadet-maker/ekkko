@@ -11,6 +11,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mirror webcam preview */
+video.mirror {
+  transform: scaleX(-1);
+}
+
 /* =============================================
    EKKO - Enterprise Design System
    Workday/ServiceNow inspired professional aesthetic
