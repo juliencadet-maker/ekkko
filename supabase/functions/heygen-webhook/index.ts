@@ -20,12 +20,13 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // HeyGen webhook payload structure
+    // HeyGen webhook payload structure: event_data (not data)
+    const ed = payload.event_data || payload.data || {};
     const eventType = payload.event_type || payload.type;
-    const videoId = payload.data?.video_id || payload.video_id;
-    const status = payload.data?.status || payload.status;
-    const videoUrl = payload.data?.video_url || payload.video_url;
-    const callbackId = payload.data?.callback_id || payload.callback_id;
+    const videoId = ed.video_id || payload.video_id;
+    const videoUrl = ed.url || ed.video_url || payload.video_url;
+    const callbackId = ed.callback_id || payload.callback_id;
+    const errorMsg = ed.msg || ed.error || payload.message;
 
     if (!videoId) {
       console.log("No video_id in webhook payload, ignoring");
