@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   Camera,
   FileVideo,
-  ScrollText
+  ScrollText,
+  CheckCircle2
 } from "lucide-react";
 import { VIDEO_CONSTRAINTS, SUGGESTED_SCRIPT } from "@/lib/constants";
 
