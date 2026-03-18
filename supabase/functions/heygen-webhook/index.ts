@@ -158,14 +158,14 @@ serve(async (req) => {
           }
         }
       }
-    } else if (status === "error" || status === "failed" || eventType === "video.failed") {
-      console.error("Video generation failed:", videoId, payload);
+    } else if (eventType === "avatar_video.fail" || eventType === "video.failed" || status === "error" || status === "failed") {
+      console.error("Video generation failed:", videoId, errorMsg);
 
       await supabase
         .from("video_jobs")
         .update({
           status: "failed",
-          error_message: payload.data?.error || payload.message || "Video generation failed",
+          error_message: errorMsg || "Video generation failed",
           completed_at: new Date().toISOString(),
         })
         .eq("id", videoJob.id);
