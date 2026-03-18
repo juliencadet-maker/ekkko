@@ -139,9 +139,10 @@ serve(async (req) => {
     }
 
     if (!heygenResponse.ok) {
-      console.error("HeyGen API error:", heygenResponse.status, heygenData);
+      console.error("HeyGen API error:", heygenResponse.status, JSON.stringify(heygenData));
+      const errorMsg = heygenData?.error?.message || heygenData?.message || heygenData?.detail || JSON.stringify(heygenData);
       return new Response(
-        JSON.stringify({ error: `HeyGen API error: ${heygenData.message || heygenData.error || "Unknown error"}` }),
+        JSON.stringify({ error: `HeyGen API error (${heygenResponse.status}): ${errorMsg}` }),
         { status: heygenResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
