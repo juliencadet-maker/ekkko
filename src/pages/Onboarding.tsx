@@ -488,6 +488,7 @@ export default function Onboarding() {
                           onConsentChange={() => {}}
                           userInfo={{ firstName, lastName, company, title }}
                           customScript={consentScriptData?.script}
+                          minDurationSeconds={0}
                         />
                         <div className="flex justify-between pt-2">
                           <Button variant="outline" onClick={() => setIdentitySubStep("guide-consent")}>

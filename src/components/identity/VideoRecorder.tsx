@@ -87,9 +87,12 @@ interface VideoRecorderProps {
   userInfo?: VideoRecorderUserInfo;
   /** Custom teleprompter script (e.g. consent text). Overrides the default generated script. */
   customScript?: string;
+  /** Minimum recording duration in seconds. Defaults to VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS (120s). */
+  minDurationSeconds?: number;
 }
 
-export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo, customScript }: VideoRecorderProps) {
+export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo, customScript, minDurationSeconds }: VideoRecorderProps) {
+  const minDuration = minDurationSeconds ?? VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS;
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
@@ -391,7 +394,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const isDurationValid = recordingDuration >= VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS;
+  const isDurationValid = minDuration === 0 || recordingDuration >= minDuration;
 
   return (
     <div className="space-y-4">
@@ -464,21 +467,21 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
               <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
               {formatTime(recordingDuration)} / {formatTime(VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS)}
             </div>
-            {recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS && (
+            {minDuration > 0 && recordingDuration < minDuration && (
               <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2">
                 <div className="flex items-center justify-between text-xs text-white/80 mb-1">
                   <span>Durée minimum requise</span>
-                  <span>{formatTime(recordingDuration)} / {formatTime(VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS)}</span>
+                  <span>{formatTime(recordingDuration)} / {formatTime(minDuration)}</span>
                 </div>
                 <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${Math.min(100, (recordingDuration / VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (recordingDuration / minDuration) * 100)}%` }}
                   />
                 </div>
               </div>
             )}
-            {recordingDuration >= VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS && (
+            {minDuration > 0 && recordingDuration >= minDuration && (
               <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-xs text-emerald-400 w-fit">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Durée minimum atteinte — vous pouvez arrêter
@@ -527,10 +530,10 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
               onClick={stopRecording} 
               variant="destructive" 
               size="lg"
-              disabled={recordingDuration < VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS}
+              disabled={minDuration > 0 && recordingDuration < minDuration}
             >
               <Square className="h-5 w-5 mr-2" />
-              Arrêter ({VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS}s min)
+              Arrêter{minDuration > 0 ? ` (${minDuration}s min)` : ""}
             </Button>
           )}
         </div>
@@ -546,11 +549,11 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
       )}
 
       {/* Duration validation */}
-      {recordedUrl && !isDurationValid && (
+      {recordedUrl && !isDurationValid && minDuration > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            La vidéo doit faire au moins {VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS} secondes. 
+            La vidéo doit faire au moins {minDuration} secondes. 
             Durée actuelle : {recordingDuration}s
           </AlertDescription>
         </Alert>
@@ -583,10 +586,6 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
       </div>
 
       {/* Suggested script */}
-      <div className="bg-muted/50 rounded-lg p-4">
-        <p className="text-sm font-medium mb-2">📝 Script suggéré :</p>
-        <p className="text-sm text-muted-foreground whitespace-pre-line">{SUGGESTED_SCRIPT}</p>
-      </div>
 
       {/* Consent */}
       {recordedUrl && isDurationValid && (
