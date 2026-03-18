@@ -175,12 +175,13 @@ export default function CampaignDetail() {
         const allCampaignIds = subs.length > 0 ? [id, ...subs.map((s) => s.id)] : [id];
 
         // Fetch all videos for this campaign + sub-campaigns
-        const { data: videosData } = await supabase
+        const { data: videosData, error: videosError } = await supabase
           .from("videos")
           .select("*, recipients(first_name, last_name, email, company)")
           .in("campaign_id", allCampaignIds)
           .eq("org_id", membership.org_id);
 
+        console.log("Videos query result:", { videosData, videosError, allCampaignIds, orgId: membership.org_id });
         setVideos((videosData || []) as (VideoType & { recipient?: Recipient })[]);
 
         // Fetch analytics
