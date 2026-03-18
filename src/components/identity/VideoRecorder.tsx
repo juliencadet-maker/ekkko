@@ -87,6 +87,8 @@ interface VideoRecorderProps {
   userInfo?: VideoRecorderUserInfo;
   /** Custom teleprompter script (e.g. consent text). Overrides the default generated script. */
   customScript?: string;
+  /** Minimum recording duration in seconds. Defaults to VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS (120s). */
+  minDurationSeconds?: number;
 }
 
 export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo, customScript }: VideoRecorderProps) {
