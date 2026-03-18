@@ -88,7 +88,7 @@ interface VideoRecorderProps {
   customScript?: string;
 }
 
-export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo }: VideoRecorderProps) {
+export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo, customScript }: VideoRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
