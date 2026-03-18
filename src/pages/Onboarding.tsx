@@ -116,8 +116,10 @@ export default function Onboarding() {
     }
   };
 
+  const isDemoAccount = profile?.email === "demo@ekko.app";
+
   const handleComplete = async () => {
-    if (!trainingVideo || !consentVideo) {
+    if (!isDemoAccount && (!trainingVideo || !consentVideo)) {
       toast({ title: "Vidéos requises", description: "Veuillez importer les deux vidéos pour continuer.", variant: "destructive" });
       return;
     }
@@ -140,14 +142,61 @@ export default function Onboarding() {
 
       if (!membership) throw new Error("No org membership found");
 
+      // Demo account: skip real uploads and HeyGen, create mock identity
+      if (isDemoAccount) {
+        setCloneStatus("creating");
+
+        const { data: provider } = await supabase
+          .from("providers")
+          .select("id")
+          .eq("org_id", membership.org_id)
+          .eq("is_active", true)
+          .single();
+
+        const displayName = `${title} – ${firstName} ${lastName}`;
+
+        const { data: identity, error: identityError } = await supabase
+          .from("identities")
+          .insert({
+            org_id: membership.org_id,
+            owner_user_id: user.id,
+            provider_id: provider?.id || null,
+            display_name: displayName,
+            type: identityType as any,
+            status: "ready",
+            clone_status: "ready",
+            reference_video_path: `demo/mock_training.mp4`,
+            consent_given: true,
+            consent_given_at: new Date().toISOString(),
+            metadata: { demo: true, title, company },
+          })
+          .select()
+          .single();
+
+        if (identityError) throw identityError;
+
+        await supabase.from("profiles").update({
+          default_identity_id: identity.id,
+          onboarding_completed: true,
+          onboarding_step: 4,
+        }).eq("user_id", user.id);
+
+        await logEvent({ eventType: "identity_created", entityType: "identity", entityId: identity.id, newValues: { displayName, type: identityType, demo: true } });
+        await logEvent({ eventType: "onboarding_completed" });
+
+        toast({ title: "Configuration terminée ! 🎉", description: "Votre identité démo est prête." });
+        setCurrentStep("complete");
+        return;
+      }
+
+      // Real account flow
       const timestamp = Date.now();
       const trainingPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_training.mp4`;
       const consentPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_consent.mp4`;
 
-      // Upload both videos
       const [trainingUpload, consentUpload] = await Promise.all([
-        supabase.storage.from("identity_assets").upload(trainingPath, trainingVideo, { contentType: trainingVideo.type, upsert: true }),
-        supabase.storage.from("identity_assets").upload(consentPath, consentVideo, { contentType: consentVideo.type, upsert: true }),
+        supabase.storage.from("identity_assets").upload(trainingPath, trainingVideo!, { contentType: trainingVideo!.type, upsert: true }),
+        supabase.storage.from("identity_assets").upload(consentPath, consentVideo!, { contentType: consentVideo!.type, upsert: true }),
       ]);
 
       if (trainingUpload.error) throw trainingUpload.error;
@@ -157,7 +206,6 @@ export default function Onboarding() {
 
       setCloneStatus("creating");
 
-      // Get provider
       const { data: provider } = await supabase
         .from("providers")
         .select("id")
@@ -167,7 +215,6 @@ export default function Onboarding() {
 
       const displayName = `${title} – ${firstName} ${lastName}`;
 
-      // Create identity with clone_status: pending
       const { data: identity, error: identityError } = await supabase
         .from("identities")
         .insert({
@@ -188,7 +235,6 @@ export default function Onboarding() {
 
       if (identityError) throw identityError;
 
-      // Update profile
       await supabase.from("profiles").update({
         default_identity_id: identity.id,
         onboarding_completed: true,
@@ -198,7 +244,6 @@ export default function Onboarding() {
       await logEvent({ eventType: "identity_created", entityType: "identity", entityId: identity.id, newValues: { displayName, type: identityType } });
       await logEvent({ eventType: "onboarding_completed" });
 
-      // Trigger HeyGen avatar creation in background
       setCloneStatus("pending");
       try {
         await heygenApi.createAvatar(identity.id);
