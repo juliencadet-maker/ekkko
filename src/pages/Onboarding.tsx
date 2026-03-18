@@ -163,7 +163,7 @@ export default function Onboarding() {
 
       if (!membership) throw new Error("No org membership found");
 
-      // Demo account: skip real uploads and HeyGen
+      // Demo account: skip real uploads and Tavus
       if (isDemoAccount) {
         setCloneStatus("creating");
 
