@@ -1,0 +1,1 @@
+UPDATE profiles SET onboarding_completed = false, onboarding_step = 0 WHERE email = 'exec@ekko.app';
