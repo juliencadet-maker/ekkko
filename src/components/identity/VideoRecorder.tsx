@@ -476,7 +476,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
               className="h-24 overflow-hidden text-white text-center"
             >
             <div className="space-y-3 py-2">
-                {generateTeleprompterScript(userInfo).split('\n\n').map((paragraph, index) => (
+                {(customScript || generateTeleprompterScript(userInfo)).split('\n\n').map((paragraph, index) => (
                   <p 
                     key={index} 
                     className="text-sm md:text-base leading-relaxed font-medium"
