@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
-import { heygenApi } from "@/lib/api/heygen";
+import { tavusApi } from "@/lib/api/tavus";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -119,7 +119,7 @@ export default function Approvals() {
 
         // Auto-trigger video generation
         try {
-          await heygenApi.generateVideo(selectedApproval.campaign_id);
+          await tavusApi.generateVideo(selectedApproval.campaign_id);
         } catch (genError) {
           console.error("Video generation trigger error:", genError);
           // Don't block approval if generation fails to start

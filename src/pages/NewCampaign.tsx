@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { heygenApi } from "@/lib/api/heygen";
+import { tavusApi } from "@/lib/api/tavus";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
@@ -238,7 +238,7 @@ export default function NewCampaign() {
           description: "La demande de validation a été envoyée.",
         });
       } else {
-        // Auto-approved - trigger HeyGen video generation
+        // Auto-approved - trigger Tavus video generation
         await logEvent({
           eventType: "campaign_approved",
           entityType: "campaign",
@@ -246,7 +246,7 @@ export default function NewCampaign() {
         });
 
         try {
-          await heygenApi.generateVideo(campaign.id);
+          await tavusApi.generateVideo(campaign.id);
           toast({
             title: "Campagne créée",
             description: "La génération vidéo est en cours.",

@@ -1,16 +1,17 @@
 project_id = "kqpbsznldzrklnnbqtwq"
 
-[functions.heygen-avatar-webhook]
+[functions.tavus-create-replica]
 verify_jwt = false
 
-[functions.heygen-create-avatar]
+[functions.tavus-generate-video]
 verify_jwt = false
 
-[functions.heygen-generate-video]
+[functions.tavus-webhook]
 verify_jwt = false
 
-[functions.heygen-webhook]
+[functions.tavus-check-status]
 verify_jwt = false
+
 
 [functions.track-watch-progress]
 verify_jwt = false
