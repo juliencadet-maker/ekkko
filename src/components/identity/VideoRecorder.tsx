@@ -84,6 +84,8 @@ interface VideoRecorderProps {
   consentGiven: boolean;
   onConsentChange: (checked: boolean) => void;
   userInfo?: VideoRecorderUserInfo;
+  /** Custom teleprompter script (e.g. consent text). Overrides the default generated script. */
+  customScript?: string;
 }
 
 export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo }: VideoRecorderProps) {
