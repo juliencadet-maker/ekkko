@@ -113,7 +113,7 @@ serve(async (req) => {
     const callbackUrl = `${supabaseUrl}/functions/v1/heygen-avatar-webhook`;
 
     // Create digital twin on HeyGen
-    const heygenResponse = await fetch(`${HEYGEN_API_URL}/v2/digital_twin`, {
+    const heygenResponse = await fetch(`${HEYGEN_API_URL}/v2/video_avatar`, {
       method: "POST",
       headers: {
         "X-Api-Key": HEYGEN_API_KEY,
@@ -121,13 +121,22 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         training_footage_url: trainingUrl,
-        consent_video_url: consentUrl,
+        video_consent_url: consentUrl,
         avatar_name: avatar_name || identity.display_name,
-        callback_url: callbackUrl,
       }),
     });
 
-    const heygenData = await heygenResponse.json();
+    const heygenText = await heygenResponse.text();
+    let heygenData: any;
+    try {
+      heygenData = JSON.parse(heygenText);
+    } catch {
+      console.error("HeyGen returned non-JSON:", heygenText.substring(0, 500));
+      return new Response(
+        JSON.stringify({ error: `HeyGen returned invalid response (status ${heygenResponse.status})` }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!heygenResponse.ok) {
       console.error("HeyGen API error:", heygenResponse.status, heygenData);
