@@ -20,12 +20,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // HeyGen webhook payload structure
+    // HeyGen webhook payload structure: event_data (not data)
+    const ed = payload.event_data || payload.data || {};
     const eventType = payload.event_type || payload.type;
-    const videoId = payload.data?.video_id || payload.video_id;
-    const status = payload.data?.status || payload.status;
-    const videoUrl = payload.data?.video_url || payload.video_url;
-    const callbackId = payload.data?.callback_id || payload.callback_id;
+    const videoId = ed.video_id || payload.video_id;
+    const videoUrl = ed.url || ed.video_url || payload.video_url;
+    const callbackId = ed.callback_id || payload.callback_id;
+    const errorMsg = ed.msg || ed.error || payload.message;
+    const status = ed.status || payload.status;
 
     if (!videoId) {
       console.log("No video_id in webhook payload, ignoring");
@@ -48,7 +50,7 @@ serve(async (req) => {
       });
     }
 
-    if (status === "completed" || status === "ready" || eventType === "video.completed") {
+    if (eventType === "avatar_video.success" || eventType === "video.completed" || status === "completed" || status === "ready") {
       console.log("Video ready:", videoId, "url:", videoUrl);
 
       // Update video_job to completed
@@ -157,14 +159,14 @@ serve(async (req) => {
           }
         }
       }
-    } else if (status === "error" || status === "failed" || eventType === "video.failed") {
-      console.error("Video generation failed:", videoId, payload);
+    } else if (eventType === "avatar_video.fail" || eventType === "video.failed" || status === "error" || status === "failed") {
+      console.error("Video generation failed:", videoId, errorMsg);
 
       await supabase
         .from("video_jobs")
         .update({
           status: "failed",
-          error_message: payload.data?.error || payload.message || "Video generation failed",
+          error_message: errorMsg || "Video generation failed",
           completed_at: new Date().toISOString(),
         })
         .eq("id", videoJob.id);
