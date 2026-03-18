@@ -181,7 +181,6 @@ export default function CampaignDetail() {
           .in("campaign_id", allCampaignIds)
           .eq("org_id", membership.org_id);
 
-        console.log("Videos query result:", { videosData, videosError, allCampaignIds, orgId: membership.org_id });
         setVideos((videosData || []) as (VideoType & { recipient?: Recipient })[]);
 
         // Fetch analytics
