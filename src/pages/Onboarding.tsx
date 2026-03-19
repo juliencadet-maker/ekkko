@@ -267,7 +267,7 @@ export default function Onboarding() {
 
       setCloneStatus("pending");
       try {
-        await heygenApi.createAvatar(identity.id);
+        await tavusApi.createReplica(identity.id);
       } catch {
         console.error("Avatar creation failed (non-blocking)");
       }

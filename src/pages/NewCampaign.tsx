@@ -246,7 +246,7 @@ export default function NewCampaign() {
         });
 
         try {
-          await heygenApi.generateVideo(campaign.id);
+          await tavusApi.generateVideo(campaign.id);
           toast({
             title: "Campagne créée",
             description: "La génération vidéo est en cours.",
