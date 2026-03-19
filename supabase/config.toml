@@ -12,6 +12,17 @@ verify_jwt = false
 [functions.tavus-check-status]
 verify_jwt = false
 
+[functions.heygen-create-avatar]
+verify_jwt = false
+
+[functions.heygen-generate-video]
+verify_jwt = false
+
+[functions.heygen-webhook]
+verify_jwt = false
+
+[functions.heygen-check-status]
+verify_jwt = false
 
 [functions.track-watch-progress]
 verify_jwt = false

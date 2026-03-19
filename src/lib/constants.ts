@@ -15,7 +15,7 @@ export const ONBOARDING_STEPS = [
 
 // Video Upload Constraints
 export const VIDEO_CONSTRAINTS = {
-  MIN_DURATION_SECONDS: 30, // 30 seconds minimum for Tavus
+  MIN_DURATION_SECONDS: 120, // 2 minutes minimum for HeyGen Digital Twin
   MAX_DURATION_SECONDS: 600, // 10 minutes max
   RECOMMENDED_DURATION_SECONDS: 180, // 3 minutes ideal
   MAX_FILE_SIZE_MB: 500,
