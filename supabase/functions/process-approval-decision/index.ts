@@ -96,7 +96,7 @@ serve(async (req) => {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
       try {
-        await fetch(`${supabaseUrl}/functions/v1/tavus-generate-video`, {
+        await fetch(`${supabaseUrl}/functions/v1/heygen-generate-video`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

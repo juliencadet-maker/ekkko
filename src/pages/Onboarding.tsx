@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
-import { tavusApi } from "@/lib/api/tavus";
+import { heygenApi } from "@/lib/api/heygen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -267,7 +267,7 @@ export default function Onboarding() {
 
       setCloneStatus("pending");
       try {
-        await tavusApi.createReplica(identity.id);
+        await heygenApi.createAvatar(identity.id);
       } catch {
         console.error("Avatar creation failed (non-blocking)");
       }
