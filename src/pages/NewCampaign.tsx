@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { tavusApi } from "@/lib/api/tavus";
+import { heygenApi } from "@/lib/api/heygen";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
