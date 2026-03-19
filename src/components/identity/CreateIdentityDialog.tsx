@@ -159,9 +159,9 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
         newValues: { displayName, type: identityType },
       });
 
-      // Trigger Tavus replica creation in background
+      // Trigger HeyGen avatar creation in background
       try {
-        await tavusApi.createReplica(identity.id);
+        await heygenApi.createAvatar(identity.id);
         toast({ 
           title: "Identité créée avec succès ! 🎉",
           description: "L'entraînement de votre avatar vidéo est en cours. Cela prend quelques minutes.",
