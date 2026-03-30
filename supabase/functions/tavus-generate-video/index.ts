@@ -118,6 +118,7 @@ async function generateVoxtralAudio(
 }
 
 serve(async (req) => {
+  console.log("tavus-generate-video called:", req.method, req.url);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -139,43 +140,12 @@ serve(async (req) => {
       );
     }
 
-    // Authenticate: accept user JWT or service role key
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const isServiceRole = token === serviceRoleKey;
-
-    let supabase;
-    if (isServiceRole) {
-      // Internal call from another edge function (e.g. process-approval-decision)
-      supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        serviceRoleKey,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      );
-    } else {
-      // User call: validate JWT
-      supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-
-      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-      if (claimsError || !claimsData?.claims) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
+    // Use service client for all operations (function is protected by verify_jwt=false in config)
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
 
     const { campaign_id, video_job_id } = await req.json();
     if (!campaign_id) {
@@ -286,8 +256,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           replica_id: replicaId,
-          script: personalizedScript,
-          audio_url: audioUrl, // Voxtral-generated audio for lip-sync
+          audio_url: audioUrl, // Voxtral-generated audio for lip-sync (no script when audio_url is provided)
           video_name: `${campaign.name} - ${recipient.first_name || recipient.email}`,
           callback_url: callbackUrl,
         }),

@@ -1,0 +1,1 @@
+UPDATE public.identities SET metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{voice_reference_path}', '"identities/36cde3e9-6cb2-4d26-8942-a778615fa47b/onboarding/d856fc88-4f3a-4587-8303-62113dec6ff5/voice_reference.wav"') WHERE id = '43fc577a-c7f5-41ba-9ebc-6eb8fae1501e';
