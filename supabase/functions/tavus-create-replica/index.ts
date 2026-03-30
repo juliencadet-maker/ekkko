@@ -46,8 +46,6 @@ serve(async (req) => {
       );
     }
 
-    const userId = claimsData.claims.sub;
-
     const { identity_id } = await req.json();
     if (!identity_id) {
       return new Response(
@@ -85,7 +83,7 @@ serve(async (req) => {
 
     const { data: signedUrlData, error: signedUrlError } = await serviceClient.storage
       .from("identity_assets")
-      .createSignedUrl(identity.reference_video_path, 3600); // 1 hour expiry
+      .createSignedUrl(identity.reference_video_path, 3600);
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error("Signed URL error:", signedUrlError);
@@ -95,11 +93,12 @@ serve(async (req) => {
       );
     }
 
-    console.log("Creating Tavus replica for identity:", identity_id);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const callbackUrl = `${supabaseUrl}/functions/v1/tavus-webhook`;
 
-    // Create replica on Tavus
-    // Tavus requires train_video_url (and optionally consent_video_url for personal replicas)
-    // We use the same video for both training and consent
+    console.log("Creating Tavus replica for identity:", identity_id, "with callback:", callbackUrl);
+
+    // Create replica on Tavus with callback_url for training completion notification
     const tavusResponse = await fetch(`${TAVUS_API_URL}/v2/replicas`, {
       method: "POST",
       headers: {
@@ -111,6 +110,7 @@ serve(async (req) => {
         consent_video_url: signedUrlData.signedUrl,
         replica_name: identity.display_name,
         model_name: "phoenix-3",
+        callback_url: callbackUrl,
       }),
     });
 
@@ -127,16 +127,19 @@ serve(async (req) => {
     const replicaId = tavusData.replica_id;
     console.log("Tavus replica created:", replicaId);
 
-    // Update identity with Tavus replica ID
-    const { error: updateError } = await supabase
+    // Update identity with Tavus replica ID and clone statuses
+    const { error: updateError } = await serviceClient
       .from("identities")
       .update({
         provider_identity_id: replicaId,
-        status: "pending_approval", // Will be set to "ready" when replica training completes
+        clone_status: "training",
+        status: "pending_approval",
         metadata: {
           ...(identity.metadata as Record<string, unknown> || {}),
           tavus_replica_id: replicaId,
-          tavus_replica_status: "training",
+          tavus_clone_status: "training",
+          // Voice clone is zero-shot via Voxtral — ready as soon as reference video exists
+          voice_clone_status: "ready",
         },
       })
       .eq("id", identity_id);
