@@ -28,20 +28,36 @@ import { VideoRecorder } from "@/components/identity/VideoRecorder";
 import { RecordingGuide } from "@/components/identity/RecordingGuide";
 
 type OnboardingStep = "welcome" | "profile" | "identity" | "complete";
-type IdentitySubStep = "guide-training" | "record-training" | "guide-consent" | "record-consent" | "review";
+type IdentitySubStep = "guide" | "record" | "review";
 
-// Generate consent script with unique code
-function generateConsentScript(firstName: string, lastName: string): { script: string; code: string } {
+// Generate combined teleprompter script (presentation + consent)
+function generateCombinedScript(firstName: string, lastName: string, company: string, title: string): { script: string; code: string } {
   const code = Math.floor(10 + Math.random() * 90).toString();
+  const companyLine = company ? `Je travaille chez ${company} en tant que ${title}.` : `J'occupe la fonction de ${title}.`;
+  
   return {
     code,
-    script: `Je m'appelle ${firstName} ${lastName}. J'autorise la création d'un clone numérique de mon apparence et de ma voix. Ce clone sera utilisé exclusivement dans le cadre de communications professionnelles via la plateforme Ekko. Pour des raisons de sécurité, mon code unique est ${code}.`,
+    script: `Bonjour, je m'appelle ${firstName} ${lastName}.
+
+${companyLine}
+
+Je fais cet enregistrement car bientôt je serai en mesure de créer plus de confiance sur le cycle de vente, tout en gagnant du temps.
+
+Je pourrai également être présent sur tous les deals sans avoir à bloquer mon agenda.
+
+Cela me permettra d'impliquer des personnes plus facilement, afin de créer plus de confiance et d'engagement avec mes clients et partenaires.
+
+Avec Ekko, je vais pouvoir personnaliser mes messages vidéo pour chaque prospect, et ainsi augmenter significativement mes taux de conversion.
+
+Pour finaliser, je confirme que j'autorise la création d'un clone numérique de mon apparence et de ma voix. Ce clone sera utilisé exclusivement dans le cadre de communications professionnelles via la plateforme Ekko. Mon code unique est ${code}.
+
+Merci !`,
   };
 }
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome");
-  const [identitySubStep, setIdentitySubStep] = useState<IdentitySubStep>("guide-training");
+  const [identitySubStep, setIdentitySubStep] = useState<IdentitySubStep>("guide");
   const [isLoading, setIsLoading] = useState(false);
 
   // Profile form
@@ -55,12 +71,10 @@ export default function Onboarding() {
   const [identityType, setIdentityType] = useState<string>("other");
   const [consentGiven, setConsentGiven] = useState(false);
   
-  // Video recordings
-  const [trainingBlob, setTrainingBlob] = useState<Blob | null>(null);
-  const [trainingDuration, setTrainingDuration] = useState(0);
-  const [consentBlob, setConsentBlob] = useState<Blob | null>(null);
-  const [consentDuration, setConsentDuration] = useState(0);
-  const [consentScriptData, setConsentScriptData] = useState<{ script: string; code: string } | null>(null);
+  // Single video recording
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [scriptData, setScriptData] = useState<{ script: string; code: string } | null>(null);
   const [cloneStatus, setCloneStatus] = useState<"idle" | "uploading" | "creating" | "pending">("idle");
 
   const navigate = useNavigate();
@@ -91,8 +105,11 @@ export default function Onboarding() {
 
       await logEvent({ eventType: "onboarding_profile_completed", newValues: { firstName, lastName, title } });
       toast({ title: "Profil enregistré ✓" });
+      
+      // Generate the combined script with user info
+      setScriptData(generateCombinedScript(firstName, lastName, company, title));
       setCurrentStep("identity");
-      setIdentitySubStep("guide-training");
+      setIdentitySubStep("guide");
     } catch {
       toast({ title: "Erreur", description: "Impossible d'enregistrer le profil", variant: "destructive" });
     } finally {
@@ -100,38 +117,21 @@ export default function Onboarding() {
     }
   };
 
-  const handleTrainingVideoReady = useCallback((blob: Blob, duration: number) => {
-    setTrainingBlob(blob);
-    setTrainingDuration(duration);
+  const handleVideoReady = useCallback((blob: Blob, duration: number) => {
+    setVideoBlob(blob);
+    setVideoDuration(duration);
   }, []);
 
-  const handleConsentVideoReady = useCallback((blob: Blob, duration: number) => {
-    setConsentBlob(blob);
-    setConsentDuration(duration);
-  }, []);
-
-  const handleStartTrainingRecording = () => {
-    setIdentitySubStep("record-training");
-  };
-
-  const handleStartConsentRecording = () => {
-    // Generate consent script with unique code
-    const data = generateConsentScript(firstName, lastName);
-    setConsentScriptData(data);
-    setIdentitySubStep("record-consent");
-  };
-
-  const handleTrainingDone = () => {
-    if (!trainingBlob) {
-      toast({ title: "Vidéo requise", description: "Veuillez d'abord enregistrer votre vidéo de présentation.", variant: "destructive" });
-      return;
+  const handleStartRecording = () => {
+    if (!scriptData) {
+      setScriptData(generateCombinedScript(firstName, lastName, company, title));
     }
-    setIdentitySubStep("guide-consent");
+    setIdentitySubStep("record");
   };
 
-  const handleConsentDone = () => {
-    if (!consentBlob) {
-      toast({ title: "Vidéo requise", description: "Veuillez d'abord enregistrer votre vidéo de consentement.", variant: "destructive" });
+  const handleRecordingDone = () => {
+    if (!videoBlob) {
+      toast({ title: "Vidéo requise", description: "Veuillez d'abord enregistrer votre vidéo.", variant: "destructive" });
       return;
     }
     setIdentitySubStep("review");
@@ -140,8 +140,8 @@ export default function Onboarding() {
   const isDemoAccount = profile?.email === "demo@ekko.app";
 
   const handleComplete = async () => {
-    if (!isDemoAccount && (!trainingBlob || !consentBlob)) {
-      toast({ title: "Vidéos requises", description: "Veuillez enregistrer les deux vidéos pour continuer.", variant: "destructive" });
+    if (!isDemoAccount && !videoBlob) {
+      toast({ title: "Vidéo requise", description: "Veuillez enregistrer votre vidéo pour continuer.", variant: "destructive" });
       return;
     }
 
@@ -210,20 +210,17 @@ export default function Onboarding() {
         return;
       }
 
-      // Real account flow: upload recordings
+      // Real account flow: upload single video
       const timestamp = Date.now();
-      const trainingPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_training.webm`;
-      const consentPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_consent.webm`;
+      const videoPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_reference.webm`;
 
-      const [trainingUpload, consentUpload] = await Promise.all([
-        supabase.storage.from("identity_assets").upload(trainingPath, trainingBlob!, { contentType: "video/webm", upsert: true }),
-        supabase.storage.from("identity_assets").upload(consentPath, consentBlob!, { contentType: "video/webm", upsert: true }),
-      ]);
+      const { error: uploadError } = await supabase.storage
+        .from("identity_assets")
+        .upload(videoPath, videoBlob!, { contentType: "video/webm", upsert: true });
 
-      if (trainingUpload.error) throw trainingUpload.error;
-      if (consentUpload.error) throw consentUpload.error;
+      if (uploadError) throw uploadError;
 
-      await logEvent({ eventType: "onboarding_video_recorded", metadata: { trainingPath, consentPath } });
+      await logEvent({ eventType: "onboarding_video_recorded", metadata: { videoPath, duration: videoDuration } });
 
       setCloneStatus("creating");
 
@@ -236,6 +233,7 @@ export default function Onboarding() {
 
       const displayName = `${title} – ${firstName} ${lastName}`;
 
+      // Single video serves as both training (Tavus) and voice reference (Voxtral)
       const { data: identity, error: identityError } = await supabase
         .from("identities")
         .insert({
@@ -246,10 +244,11 @@ export default function Onboarding() {
           type: identityType as any,
           status: "pending_approval",
           clone_status: "pending",
-          reference_video_path: trainingPath,
+          reference_video_path: videoPath,
+          reference_video_duration: videoDuration,
           consent_given: true,
           consent_given_at: new Date().toISOString(),
-          metadata: { consent_video_path: consentPath, title, company, consent_code: consentScriptData?.code },
+          metadata: { title, company, consent_code: scriptData?.code },
         })
         .select()
         .single();
@@ -266,6 +265,9 @@ export default function Onboarding() {
       await logEvent({ eventType: "onboarding_completed" });
 
       setCloneStatus("pending");
+      
+      // Trigger Tavus replica creation (visual clone) - non-blocking
+      // The same video stored in reference_video_path will be used by Voxtral for voice cloning at generation time
       try {
         await tavusApi.createReplica(identity.id);
       } catch {
@@ -385,16 +387,16 @@ export default function Onboarding() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Video className="h-5 w-5" />
-                  Créez votre clone vidéo
+                  Créez votre clone
                 </CardTitle>
                 <CardDescription>
                   {isDemoAccount
                     ? "En mode démo, votre identité sera créée automatiquement sans vidéo."
-                    : identitySubStep === "guide-training" || identitySubStep === "record-training"
-                      ? "Étape 1/2 — Enregistrez votre vidéo de présentation (minimum 2 minutes)"
-                      : identitySubStep === "guide-consent" || identitySubStep === "record-consent"
-                        ? "Étape 2/2 — Enregistrez votre déclaration de consentement"
-                        : "Vérifiez vos enregistrements et finalisez"}
+                    : identitySubStep === "guide"
+                      ? "Une seule vidéo pour cloner votre apparence et votre voix."
+                      : identitySubStep === "record"
+                        ? "Enregistrez-vous en suivant le téléprompter — cette vidéo sert pour le visuel ET la voix."
+                        : "Vérifiez votre enregistrement et finalisez."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -435,67 +437,27 @@ export default function Onboarding() {
                   </>
                 ) : (
                   <>
-                    {/* Sub-step: Training Guide */}
-                    {identitySubStep === "guide-training" && (
-                      <RecordingGuide videoType="training" onStartRecording={handleStartTrainingRecording} />
+                    {/* Sub-step: Guide */}
+                    {identitySubStep === "guide" && (
+                      <RecordingGuide onStartRecording={handleStartRecording} />
                     )}
 
-                    {/* Sub-step: Training Recording */}
-                    {identitySubStep === "record-training" && (
+                    {/* Sub-step: Recording */}
+                    {identitySubStep === "record" && (
                       <div className="space-y-4">
                         <VideoRecorder
-                          onVideoReady={handleTrainingVideoReady}
+                          onVideoReady={handleVideoReady}
                           consentGiven={true}
                           onConsentChange={() => {}}
                           userInfo={{ firstName, lastName, company, title }}
+                          customScript={scriptData?.script}
                         />
                         <div className="flex justify-between pt-2">
-                          <Button variant="outline" onClick={() => setIdentitySubStep("guide-training")}>
+                          <Button variant="outline" onClick={() => setIdentitySubStep("guide")}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Retour aux conseils
                           </Button>
-                          <Button onClick={handleTrainingDone} disabled={!trainingBlob}>
-                            Continuer
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Sub-step: Consent Guide */}
-                    {identitySubStep === "guide-consent" && (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
-                          <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                          <span className="text-sm font-medium">Vidéo de présentation enregistrée ✓ ({trainingDuration}s)</span>
-                        </div>
-                        <RecordingGuide videoType="consent" onStartRecording={handleStartConsentRecording} />
-                        <div className="bg-muted/50 rounded-lg p-4 border">
-                          <p className="text-sm font-medium mb-2">📝 Texte à lire pendant l'enregistrement :</p>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {consentScriptData?.script || generateConsentScript(firstName, lastName).script}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Sub-step: Consent Recording */}
-                    {identitySubStep === "record-consent" && (
-                      <div className="space-y-4">
-                        <VideoRecorder
-                          onVideoReady={handleConsentVideoReady}
-                          consentGiven={true}
-                          onConsentChange={() => {}}
-                          userInfo={{ firstName, lastName, company, title }}
-                          customScript={consentScriptData?.script}
-                          minDurationSeconds={0}
-                        />
-                        <div className="flex justify-between pt-2">
-                          <Button variant="outline" onClick={() => setIdentitySubStep("guide-consent")}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Retour
-                          </Button>
-                          <Button onClick={handleConsentDone} disabled={!consentBlob}>
+                          <Button onClick={handleRecordingDone} disabled={!videoBlob}>
                             Continuer
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
@@ -506,15 +468,9 @@ export default function Onboarding() {
                     {/* Sub-step: Review */}
                     {identitySubStep === "review" && (
                       <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
-                            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                            <span className="text-sm font-medium">Vidéo de présentation — {trainingDuration}s</span>
-                          </div>
-                          <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
-                            <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                            <span className="text-sm font-medium">Vidéo de consentement — {consentDuration}s</span>
-                          </div>
+                        <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                          <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                          <span className="text-sm font-medium">Vidéo enregistrée — {videoDuration}s</span>
                         </div>
 
                         {/* Identity Type */}
@@ -534,7 +490,7 @@ export default function Onboarding() {
                         <div className="flex items-start space-x-3 p-4 bg-muted/50 rounded-lg border">
                           <Checkbox id="consent" checked={consentGiven} onCheckedChange={(c) => setConsentGiven(!!c)} className="mt-1" />
                           <label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
-                            J'autorise la création d'un clone numérique de mon apparence et de ma voix à partir de ces vidéos, conformément aux{" "}
+                            J'autorise la création d'un clone numérique de mon apparence et de ma voix à partir de cette vidéo, conformément aux{" "}
                             <span className="text-primary underline">conditions d'utilisation</span>.
                           </label>
                         </div>
@@ -543,20 +499,20 @@ export default function Onboarding() {
                         {cloneStatus === "uploading" && (
                           <Alert>
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <AlertDescription>Upload des vidéos en cours...</AlertDescription>
+                            <AlertDescription>Upload de la vidéo en cours...</AlertDescription>
                           </Alert>
                         )}
                         {cloneStatus === "creating" && (
                           <Alert>
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <AlertDescription>Création du clone en cours...</AlertDescription>
+                            <AlertDescription>Création des clones visuel et vocal en cours...</AlertDescription>
                           </Alert>
                         )}
 
                         <div className="flex justify-between pt-2">
-                          <Button variant="outline" onClick={() => setIdentitySubStep("guide-consent")}>
+                          <Button variant="outline" onClick={() => { setVideoBlob(null); setVideoDuration(0); setIdentitySubStep("guide"); }}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Refaire les vidéos
+                            Refaire la vidéo
                           </Button>
                           <Button onClick={handleComplete} size="lg" disabled={isLoading || !consentGiven}>
                             {isLoading ? (
@@ -583,7 +539,7 @@ export default function Onboarding() {
                 </div>
                 <CardTitle className="text-2xl">Vous êtes prêt ! 🎉</CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Votre clone vidéo est en cours de création. Vous serez notifié dès qu'il sera prêt.
+                  Votre clone vidéo et vocal est en cours de création. Vous serez notifié dès qu'il sera prêt.
                   En attendant, vous pouvez explorer la plateforme.
                 </CardDescription>
               </CardHeader>
