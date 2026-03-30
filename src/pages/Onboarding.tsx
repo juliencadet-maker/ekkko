@@ -73,6 +73,7 @@ export default function Onboarding() {
   
   // Single video recording
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [videoDuration, setVideoDuration] = useState(0);
   const [scriptData, setScriptData] = useState<{ script: string; code: string } | null>(null);
   const [cloneStatus, setCloneStatus] = useState<"idle" | "uploading" | "creating" | "pending">("idle");
