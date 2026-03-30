@@ -99,6 +99,20 @@ export default function VideoLandingPage() {
   const viewerHashRef = useRef(generateViewerHash());
   const lastReportedRef = useRef(0);
   const watchSecondsRef = useRef(0);
+  const lastSeekFromRef = useRef(0);
+  const segmentReplayCountRef = useRef<Record<string, number>>({});
+
+  const { trackEvent } = useVideoEventTracker();
+
+  const baseTrackParams = useCallback(() => ({
+    video_id: videoId || "",
+    campaign_id: campaignId || "",
+    viewer_hash: viewerHashRef.current,
+    viewer_email: viewerEmail || undefined,
+    viewer_name: viewerName || undefined,
+    referred_by_hash: referredBy || undefined,
+    referrer: document.referrer || undefined,
+  }), [videoId, campaignId, viewerEmail, viewerName, referredBy]);
 
   useEffect(() => {
     const fetchCampaign = async () => {
