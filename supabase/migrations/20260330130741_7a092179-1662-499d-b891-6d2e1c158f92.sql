@@ -1,0 +1,1 @@
+UPDATE public.campaigns SET status = 'approved' WHERE id = '09f1f687-ba9b-4a9e-a3ca-91b1b3eab4da';
