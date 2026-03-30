@@ -1,0 +1,1 @@
+UPDATE storage.buckets SET allowed_mime_types = array_append(allowed_mime_types, 'audio/wav') WHERE id = 'generated_videos' AND NOT ('audio/wav' = ANY(COALESCE(allowed_mime_types, '{}')));
