@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, 
@@ -15,9 +16,12 @@ import {
   Camera,
   FileVideo,
   ScrollText,
-  CheckCircle2
+  CheckCircle2,
+  ShieldCheck,
+  MessageSquare,
+  EarOff
 } from "lucide-react";
-import { VIDEO_CONSTRAINTS, SUGGESTED_SCRIPT } from "@/lib/constants";
+import { VIDEO_CONSTRAINTS, TAVUS_CONSENT_SCRIPT_EN, TAVUS_SPEAKING_SCRIPT_FR } from "@/lib/constants";
 import { WavRecorder } from "@/lib/wavRecorder";
 
 // User info for personalized teleprompter
@@ -28,26 +32,41 @@ export interface VideoRecorderUserInfo {
   title?: string;
 }
 
-// Generate personalized teleprompter script
-function generateTeleprompterScript(userInfo?: VideoRecorderUserInfo): string {
+// Recording phases matching Tavus requirements
+type RecordingPhase = "consent" | "speaking" | "listening";
+
+interface PhaseConfig {
+  key: RecordingPhase;
+  label: string;
+  icon: typeof ShieldCheck;
+  durationSeconds: number;
+  color: string;
+}
+
+const RECORDING_PHASES: PhaseConfig[] = [
+  { key: "consent", label: "Consentement", icon: ShieldCheck, durationSeconds: 15, color: "text-amber-500" },
+  { key: "speaking", label: "Parole", icon: MessageSquare, durationSeconds: VIDEO_CONSTRAINTS.SPEAKING_PHASE_SECONDS, color: "text-primary" },
+  { key: "listening", label: "Écoute", icon: EarOff, durationSeconds: VIDEO_CONSTRAINTS.LISTENING_PHASE_SECONDS, color: "text-emerald-500" },
+];
+
+// Generate personalized consent script
+function generateConsentScript(userInfo?: VideoRecorderUserInfo): string {
+  const fullName = [userInfo?.firstName, userInfo?.lastName].filter(Boolean).join(" ") || "[YOUR FULL NAME]";
+  return TAVUS_CONSENT_SCRIPT_EN.replace("[YOUR FULL NAME]", fullName);
+}
+
+// Generate personalized speaking script
+function generateSpeakingScript(userInfo?: VideoRecorderUserInfo): string {
   const firstName = userInfo?.firstName || "[votre prénom]";
   const lastName = userInfo?.lastName || "[votre nom]";
   const company = userInfo?.company || "[votre entreprise]";
   const title = userInfo?.title || "[votre fonction]";
 
-  return `Bonjour, je m'appelle ${firstName} ${lastName}.
-
-Je travaille chez ${company} en tant que ${title}.
-
-Je fais cet enregistrement car bientôt je serai en mesure de créer plus de confiance sur le cycle de vente, tout en gagnant du temps.
-
-Je pourrai également être présent sur tous les deals sans avoir à bloquer mon agenda.
-
-Cela me permettra d'impliquer des personnes plus facilement, afin de créer plus de confiance et d'engagement avec mes clients et partenaires.
-
-Avec Ekko, je vais pouvoir personnaliser mes messages vidéo pour chaque prospect, et ainsi augmenter significativement mes taux de conversion.
-
-Merci de votre attention !`;
+  return TAVUS_SPEAKING_SCRIPT_FR
+    .replace("[votre prénom]", firstName)
+    .replace("[votre nom]", lastName)
+    .replace("[votre entreprise]", company)
+    .replace("[votre fonction]", title);
 }
 
 // Supported MIME types in order of preference
@@ -83,14 +102,11 @@ function checkBrowserSupport(): { supported: boolean; reason?: string } {
 
 interface VideoRecorderProps {
   onVideoReady: (blob: Blob, duration: number) => void;
-  /** Called with audio-only blob extracted from the recording (for voice cloning) */
   onAudioReady?: (blob: Blob) => void;
   consentGiven: boolean;
   onConsentChange: (checked: boolean) => void;
   userInfo?: VideoRecorderUserInfo;
-  /** Custom teleprompter script (e.g. consent text). Overrides the default generated script. */
   customScript?: string;
-  /** Minimum recording duration in seconds. Defaults to VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS (120s). */
   minDurationSeconds?: number;
 }
 
@@ -105,7 +121,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
   const [isInitializingCamera, setIsInitializingCamera] = useState(false);
   const [browserSupport, setBrowserSupport] = useState<{ supported: boolean; reason?: string } | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
-  const [showTeleprompter, setShowTeleprompter] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState<RecordingPhase>("consent");
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -130,6 +146,36 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
     }
   }, [recordedBlob, consentGiven, recordingDuration, onVideoReady]);
 
+  // Determine current phase based on elapsed time
+  useEffect(() => {
+    if (!isRecording) return;
+    
+    const consentEnd = RECORDING_PHASES[0].durationSeconds;
+    const speakingEnd = consentEnd + RECORDING_PHASES[1].durationSeconds;
+    
+    if (recordingDuration < consentEnd) {
+      setCurrentPhase("consent");
+    } else if (recordingDuration < speakingEnd) {
+      setCurrentPhase("speaking");
+    } else {
+      setCurrentPhase("listening");
+    }
+  }, [recordingDuration, isRecording]);
+
+  // Get the script text for current phase
+  const getPhaseScript = useCallback((): string | null => {
+    if (customScript) return customScript;
+    
+    switch (currentPhase) {
+      case "consent":
+        return `🇬🇧 CONSENTEMENT — Lisez cette phrase EN ANGLAIS :\n\n${generateConsentScript(userInfo)}`;
+      case "speaking":
+        return `🇫🇷 PAROLE LIBRE — Parlez naturellement :\n\n${generateSpeakingScript(userInfo)}`;
+      case "listening":
+        return null; // No script during listening
+    }
+  }, [currentPhase, customScript, userInfo]);
+
   const initCamera = useCallback(async () => {
     setIsInitializingCamera(true);
     setCameraError(null);
@@ -146,10 +192,15 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: "user", 
-          width: { ideal: 1280, min: 640 }, 
-          height: { ideal: 720, min: 480 } 
+          width: { ideal: 1920, min: 1280 }, 
+          height: { ideal: 1080, min: 720 },
+          frameRate: { ideal: 30, min: 25 },
         },
-        audio: true,
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
       });
       
       streamRef.current = stream;
@@ -178,7 +229,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
       } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
         setCameraError("La caméra est utilisée par une autre application. Veuillez la fermer et réessayer.");
       } else if (err.name === "OverconstrainedError") {
-        setCameraError("Votre caméra ne supporte pas la résolution requise.");
+        setCameraError("Votre caméra ne supporte pas la résolution requise (1080p minimum).");
       } else if (err.name === "TypeError") {
         setCameraError("Erreur de configuration. Veuillez actualiser la page.");
       } else {
@@ -207,16 +258,15 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
     };
   }, [recordedUrl]);
 
-  // Auto-scroll teleprompter during recording
+  // Auto-scroll teleprompter during speaking phases
   useEffect(() => {
-    if (isRecording && showTeleprompter && teleprompterRef.current) {
+    if (isRecording && currentPhase !== "listening" && teleprompterRef.current) {
       const element = teleprompterRef.current;
       element.scrollTop = 0;
       
-      // Calculate scroll speed: total scroll height over ~35 seconds for comfortable reading
       const totalScrollHeight = element.scrollHeight - element.clientHeight;
-      const scrollDuration = 35000; // 35 seconds
-      const scrollStep = totalScrollHeight / (scrollDuration / 50); // Update every 50ms
+      const phaseDuration = currentPhase === "consent" ? 15000 : 55000;
+      const scrollStep = totalScrollHeight / (phaseDuration / 50);
       
       scrollIntervalRef.current = setInterval(() => {
         if (element.scrollTop < totalScrollHeight) {
@@ -233,7 +283,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         clearInterval(scrollIntervalRef.current);
       }
     };
-  }, [isRecording, showTeleprompter]);
+  }, [isRecording, currentPhase]);
 
   const startRecording = useCallback(() => {
     if (!streamRef.current) {
@@ -243,7 +293,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
 
     setRecordingError(null);
     chunksRef.current = [];
-    setShowTeleprompter(true);
+    setCurrentPhase("consent");
     
     try {
       const mimeType = getSupportedMimeType();
@@ -252,7 +302,6 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         return;
       }
 
-      // Video+audio recorder
       const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType });
 
       mediaRecorder.ondataavailable = (e) => {
@@ -284,7 +333,6 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         console.error("MediaRecorder error:", event);
         setRecordingError("Erreur pendant l'enregistrement. Veuillez réessayer.");
         setIsRecording(false);
-        setShowTeleprompter(false);
         if (timerRef.current) {
           clearInterval(timerRef.current);
         }
@@ -316,7 +364,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
             stopRecording();
             toast({
               title: "Durée maximale atteinte",
-              description: `L'enregistrement a été arrêté automatiquement après ${VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS} secondes.`,
+              description: `L'enregistrement a été arrêté automatiquement après ${VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS / 60} minutes.`,
             });
             return prev;
           }
@@ -326,7 +374,6 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
     } catch (error) {
       console.error("Error starting recording:", error);
       setRecordingError("Impossible de démarrer l'enregistrement. Veuillez actualiser la page.");
-      setShowTeleprompter(false);
     }
   }, [toast, onAudioReady]);
 
@@ -352,13 +399,11 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         mediaRecorderRef.current.stop();
       }
       setIsRecording(false);
-      setShowTeleprompter(false);
     } catch (error) {
       console.error("Error stopping recording:", error);
       setIsRecording(false);
-      setShowTeleprompter(false);
     }
-  }, []);
+  }, [onAudioReady]);
 
   const resetRecording = useCallback(() => {
     setRecordedBlob(null);
@@ -368,6 +413,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
     }
     setRecordedUrl(null);
     setRecordingDuration(0);
+    setCurrentPhase("consent");
     onConsentChange(false);
     if (videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
@@ -381,17 +427,17 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
     if (!file.type.startsWith("video/")) {
       toast({
         title: "Format invalide",
-        description: "Veuillez sélectionner un fichier vidéo (MP4, WebM, MOV).",
+        description: "Veuillez sélectionner un fichier vidéo (MP4, WebM).",
         variant: "destructive",
       });
       return;
     }
 
-    const maxSize = 100 * 1024 * 1024;
+    const maxSize = VIDEO_CONSTRAINTS.MAX_FILE_SIZE_MB * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "Fichier trop volumineux",
-        description: "La taille maximale est de 100 Mo.",
+        description: `La taille maximale est de ${VIDEO_CONSTRAINTS.MAX_FILE_SIZE_MB} Mo.`,
         variant: "destructive",
       });
       return;
@@ -422,6 +468,24 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
   };
 
   const isDurationValid = minDuration === 0 || recordingDuration >= minDuration;
+
+  // Calculate phase progress for the timeline
+  const totalPhaseDuration = RECORDING_PHASES.reduce((sum, p) => sum + p.durationSeconds, 0);
+  const getPhaseProgress = () => {
+    let elapsed = recordingDuration;
+    return RECORDING_PHASES.map((phase) => {
+      const phaseElapsed = Math.min(elapsed, phase.durationSeconds);
+      elapsed = Math.max(0, elapsed - phase.durationSeconds);
+      return {
+        ...phase,
+        progress: phase.durationSeconds > 0 ? (phaseElapsed / phase.durationSeconds) * 100 : 0,
+        completed: phaseElapsed >= phase.durationSeconds,
+        active: phaseElapsed > 0 && phaseElapsed < phase.durationSeconds,
+      };
+    });
+  };
+
+  const phaseScript = getPhaseScript();
 
   return (
     <div className="space-y-4">
@@ -459,7 +523,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
             {isInitializingCamera ? (
               <>
                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                <p className="text-sm">Initialisation de la caméra...</p>
+                <p className="text-sm">Initialisation de la caméra (1080p)...</p>
               </>
             ) : cameraError ? (
               <div className="text-center px-4">
@@ -487,28 +551,52 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
           </div>
         )}
 
-        {/* Recording indicator + min duration progress */}
+        {/* Recording indicator + phase timeline */}
         {isRecording && (
           <div className="absolute top-4 left-4 right-4 z-10 space-y-2">
-            <div className="flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm w-fit">
-              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              {formatTime(recordingDuration)} / {formatTime(VIDEO_CONSTRAINTS.MAX_DURATION_SECONDS)}
-            </div>
-            {minDuration > 0 && recordingDuration < minDuration && (
-              <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2">
-                <div className="flex items-center justify-between text-xs text-white/80 mb-1">
-                  <span>Durée minimum requise</span>
-                  <span>{formatTime(recordingDuration)} / {formatTime(minDuration)}</span>
-                </div>
-                <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${Math.min(100, (recordingDuration / minDuration) * 100)}%` }}
-                  />
-                </div>
+            {/* Timer */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm w-fit">
+                <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                {formatTime(recordingDuration)} / {formatTime(totalPhaseDuration)}
               </div>
-            )}
-            {minDuration > 0 && recordingDuration >= minDuration && (
+              {/* Current phase badge */}
+              <Badge variant="secondary" className="bg-black/70 text-white border-0 text-xs">
+                {currentPhase === "consent" && "🇬🇧 Consentement"}
+                {currentPhase === "speaking" && "🇫🇷 Parole"}
+                {currentPhase === "listening" && "🤫 Écoute silencieuse"}
+              </Badge>
+            </div>
+
+            {/* Phase progress bar */}
+            <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2">
+              <div className="flex gap-1 h-2">
+                {getPhaseProgress().map((phase) => (
+                  <div
+                    key={phase.key}
+                    className="relative flex-1 bg-white/20 rounded-full overflow-hidden"
+                    title={phase.label}
+                  >
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 ease-linear ${
+                        phase.completed ? "bg-emerald-500" : phase.active ? "bg-primary" : "bg-white/10"
+                      }`}
+                      style={{ width: `${phase.progress}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between mt-1">
+                {RECORDING_PHASES.map((phase) => (
+                  <span key={phase.key} className={`text-[10px] ${currentPhase === phase.key ? "text-white" : "text-white/50"}`}>
+                    {phase.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Min duration indicator */}
+            {recordingDuration >= minDuration && (
               <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-xs text-emerald-400 w-fit">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Durée minimum atteinte — vous pouvez arrêter
@@ -518,18 +606,20 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         )}
 
         {/* Teleprompter overlay during recording */}
-        {isRecording && showTeleprompter && (
+        {isRecording && currentPhase !== "listening" && phaseScript && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 z-10">
             <div className="flex items-center gap-2 text-white/80 mb-2">
               <ScrollText className="h-4 w-4" />
-              <span className="text-xs font-medium">Lisez le script ci-dessous</span>
+              <span className="text-xs font-medium">
+                {currentPhase === "consent" ? "Lisez EN ANGLAIS :" : "Lisez naturellement :"}
+              </span>
             </div>
             <div 
               ref={teleprompterRef}
               className="h-24 overflow-hidden text-white text-center"
             >
-            <div className="space-y-3 py-2">
-                {(customScript || generateTeleprompterScript(userInfo)).split('\n\n').map((paragraph, index) => (
+              <div className="space-y-3 py-2">
+                {phaseScript.split('\n\n').map((paragraph, index) => (
                   <p 
                     key={index} 
                     className="text-sm md:text-base leading-relaxed font-medium"
@@ -542,6 +632,24 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
             </div>
           </div>
         )}
+
+        {/* Listening phase overlay */}
+        {isRecording && currentPhase === "listening" && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 z-10">
+            <div className="flex flex-col items-center gap-3 text-white">
+              <EarOff className="h-8 w-8 text-emerald-400" />
+              <div className="text-center">
+                <p className="text-base font-semibold">Phase d'écoute silencieuse</p>
+                <p className="text-sm text-white/70 mt-1">
+                  Restez immobile • Lèvres fermées • Regard vers la caméra
+                </p>
+                <p className="text-xs text-white/50 mt-1">
+                  Un sourire léger occasionnel est bienvenu 😊
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Controls */}
@@ -550,7 +658,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
           {!isRecording ? (
             <Button onClick={startRecording} size="lg">
               <Play className="h-5 w-5 mr-2" />
-              Démarrer
+              Démarrer l'enregistrement
             </Button>
           ) : (
             <Button 
@@ -560,7 +668,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
               disabled={minDuration > 0 && recordingDuration < minDuration}
             >
               <Square className="h-5 w-5 mr-2" />
-              Arrêter{minDuration > 0 ? ` (${minDuration}s min)` : ""}
+              Arrêter{minDuration > 0 && recordingDuration < minDuration ? ` (${formatTime(minDuration - recordingDuration)} restant)` : ""}
             </Button>
           )}
         </div>
@@ -580,8 +688,8 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            La vidéo doit faire au moins {minDuration} secondes. 
-            Durée actuelle : {recordingDuration}s
+            La vidéo doit faire au moins {formatTime(minDuration)} ({minDuration} secondes). 
+            Durée actuelle : {formatTime(recordingDuration)}
           </AlertDescription>
         </Alert>
       )}
@@ -598,7 +706,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         <input
           ref={fileInputRef}
           type="file"
-          accept="video/*"
+          accept="video/mp4,video/webm"
           onChange={handleFileUpload}
           className="hidden"
         />
@@ -608,13 +716,15 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
           className="w-full"
         >
           <FileVideo className="h-4 w-4 mr-2" />
-          Importer une vidéo existante
+          Importer une vidéo existante (MP4, WebM — max {VIDEO_CONSTRAINTS.MAX_FILE_SIZE_MB} Mo)
         </Button>
+        <p className="text-xs text-muted-foreground mt-2 text-center">
+          La vidéo importée doit respecter les exigences : 1080p min, 25 fps, 2 min minimum (1 min parole + 1 min écoute), 
+          avec le consentement Tavus prononcé en anglais au début.
+        </p>
       </div>
 
-      {/* Suggested script */}
-
-      {/* Consent */}
+      {/* Consent checkbox */}
       {recordedUrl && isDurationValid && (
         <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
           <Checkbox
@@ -623,9 +733,10 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
             onCheckedChange={(checked) => onConsentChange(checked === true)}
           />
           <Label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
-            J'autorise l'utilisation de mon image pour la génération de vidéos personnalisées 
-            dans le cadre des campagnes de mon organisation. Je comprends que cette vidéo sera 
-            utilisée comme référence pour créer du contenu synthétique.
+            J'autorise l'utilisation de mon image et de ma voix pour la création d'un avatar vidéo 
+            par intelligence artificielle. Je confirme avoir prononcé la phrase de consentement en anglais 
+            dans l'enregistrement. Je comprends que cet avatar sera utilisé pour générer des vidéos 
+            personnalisées dans le cadre des campagnes de mon organisation.
           </Label>
         </div>
       )}
