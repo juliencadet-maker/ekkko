@@ -1,0 +1,1 @@
+UPDATE public.profiles SET onboarding_completed = false, onboarding_step = 0, default_identity_id = NULL WHERE email = 'exec@ekko.app';

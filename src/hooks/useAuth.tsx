@@ -108,7 +108,7 @@ export function useAuth(): UserContext & {
 
   const signOut = useCallback(async () => {
     // Reset onboarding for demo accounts so next login restarts the wizard
-    const demoEmails = ["demo@ekko.app"];
+    const demoEmails = ["demo@ekko.app", "exec@ekko.app"];
     if (user?.email && demoEmails.includes(user.email) && user?.id) {
       await supabase
         .from("profiles")
