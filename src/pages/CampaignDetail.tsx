@@ -21,6 +21,7 @@ import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
 import { EkkoAgent } from "@/components/campaign/EkkoAgent";
 import { DealCloseModal } from "@/components/campaign/DealCloseModal";
+import { PowerMap } from "@/components/campaign/PowerMap";
 import {
   ArrowLeft,
   Play,
