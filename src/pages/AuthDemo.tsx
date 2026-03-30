@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Building2, ArrowRight } from "lucide-react";
+import { EkkoLogo } from "@/components/ui/EkkoLogo";
 
 export default function AuthDemo() {
   const [isLoading, setIsLoading] = useState(false);

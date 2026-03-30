@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, Lock, Building2 } from "lucide-react";
 import { z } from "zod";
+import { EkkoLogo } from "@/components/ui/EkkoLogo";
 
 const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),
