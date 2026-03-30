@@ -243,10 +243,19 @@ export default function VideoLandingPage() {
     }
   }, [videoId, referredBy, viewerName, viewerEmail]);
 
-  // Track video progress
+  // Track video progress + granular events
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoId) return;
+
+    // page_landed event on mount
+    trackEvent({ ...baseTrackParams(), event_type: "page_landed", event_data: { referrer: document.referrer } });
+
+    const onPlay = () => {
+      if (video.currentTime < 1) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_started", position_sec: 0, event_data: { autoplay: false } });
+      }
+    };
 
     const onTimeUpdate = () => {
       if (!video.duration) return;
@@ -256,22 +265,77 @@ export default function VideoLandingPage() {
       if (rounded > lastReportedRef.current) {
         lastReportedRef.current = rounded;
         reportProgress(percentage);
+        trackEvent({ ...baseTrackParams(), event_type: "watch_progress", position_sec: video.currentTime, event_data: { percent: Math.round(percentage), elapsed_sec: Math.round(video.currentTime) } });
+      }
+    };
+
+    const onPause = () => {
+      if (!video.ended) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_paused", position_sec: video.currentTime, event_data: { duration_sec: video.duration } });
+      }
+    };
+
+    const onSeeking = () => {
+      lastSeekFromRef.current = video.currentTime;
+    };
+
+    const onSeeked = () => {
+      const from = lastSeekFromRef.current;
+      const to = video.currentTime;
+      const direction = to < from ? "backward" : "forward";
+      trackEvent({ ...baseTrackParams(), event_type: "video_seeked", position_sec: to, event_data: { from_sec: Math.round(from), to_sec: Math.round(to), direction } });
+
+      // Detect segment replay (backward seek)
+      if (direction === "backward") {
+        const segKey = `${Math.floor(to / 10) * 10}`;
+        segmentReplayCountRef.current[segKey] = (segmentReplayCountRef.current[segKey] || 0) + 1;
+        if (segmentReplayCountRef.current[segKey] >= 2) {
+          trackEvent({ ...baseTrackParams(), event_type: "segment_replayed", position_sec: to, event_data: { segment_start: Math.floor(to / 10) * 10, segment_end: Math.floor(to / 10) * 10 + 10, replay_count: segmentReplayCountRef.current[segKey] } });
+        }
       }
     };
 
     const onEnded = () => {
       reportProgress(100);
       setVideoEnded(true);
+      trackEvent({ ...baseTrackParams(), event_type: "video_completed", position_sec: video.duration, event_data: { total_watch_pct: 100, total_time_sec: Math.round(video.duration) } });
     };
 
+    const onRateChange = () => {
+      trackEvent({ ...baseTrackParams(), event_type: "speed_changed", position_sec: video.currentTime, event_data: { to_speed: video.playbackRate } });
+    };
+
+    const onFullscreenChange = () => {
+      const isFullscreen = !!document.fullscreenElement;
+      trackEvent({ ...baseTrackParams(), event_type: "fullscreen_toggled", position_sec: video.currentTime, event_data: { direction: isFullscreen ? "enter" : "exit" } });
+    };
+
+    const onVisibilityChange = () => {
+      trackEvent({ ...baseTrackParams(), event_type: "tab_visibility_changed", position_sec: video.currentTime, event_data: { state: document.hidden ? "hidden" : "visible" } });
+    };
+
+    video.addEventListener("play", onPlay);
     video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("seeking", onSeeking);
+    video.addEventListener("seeked", onSeeked);
     video.addEventListener("ended", onEnded);
+    video.addEventListener("ratechange", onRateChange);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
+      video.removeEventListener("play", onPlay);
       video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("seeking", onSeeking);
+      video.removeEventListener("seeked", onSeeked);
       video.removeEventListener("ended", onEnded);
+      video.removeEventListener("ratechange", onRateChange);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [videoId, reportProgress]);
+  }, [videoId, reportProgress, trackEvent, baseTrackParams]);
 
   const handleVideoToggle = () => {
     const video = videoRef.current;
