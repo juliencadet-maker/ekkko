@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { EkkoLogo } from "@/components/ui/EkkoLogo";
 import {
   CheckCircle2,
   XCircle,
