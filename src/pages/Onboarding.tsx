@@ -148,8 +148,12 @@ export default function Onboarding() {
   const EXEC_TAVUS_REPLICA_ID = "35687b4153974f7ca564d3a3ba7c455e";
 
   const handleComplete = async () => {
-    if (!isDemoAccount && !videoBlob) {
+    if (!isDemoAccount && !isExecAccount && !videoBlob) {
       toast({ title: "Vidéo requise", description: "Veuillez enregistrer votre vidéo pour continuer.", variant: "destructive" });
+      return;
+    }
+    if (isExecAccount && !videoBlob) {
+      toast({ title: "Vidéo requise", description: "Veuillez enregistrer votre vidéo pour capturer votre voix.", variant: "destructive" });
       return;
     }
 
