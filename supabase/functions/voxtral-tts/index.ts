@@ -88,7 +88,7 @@ serve(async (req) => {
 
     const { data: signedUrlData, error: signedUrlError } = await serviceClient.storage
       .from("identity_assets")
-      .createSignedUrl(identity.reference_video_path, 3600);
+      .createSignedUrl(voiceReferencePath, 3600);
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error("Signed URL error:", signedUrlError);
