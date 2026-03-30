@@ -98,7 +98,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating Voxtral TTS for identity ${identity_id}, script length: ${script.length}`);
+    console.log(`Generating Voxtral TTS for identity ${identity_id}, voice ref: ${voiceReferencePath}, script length: ${script.length}`);
 
     // Download the reference video to use as voice prompt
     const refVideoResponse = await fetch(signedUrlData.signedUrl);
