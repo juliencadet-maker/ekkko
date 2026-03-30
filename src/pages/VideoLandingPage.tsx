@@ -1,12 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Pause, ExternalLink, Send } from "lucide-react";
+import { Play, Pause, ExternalLink, Send, Share2, MessageSquare, ThumbsUp, Heart, Flame, Star, Sparkles, Lock, Mail, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ShareDialog } from "@/components/landing/ShareDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const MOCK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
@@ -28,7 +34,6 @@ const DEFAULT_CONFIG: LandingPageConfig = {
   subheadline: "Découvrez notre vidéo exclusive",
 };
 
-// Generate a stable viewer hash from browser fingerprint
 function generateViewerHash(): string {
   const nav = navigator;
   const raw = [nav.userAgent, nav.language, screen.width, screen.height, new Date().getTimezoneOffset()].join("|");
@@ -40,6 +45,15 @@ function generateViewerHash(): string {
   }
   return Math.abs(hash).toString(36);
 }
+
+const EMOJI_REACTIONS = [
+  { emoji: "👍", label: "Super" },
+  { emoji: "🔥", label: "Excellent" },
+  { emoji: "❤️", label: "J'adore" },
+  { emoji: "⭐", label: "Top" },
+  { emoji: "✨", label: "Génial" },
+  { emoji: "🤝", label: "Intéressé" },
+];
 
 export default function VideoLandingPage() {
   const { campaignId } = useParams<{ campaignId: string }>();
@@ -53,13 +67,32 @@ export default function VideoLandingPage() {
   const [error, setError] = useState<string | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
 
-  // Viewer identification
-  const [showIdentForm, setShowIdentForm] = useState(false);
-  const [identSubmitted, setIdentSubmitted] = useState(false);
-  const [identName, setIdentName] = useState("");
-  const [identEmail, setIdentEmail] = useState("");
-  const [identTitle, setIdentTitle] = useState("");
-  const [identCompany, setIdentCompany] = useState("");
+  // Access gate
+  const [isGated, setIsGated] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
+  const [gateEmail, setGateEmail] = useState("");
+  const [gateName, setGateName] = useState("");
+  const [gateChecking, setGateChecking] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
+
+  // Viewer identity (from gate or form)
+  const [viewerName, setViewerName] = useState("");
+  const [viewerEmail, setViewerEmail] = useState("");
+
+  // Video ended state
+  const [videoEnded, setVideoEnded] = useState(false);
+
+  // Reactions
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
+  const [commentSent, setCommentSent] = useState(false);
+  const [reactions, setReactions] = useState<{ emoji: string; count: number }[]>([]);
+
+  // Invite dialog
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteSending, setInviteSending] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewerHashRef = useRef(generateViewerHash());
@@ -75,31 +108,51 @@ export default function VideoLandingPage() {
       }
 
       try {
-        const { data, error: fetchError } = await supabase
-          .from("campaigns")
-          .select("name, metadata")
-          .eq("id", campaignId)
-          .single();
-
-        if (fetchError) throw fetchError;
-
-        setCampaignName(data.name);
-        const metadata = data.metadata as Record<string, unknown> | null;
-        if (metadata?.landingPageConfig) {
-          setConfig(metadata.landingPageConfig as LandingPageConfig);
-        }
-
-        // Fetch video via secure edge function (no direct DB access)
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+        // Fetch campaign via edge function (public access)
         const videoRes = await fetch(`${supabaseUrl}/functions/v1/get-public-video`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "apikey": supabaseKey },
           body: JSON.stringify({ campaign_id: campaignId }),
         });
         const videoData = await videoRes.json();
-        if (videoData?.video_id) {
-          setVideoId(videoData.video_id);
+
+        if (videoData?.campaign_name) setCampaignName(videoData.campaign_name);
+        if (videoData?.landing_page_config) setConfig(videoData.landing_page_config as LandingPageConfig);
+        if (videoData?.video_id) setVideoId(videoData.video_id);
+
+        // Check if there's an access list
+        const accessRes = await fetch(`${supabaseUrl}/functions/v1/check-video-access`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+          body: JSON.stringify({ campaign_id: campaignId, email: "probe@check.access" }),
+        });
+        const accessData = await accessRes.json();
+        
+        // If there are restrictions (not "no_restrictions"), show gate
+        if (accessData?.reason !== "no_restrictions" && !accessData?.allowed) {
+          setIsGated(true);
+        } else if (accessData?.reason === "no_restrictions") {
+          setAccessGranted(true);
+        }
+
+        // Fallback: also try to get campaign name from the response
+        if (!videoData?.campaign_name) {
+          // Use a separate non-auth call if needed
+          const { data } = await supabase
+            .from("campaigns")
+            .select("name, metadata")
+            .eq("id", campaignId)
+            .single();
+          if (data) {
+            setCampaignName(data.name);
+            const metadata = data.metadata as Record<string, unknown> | null;
+            if (metadata?.landingPageConfig) {
+              setConfig(metadata.landingPageConfig as LandingPageConfig);
+            }
+          }
         }
       } catch (err) {
         console.error("Fetch error:", err);
@@ -112,13 +165,47 @@ export default function VideoLandingPage() {
     fetchCampaign();
   }, [campaignId]);
 
-  const reportProgress = useCallback(async (percentage: number) => {
-    if (!videoId) return;
+  const handleGateSubmit = async () => {
+    if (!gateEmail.trim() || !gateName.trim()) {
+      setGateError("Veuillez renseigner votre nom et email");
+      return;
+    }
+
+    setGateChecking(true);
+    setGateError(null);
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      const res = await fetch(`${supabaseUrl}/functions/v1/check-video-access`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+        body: JSON.stringify({ campaign_id: campaignId, email: gateEmail.trim() }),
+      });
+      const data = await res.json();
+
+      if (data?.allowed) {
+        setAccessGranted(true);
+        setViewerName(gateName.trim());
+        setViewerEmail(gateEmail.trim());
+        // Also report this viewer to watch progress
+        reportProgress(0);
+      } else {
+        setGateError("Votre adresse email n'est pas autorisée à voir cette vidéo. Vérifiez avec l'expéditeur.");
+      }
+    } catch {
+      setGateError("Erreur de vérification, veuillez réessayer");
+    } finally {
+      setGateChecking(false);
+    }
+  };
+
+  const reportProgress = useCallback(async (percentage: number) => {
+    if (!videoId) return;
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       await fetch(`${supabaseUrl}/functions/v1/track-watch-progress`, {
         method: "POST",
         headers: {
@@ -131,13 +218,15 @@ export default function VideoLandingPage() {
           viewer_hash: viewerHashRef.current,
           watch_percentage: Math.round(percentage),
           total_watch_seconds: Math.round(watchSecondsRef.current),
+          viewer_name: viewerName || undefined,
+          viewer_email: viewerEmail || undefined,
           referred_by_hash: referredBy || undefined,
         }),
       });
     } catch {
-      // Silently fail - don't interrupt viewing
+      // silent
     }
-  }, [videoId, referredBy]);
+  }, [videoId, referredBy, viewerName, viewerEmail]);
 
   // Track video progress
   useEffect(() => {
@@ -148,8 +237,6 @@ export default function VideoLandingPage() {
       if (!video.duration) return;
       const percentage = (video.currentTime / video.duration) * 100;
       watchSecondsRef.current = video.currentTime;
-
-      // Report every 10% change
       const rounded = Math.floor(percentage / 10) * 10;
       if (rounded > lastReportedRef.current) {
         lastReportedRef.current = rounded;
@@ -159,58 +246,88 @@ export default function VideoLandingPage() {
 
     const onEnded = () => {
       reportProgress(100);
-      // Show identification form after video ends
-      if (!identSubmitted) {
-        setTimeout(() => setShowIdentForm(true), 1000);
-      }
-    };
-
-    const onPlay = () => {
-      // Show form after 30% viewing
-      const checkThreshold = () => {
-        if (video.duration && video.currentTime / video.duration > 0.3 && !identSubmitted) {
-          setShowIdentForm(true);
-        }
-      };
-      setTimeout(checkThreshold, 5000);
+      setVideoEnded(true);
     };
 
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("ended", onEnded);
-    video.addEventListener("play", onPlay);
 
     return () => {
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("ended", onEnded);
-      video.removeEventListener("play", onPlay);
     };
-  }, [videoId, reportProgress, identSubmitted]);
+  }, [videoId, reportProgress]);
 
   const handleVideoToggle = () => {
     const video = videoRef.current;
     if (video) {
-      if (isPlaying) {
-        video.pause();
-      } else {
-        video.play();
-      }
+      if (isPlaying) video.pause();
+      else video.play();
       setIsPlaying(!isPlaying);
     }
   };
 
-  const handleIdentSubmit = async () => {
-    if (!identName.trim() || !identEmail.trim()) {
-      toast.error("Veuillez remplir au moins votre nom et email");
-      return;
-    }
-
-    if (!videoId) return;
-
+  const handleEmojiReaction = async (emoji: string) => {
+    if (!videoId || !campaignId) return;
+    setSelectedEmoji(emoji);
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/submit-video-reaction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+        body: JSON.stringify({
+          video_id: videoId,
+          campaign_id: campaignId,
+          viewer_hash: viewerHashRef.current,
+          viewer_name: viewerName || undefined,
+          viewer_email: viewerEmail || undefined,
+          reaction_type: "emoji",
+          emoji,
+        }),
+      });
+      toast.success("Merci pour votre réaction !");
+    } catch {
+      toast.error("Erreur, veuillez réessayer");
+    }
+  };
 
-      await fetch(`${supabaseUrl}/functions/v1/track-watch-progress`, {
+  const handleCommentSubmit = async () => {
+    if (!comment.trim() || !videoId || !campaignId) return;
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/submit-video-reaction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+        body: JSON.stringify({
+          video_id: videoId,
+          campaign_id: campaignId,
+          viewer_hash: viewerHashRef.current,
+          viewer_name: viewerName || undefined,
+          viewer_email: viewerEmail || undefined,
+          reaction_type: "comment",
+          comment: comment.trim(),
+        }),
+      });
+      setCommentSent(true);
+      setComment("");
+      toast.success("Commentaire envoyé !");
+    } catch {
+      toast.error("Erreur, veuillez réessayer");
+    }
+  };
+
+  const handleInviteSend = async () => {
+    if (!inviteEmail.trim() || !inviteName.trim() || !videoId || !campaignId) {
+      toast.error("Veuillez remplir nom et email");
+      return;
+    }
+    setInviteSending(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/send-share-invite`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -219,25 +336,28 @@ export default function VideoLandingPage() {
         },
         body: JSON.stringify({
           video_id: videoId,
-          viewer_hash: viewerHashRef.current,
-          watch_percentage: Math.round((videoRef.current?.currentTime || 0) / (videoRef.current?.duration || 1) * 100),
-          total_watch_seconds: Math.round(watchSecondsRef.current),
-          viewer_name: identName.trim(),
-          viewer_email: identEmail.trim(),
-          viewer_title: identTitle.trim() || undefined,
-          viewer_company: identCompany.trim() || undefined,
-          referred_by_hash: referredBy || undefined,
+          campaign_id: campaignId,
+          sender_name: viewerName || "Un collaborateur",
+          sender_viewer_hash: viewerHashRef.current,
+          collaborators: [{
+            first_name: inviteName.split(" ")[0]?.trim() || inviteName.trim(),
+            last_name: inviteName.split(" ").slice(1).join(" ")?.trim() || "",
+            email: inviteEmail.trim(),
+          }],
         }),
       });
-
-      setIdentSubmitted(true);
-      setShowIdentForm(false);
-      toast.success("Merci ! Bonne vidéo 🎬");
+      toast.success(`Invitation envoyée à ${inviteName}`);
+      setShowInviteDialog(false);
+      setInviteName("");
+      setInviteEmail("");
     } catch {
-      toast.error("Erreur, veuillez réessayer");
+      toast.error("Erreur lors de l'envoi");
+    } finally {
+      setInviteSending(false);
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -246,6 +366,7 @@ export default function VideoLandingPage() {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
@@ -257,141 +378,232 @@ export default function VideoLandingPage() {
     );
   }
 
+  // Access gate
+  if (isGated && !accessGranted) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: config.brandColor + "08" }}>
+        <header className="py-4 px-6 flex items-center justify-center shadow-sm" style={{ backgroundColor: config.brandColor }}>
+          {config.logoUrl ? (
+            <img src={config.logoUrl} alt="Logo" className="h-10 max-w-[200px] object-contain brightness-0 invert" />
+          ) : (
+            <div className="h-10 flex items-center text-white font-bold text-xl">{campaignName}</div>
+          )}
+        </header>
+
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <Card className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <CardContent className="pt-8 pb-6 px-6 text-center space-y-6">
+              <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: config.brandColor + "15" }}>
+                <Lock className="h-8 w-8" style={{ color: config.brandColor }} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold mb-2" style={{ color: config.brandColor }}>
+                  {config.headline}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Pour accéder à cette vidéo, veuillez vous identifier.
+                </p>
+              </div>
+              <div className="space-y-3 text-left">
+                <Input
+                  placeholder="Votre nom complet"
+                  value={gateName}
+                  onChange={(e) => setGateName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGateSubmit()}
+                />
+                <Input
+                  placeholder="Votre adresse email professionnelle"
+                  type="email"
+                  value={gateEmail}
+                  onChange={(e) => setGateEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGateSubmit()}
+                />
+                {gateError && (
+                  <p className="text-sm text-destructive">{gateError}</p>
+                )}
+                <Button
+                  className="w-full"
+                  style={{ backgroundColor: config.brandColor }}
+                  onClick={handleGateSubmit}
+                  disabled={gateChecking}
+                >
+                  {gateChecking ? "Vérification..." : "Accéder à la vidéo"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+
+        <footer className="py-4 px-6 text-center">
+          <p className="text-xs text-muted-foreground">
+            Cette vidéo a été générée par IA •
+            <a href="/" className="ml-1 hover:underline" style={{ color: config.brandColor }}>Propulsé par Ekko</a>
+          </p>
+        </footer>
+      </div>
+    );
+  }
+
+  // Main landing page
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: config.brandColor + "08" }}
-    >
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: config.brandColor + "08" }}>
       {/* Header */}
-      <header
-        className="py-4 px-6 flex items-center justify-center shadow-sm"
-        style={{ backgroundColor: config.brandColor }}
-      >
-        {config.logoUrl ? (
-          <img
-            src={config.logoUrl}
-            alt="Logo"
-            className="h-10 max-w-[200px] object-contain brightness-0 invert"
-          />
-        ) : (
-          <div className="h-10 flex items-center text-white font-bold text-xl">
-            {campaignName}
-          </div>
-        )}
+      <header className="py-3 md:py-4 px-4 md:px-6 flex items-center justify-between shadow-sm" style={{ backgroundColor: config.brandColor }}>
+        <div className="flex items-center">
+          {config.logoUrl ? (
+            <img src={config.logoUrl} alt="Logo" className="h-8 md:h-10 max-w-[160px] md:max-w-[200px] object-contain brightness-0 invert" />
+          ) : (
+            <div className="h-8 md:h-10 flex items-center text-white font-bold text-lg md:text-xl">{campaignName}</div>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white/80 hover:text-white hover:bg-white/10 gap-1.5"
+          onClick={() => setShowInviteDialog(true)}
+        >
+          <UserPlus className="h-4 w-4" />
+          <span className="hidden sm:inline">Inviter un collègue</span>
+        </Button>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 md:py-12">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 md:py-12">
         <div className="w-full max-w-3xl mx-auto text-center">
-          <h1
-            className="text-2xl md:text-4xl font-bold mb-3"
-            style={{ color: config.brandColor }}
-          >
+          <h1 className="text-xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-3" style={{ color: config.brandColor }}>
             {config.headline}
           </h1>
-          <p className="text-base md:text-lg text-muted-foreground mb-8">
+          <p className="text-sm md:text-base text-muted-foreground mb-6 md:mb-8">
             {config.subheadline}
           </p>
 
           {/* Video Player */}
-          <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl mb-8">
+          <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl mb-6 md:mb-8">
             <video
               ref={videoRef}
               src={MOCK_VIDEO_URL}
               className="w-full h-full object-cover"
               poster="/placeholder.svg"
-              onPlay={() => setIsPlaying(true)}
+              onPlay={() => { setIsPlaying(true); setVideoEnded(false); }}
               onPause={() => setIsPlaying(false)}
-              onEnded={() => setIsPlaying(false)}
+              onEnded={() => { setIsPlaying(false); setVideoEnded(true); }}
               playsInline
             />
 
             {/* Play/Pause overlay */}
-            <div
-              className={`absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity cursor-pointer ${
-                isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100"
-              }`}
-              onClick={handleVideoToggle}
-            >
+            {!videoEnded && (
               <div
-                className="w-20 h-20 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                style={{ backgroundColor: config.brandColor }}
+                className={`absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity cursor-pointer ${
+                  isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100"
+                }`}
+                onClick={handleVideoToggle}
               >
-                {isPlaying ? (
-                  <Pause className="h-10 w-10 text-white" />
-                ) : (
-                  <Play className="h-10 w-10 text-white ml-1" />
-                )}
+                <div
+                  className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                  style={{ backgroundColor: config.brandColor }}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-8 w-8 md:h-10 md:w-10 text-white" />
+                  ) : (
+                    <Play className="h-8 w-8 md:h-10 md:w-10 text-white ml-1" />
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* Viewer Identification Form */}
-          {showIdentForm && !identSubmitted && (
-            <Card className="mb-8 text-left max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <CardContent className="pt-6 space-y-3">
-                <p className="text-sm font-medium text-center mb-4">
-                  Vous aimez cette vidéo ? Présentez-vous !
+            {/* End overlay with reactions */}
+            {videoEnded && (
+              <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+                <p className="text-white text-lg md:text-xl font-semibold mb-4 md:mb-6">
+                  Qu'avez-vous pensé de cette vidéo ?
                 </p>
-                <Input
-                  placeholder="Votre nom *"
-                  value={identName}
-                  onChange={(e) => setIdentName(e.target.value)}
-                />
-                <Input
-                  placeholder="Votre email *"
-                  type="email"
-                  value={identEmail}
-                  onChange={(e) => setIdentEmail(e.target.value)}
-                />
-                <Input
-                  placeholder="Titre / Poste"
-                  value={identTitle}
-                  onChange={(e) => setIdentTitle(e.target.value)}
-                />
-                <Input
-                  placeholder="Entreprise"
-                  value={identCompany}
-                  onChange={(e) => setIdentCompany(e.target.value)}
-                />
-                <div className="flex gap-2">
+
+                {/* Emoji reactions */}
+                <div className="flex flex-wrap gap-2 md:gap-3 justify-center mb-4 md:mb-6">
+                  {EMOJI_REACTIONS.map(({ emoji, label }) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleEmojiReaction(emoji)}
+                      className={`flex flex-col items-center gap-1 p-2 md:p-3 rounded-xl transition-all hover:scale-110 ${
+                        selectedEmoji === emoji
+                          ? "bg-white/30 scale-110"
+                          : "bg-white/10 hover:bg-white/20"
+                      }`}
+                    >
+                      <span className="text-2xl md:text-3xl">{emoji}</span>
+                      <span className="text-[10px] md:text-xs text-white/70">{label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Comment */}
+                {!commentSent ? (
+                  <div className="w-full max-w-sm flex gap-2">
+                    <Input
+                      placeholder="Laisser un petit mot..."
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleCommentSubmit()}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                    />
+                    <Button
+                      size="icon"
+                      onClick={handleCommentSubmit}
+                      disabled={!comment.trim()}
+                      style={{ backgroundColor: config.brandColor }}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-white/60 text-sm">✓ Commentaire envoyé</p>
+                )}
+
+                {/* Replay + invite */}
+                <div className="flex gap-3 mt-4 md:mt-6">
                   <Button
-                    className="flex-1"
-                    style={{ backgroundColor: config.brandColor }}
-                    onClick={handleIdentSubmit}
+                    variant="outline"
+                    className="text-white border-white/30 hover:bg-white/10 gap-2"
+                    onClick={() => {
+                      const video = videoRef.current;
+                      if (video) {
+                        video.currentTime = 0;
+                        video.play();
+                        setVideoEnded(false);
+                      }
+                    }}
                   >
-                    <Send className="mr-2 h-4 w-4" />
-                    Envoyer
+                    <Play className="h-4 w-4" />
+                    Revoir
                   </Button>
                   <Button
-                    variant="ghost"
-                    onClick={() => setShowIdentForm(false)}
+                    variant="outline"
+                    className="text-white border-white/30 hover:bg-white/10 gap-2"
+                    onClick={() => setShowInviteDialog(true)}
                   >
-                    Plus tard
+                    <Share2 className="h-4 w-4" />
+                    Partager
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Share & CTA */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            {videoId && campaignId && (
-              <ShareDialog
-                videoId={videoId}
-                campaignId={campaignId}
-                senderName={identName || "Un collaborateur"}
-                senderViewerHash={viewerHashRef.current}
-                brandColor={config.brandColor}
-              />
+              </div>
             )}
+          </div>
+
+          {/* CTA + Share */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
+            <Button
+              variant="outline"
+              className="gap-2 border-2"
+              style={{ borderColor: config.brandColor, color: config.brandColor }}
+              onClick={() => setShowInviteDialog(true)}
+            >
+              <Share2 className="h-4 w-4" />
+              Partager à un collègue
+            </Button>
             <Button
               size="lg"
-              className="px-8 py-6 text-lg font-semibold rounded-xl transition-transform hover:scale-105"
-              style={{
-                backgroundColor: config.brandColor,
-                color: "white",
-              }}
+              className="px-6 md:px-8 py-5 md:py-6 text-base md:text-lg font-semibold rounded-xl transition-transform hover:scale-105"
+              style={{ backgroundColor: config.brandColor, color: "white" }}
               onClick={() => window.open(config.ctaUrl, "_blank")}
             >
               {config.ctaText}
@@ -402,18 +614,50 @@ export default function VideoLandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 px-6 text-center">
+      <footer className="py-3 md:py-4 px-4 md:px-6 text-center">
         <p className="text-xs text-muted-foreground">
           Cette vidéo a été générée par IA •
-          <a
-            href="/"
-            className="ml-1 hover:underline"
-            style={{ color: config.brandColor }}
-          >
-            Propulsé par Ekko
-          </a>
+          <a href="/" className="ml-1 hover:underline" style={{ color: config.brandColor }}>Propulsé par Ekko</a>
         </p>
       </footer>
+
+      {/* Invite Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Inviter un collègue
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Partagez cette vidéo avec un collègue pour qu'il puisse la visionner.
+            </p>
+            <Input
+              placeholder="Nom du collègue"
+              value={inviteName}
+              onChange={(e) => setInviteName(e.target.value)}
+            />
+            <Input
+              placeholder="Email professionnel"
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleInviteSend()}
+            />
+            <Button
+              className="w-full gap-2"
+              style={{ backgroundColor: config.brandColor }}
+              onClick={handleInviteSend}
+              disabled={inviteSending}
+            >
+              <Send className="h-4 w-4" />
+              {inviteSending ? "Envoi..." : "Envoyer l'invitation"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
+import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
 import {
   ArrowLeft,
   Play,
@@ -46,6 +47,7 @@ import {
   MessageSquare,
   GitCompareArrows,
   Loader2,
+  Globe,
   RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -135,6 +137,7 @@ export default function CampaignDetail() {
   const [isResubmitting, setIsResubmitting] = useState(false);
   const [scriptVersions, setScriptVersions] = useState<any[]>([]);
   const [showDiffDialog, setShowDiffDialog] = useState(false);
+  const [showLandingPageEditor, setShowLandingPageEditor] = useState(false);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
@@ -617,6 +620,10 @@ export default function CampaignDetail() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowLandingPageEditor(true)}>
+              <Globe className="mr-2 h-4 w-4" />
+              Landing page
+            </Button>
             <Button variant="outline">
               <Download className="mr-2 h-4 w-4" />
               Exporter
@@ -1012,6 +1019,17 @@ export default function CampaignDetail() {
           versions={scriptVersions}
         />
       )}
+
+      <LandingPageEditor
+        open={showLandingPageEditor}
+        onOpenChange={setShowLandingPageEditor}
+        campaignId={campaign.id}
+        campaignName={campaign.name}
+        videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id))}
+        orgId={membership?.org_id || ""}
+        initialConfig={landingPageConfig as unknown as LandingPageConfig | undefined}
+        onSave={(config) => handleSaveLandingPageConfig(config as unknown as Record<string, unknown>)}
+      />
     </AppLayout>
   );
 }
