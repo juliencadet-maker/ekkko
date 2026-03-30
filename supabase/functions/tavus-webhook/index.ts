@@ -21,17 +21,111 @@ serve(async (req) => {
     );
 
     const status = payload.status;
-    const tavusVideoId = payload.video_id;
-    const downloadUrl = payload.download_url;
-    const hostedUrl = payload.hosted_url;
-    const streamUrl = payload.stream_url;
 
-    if (!tavusVideoId) {
-      console.log("No video_id in webhook payload, ignoring");
+    // ═══════════════════════════════════════════════════════
+    // REPLICA TRAINING CALLBACK
+    // Tavus sends: { replica_id, status: "ready" | "error" }
+    // ═══════════════════════════════════════════════════════
+    if (payload.replica_id && !payload.video_id) {
+      const replicaId = payload.replica_id;
+      console.log("Replica training callback:", replicaId, "status:", status);
+
+      // Find the identity by provider_identity_id (replica_id)
+      const { data: identity, error: identityError } = await supabase
+        .from("identities")
+        .select("*")
+        .eq("provider_identity_id", replicaId)
+        .single();
+
+      if (identityError || !identity) {
+        console.error("Identity not found for replica:", replicaId);
+        return new Response(JSON.stringify({ ok: true, warning: "Identity not found" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (status === "ready") {
+        console.log("Replica training completed for identity:", identity.id);
+
+        // Both clones ready: Tavus replica is "ready", voice is always ready (zero-shot)
+        await supabase
+          .from("identities")
+          .update({
+            clone_status: "ready",
+            status: "ready",
+            metadata: {
+              ...(identity.metadata as Record<string, unknown> || {}),
+              tavus_clone_status: "ready",
+              voice_clone_status: "ready",
+            },
+          })
+          .eq("id", identity.id);
+
+        // Notify the identity owner
+        if (identity.owner_user_id) {
+          await supabase
+            .from("notifications")
+            .insert({
+              org_id: identity.org_id,
+              user_id: identity.owner_user_id,
+              title: "Clone prêt ! 🎉",
+              message: `Votre clone "${identity.display_name}" est maintenant prêt. Vous pouvez créer des vidéos personnalisées.`,
+              type: "identity_ready",
+              entity_type: "identity",
+              entity_id: identity.id,
+            });
+        }
+      } else if (status === "error") {
+        console.error("Replica training failed:", replicaId, payload);
+
+        await supabase
+          .from("identities")
+          .update({
+            clone_status: "error",
+            metadata: {
+              ...(identity.metadata as Record<string, unknown> || {}),
+              tavus_clone_status: "error",
+              tavus_error: payload.message || payload.detail || "Training failed",
+            },
+          })
+          .eq("id", identity.id);
+
+        if (identity.owner_user_id) {
+          await supabase
+            .from("notifications")
+            .insert({
+              org_id: identity.org_id,
+              user_id: identity.owner_user_id,
+              title: "Erreur de création du clone",
+              message: `La création de votre clone "${identity.display_name}" a échoué. Veuillez réessayer ou contacter le support.`,
+              type: "identity_error",
+              entity_type: "identity",
+              entity_id: identity.id,
+            });
+        }
+      }
+
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ═══════════════════════════════════════════════════════
+    // VIDEO GENERATION CALLBACK
+    // Tavus sends: { video_id, status, download_url, hosted_url, stream_url }
+    // ═══════════════════════════════════════════════════════
+    const tavusVideoId = payload.video_id;
+
+    if (!tavusVideoId) {
+      console.log("No video_id or replica_id in webhook payload, ignoring");
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const downloadUrl = payload.download_url;
+    const hostedUrl = payload.hosted_url;
+    const streamUrl = payload.stream_url;
 
     // Find the video_job by provider_job_id
     const { data: videoJob, error: jobError } = await supabase
