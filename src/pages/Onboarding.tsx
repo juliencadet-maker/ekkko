@@ -414,7 +414,15 @@ export default function Onboarding() {
             <span className="text-sm font-medium text-muted-foreground">
               Étape {stepIndex + 1} sur {ONBOARDING_STEPS.length}
             </span>
-            <span className="text-sm font-medium text-muted-foreground">{Math.round(progress)}%</span>
+            <div className="flex items-center gap-3">
+              {canSkip && (
+                <Button variant="ghost" size="sm" onClick={handleSkipOnboarding} disabled={isLoading} className="text-xs text-muted-foreground hover:text-foreground">
+                  {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Skip Onboarding →
+                </Button>
+              )}
+              <span className="text-sm font-medium text-muted-foreground">{Math.round(progress)}%</span>
+            </div>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
