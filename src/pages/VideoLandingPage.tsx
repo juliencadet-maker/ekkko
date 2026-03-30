@@ -427,6 +427,7 @@ export default function VideoLandingPage() {
           }],
         }),
       });
+      trackEvent({ ...baseTrackParams(), event_type: "page_shared", event_data: { share_method: "invite_dialog", recipient_hint: inviteEmail.trim() } });
       toast.success(`Invitation envoyée à ${inviteName}`);
       setShowInviteDialog(false);
       setInviteName("");
