@@ -13,13 +13,35 @@ export const ONBOARDING_STEPS = [
   { id: 4, label: "Terminé", key: "complete" },
 ] as const;
 
-// Video Upload Constraints
+// Video Upload Constraints — aligned with Tavus Phoenix-3 replica requirements
 export const VIDEO_CONSTRAINTS = {
-  MIN_DURATION_SECONDS: 10, // 10 seconds minimum for Voxtral voice cloning + Tavus
+  MIN_DURATION_SECONDS: 120, // 2 minutes: 1 min speaking + 1 min listening (Tavus requirement)
   MAX_DURATION_SECONDS: 300, // 5 minutes max
-  RECOMMENDED_DURATION_SECONDS: 30, // 30 seconds ideal for good quality
-  MAX_FILE_SIZE_MB: 500,
+  SPEAKING_PHASE_SECONDS: 60, // 1 minute of speaking
+  LISTENING_PHASE_SECONDS: 60, // 1 minute of silent listening
+  RECOMMENDED_DURATION_SECONDS: 120, // 2 minutes ideal (exact Tavus spec)
+  MAX_FILE_SIZE_MB: 750, // Tavus max upload size
+  MIN_RESOLUTION_HEIGHT: 1080, // Minimum 1080p
+  MIN_FPS: 25, // Minimum 25 fps
 } as const;
+
+// Tavus consent statement (must be spoken in English at the start of the video)
+export const TAVUS_CONSENT_SCRIPT_EN = `I, [YOUR FULL NAME], am currently speaking and give consent to Tavus to create an AI clone of me by using the audio and video samples I provide. I understand that this AI clone can be used to create videos that look and sound like me.`;
+
+// French speaking script for the speaking phase (after consent)
+export const TAVUS_SPEAKING_SCRIPT_FR = `Bonjour, je m'appelle [votre prénom] [votre nom].
+
+Je travaille chez [votre entreprise] en tant que [votre fonction].
+
+Je fais cet enregistrement car bientôt je serai en mesure de créer plus de confiance sur le cycle de vente, tout en gagnant du temps.
+
+Je pourrai également être présent sur tous les deals sans avoir à bloquer mon agenda.
+
+Cela me permettra d'impliquer des personnes plus facilement, afin de créer plus de confiance et d'engagement avec mes clients et partenaires.
+
+Avec Ekko, je vais pouvoir personnaliser mes messages vidéo pour chaque prospect, et ainsi augmenter significativement mes taux de conversion.
+
+Merci de votre attention !`;
 
 export const SUGGESTED_SCRIPT = `Bonjour, je suis [votre prénom] [votre nom].
 
