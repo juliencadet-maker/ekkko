@@ -3,6 +3,8 @@ import {
   CheckCircle2, 
   XCircle, 
 } from "lucide-react";
+import framingGood from "@/assets/framing-good.png";
+import framingBad from "@/assets/framing-bad.png";
 
 interface RecordingGuideProps {
   onStartRecording: () => void;
