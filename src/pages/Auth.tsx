@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, Lock, Building2 } from "lucide-react";
 import { z } from "zod";
+import { EkkoLogo } from "@/components/ui/EkkoLogo";
 
 const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),
@@ -216,10 +217,7 @@ export default function Auth() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-xl">
-              E
-            </div>
-            <span className="text-3xl font-bold text-foreground">Ekko</span>
+            <EkkoLogo size={40} textSize={28} onDark={false} />
           </div>
           <p className="text-muted-foreground">
             Plateforme vidéo personnalisée pour les entreprises

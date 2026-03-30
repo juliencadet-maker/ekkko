@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ROLE_LABELS } from "@/lib/constants";
 import { NotificationBell } from "./NotificationBell";
+import { EkkoLogo } from "@/components/ui/EkkoLogo";
 
 const navigationItems = [
   {
@@ -82,12 +83,7 @@ export function AppSidebar() {
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center justify-between px-6 border-b border-marine-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-signal font-bold text-marine text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              E
-            </div>
-            <span className="ekko-logo-text text-xl text-ivory">Ekko</span>
-          </div>
+          <EkkoLogo size={28} textSize={20} onDark={true} />
           <NotificationBell />
         </div>
 
