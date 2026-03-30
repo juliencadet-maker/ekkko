@@ -374,6 +374,7 @@ export default function VideoLandingPage() {
 
   const handleCommentSubmit = async () => {
     if (!comment.trim() || !videoId || !campaignId) return;
+    trackEvent({ ...baseTrackParams(), event_type: "comment_submitted", event_data: { comment_text: comment.trim() } });
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
