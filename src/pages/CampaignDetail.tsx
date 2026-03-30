@@ -19,6 +19,8 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
+import { EkkoAgent } from "@/components/campaign/EkkoAgent";
+import { DealCloseModal } from "@/components/campaign/DealCloseModal";
 import {
   ArrowLeft,
   Play,
@@ -138,6 +140,10 @@ export default function CampaignDetail() {
   const [scriptVersions, setScriptVersions] = useState<any[]>([]);
   const [showDiffDialog, setShowDiffDialog] = useState(false);
   const [showLandingPageEditor, setShowLandingPageEditor] = useState(false);
+  const [showAgent, setShowAgent] = useState(false);
+  const [showDealClose, setShowDealClose] = useState(false);
+  const [dealScore, setDealScore] = useState<any>(null);
+  const [viewers, setViewers] = useState<any[]>([]);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
@@ -276,6 +282,14 @@ export default function CampaignDetail() {
           .eq("campaign_id", id)
           .order("version_number", { ascending: false });
         setScriptVersions(versionsData || []);
+
+        // Fetch deal score + viewers for agent
+        const [dealScoreRes, viewersRes] = await Promise.all([
+          supabase.from("deal_scores").select("*").eq("campaign_id", id).order("scored_at", { ascending: false }).limit(1),
+          supabase.from("viewers").select("*").eq("campaign_id", id).order("contact_score", { ascending: false, nullsFirst: false }),
+        ]);
+        if (dealScoreRes.data?.[0]) setDealScore(dealScoreRes.data[0]);
+        if (viewersRes.data) setViewers(viewersRes.data);
       } catch {
         console.error("Fetch campaign failed");
         toast.error("Erreur lors du chargement de la campagne");
@@ -619,14 +633,18 @@ export default function CampaignDetail() {
               {format(new Date(campaign.created_at), "d MMMM yyyy", { locale: fr })}
             </p>
           </div>
-          <div className="flex gap-2">
+           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowAgent(!showAgent)}>
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Agent IA
+            </Button>
+            <Button variant="outline" onClick={() => setShowDealClose(true)}>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Clôturer
+            </Button>
             <Button variant="outline" onClick={() => setShowLandingPageEditor(true)}>
               <Globe className="mr-2 h-4 w-4" />
               Landing page
-            </Button>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Exporter
             </Button>
             <Button onClick={() => { copyShareLink(shareLink); }}>
               <Share2 className="mr-2 h-4 w-4" />
