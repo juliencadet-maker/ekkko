@@ -633,14 +633,18 @@ export default function CampaignDetail() {
               {format(new Date(campaign.created_at), "d MMMM yyyy", { locale: fr })}
             </p>
           </div>
-          <div className="flex gap-2">
+           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowAgent(!showAgent)}>
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Agent IA
+            </Button>
+            <Button variant="outline" onClick={() => setShowDealClose(true)}>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Clôturer
+            </Button>
             <Button variant="outline" onClick={() => setShowLandingPageEditor(true)}>
               <Globe className="mr-2 h-4 w-4" />
               Landing page
-            </Button>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Exporter
             </Button>
             <Button onClick={() => { copyShareLink(shareLink); }}>
               <Share2 className="mr-2 h-4 w-4" />
