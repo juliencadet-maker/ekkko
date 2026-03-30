@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useVideoJobPolling } from "@/hooks/useVideoJobPolling";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -44,6 +45,8 @@ import {
   FileText,
   MessageSquare,
   GitCompareArrows,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -138,6 +141,42 @@ export default function CampaignDetail() {
   >({});
 
   const isParent = campaign && !campaign.parent_campaign_id && subCampaigns.length > 0;
+
+  // Video generation polling
+  const {
+    jobs: videoJobs,
+    isPolling: isVideoPolling,
+    hasActiveJobs,
+    completedCount: jobsCompleted,
+    failedCount: jobsFailed,
+    totalCount: jobsTotal,
+    progressPercent: jobsProgress,
+    refetch: refetchJobs,
+  } = useVideoJobPolling({
+    campaignId: id,
+    orgId: membership?.org_id,
+    enabled: !!campaign && ["generating", "approved"].includes(campaign?.status || ""),
+  });
+
+  // Auto-refresh campaign data when all jobs finish
+  const prevHasActiveRef = useRef(hasActiveJobs);
+  useEffect(() => {
+    if (prevHasActiveRef.current && !hasActiveJobs && jobsTotal > 0) {
+      // Jobs just finished — reload campaign & videos
+      const refreshData = async () => {
+        if (!id || !membership?.org_id) return;
+        const [campRes, vidRes] = await Promise.all([
+          supabase.from("campaigns").select("*, identities(display_name, type)").eq("id", id).single(),
+          supabase.from("videos").select("*, recipients(first_name, last_name, email, company)").eq("campaign_id", id).eq("org_id", membership.org_id),
+        ]);
+        if (campRes.data) setCampaign(campRes.data as Campaign);
+        if (vidRes.data) setVideos(vidRes.data as (VideoType & { recipient?: Recipient })[]);
+        toast.success("Génération vidéo terminée !");
+      };
+      refreshData();
+    }
+    prevHasActiveRef.current = hasActiveJobs;
+  }, [hasActiveJobs, jobsTotal, id, membership?.org_id]);
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -610,6 +649,45 @@ export default function CampaignDetail() {
         })()}
       </div>
 
+      {/* Video Generation Progress Banner */}
+      {(hasActiveJobs || (jobsTotal > 0 && ["generating", "approved"].includes(campaign.status))) && (
+        <Alert className="mb-6 border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-3">
+            {hasActiveJobs ? (
+              <Loader2 className="h-5 w-5 text-primary animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+            )}
+            <div className="flex-1">
+              <AlertTitle className="font-semibold text-foreground">
+                {hasActiveJobs
+                  ? "Génération vidéo en cours..."
+                  : jobsFailed > 0
+                    ? "Génération terminée avec des erreurs"
+                    : "Génération terminée ✓"}
+              </AlertTitle>
+              <AlertDescription className="mt-1">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} terminée{jobsCompleted > 1 ? "s" : ""}
+                    {jobsFailed > 0 && (
+                      <span className="text-destructive ml-1">• {jobsFailed} erreur{jobsFailed > 1 ? "s" : ""}</span>
+                    )}
+                  </span>
+                  {isVideoPolling && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      Actualisation auto
+                    </span>
+                  )}
+                </div>
+                <Progress value={jobsProgress} className="h-2 mt-2" />
+              </AlertDescription>
+            </div>
+          </div>
+        </Alert>
+      )}
+
       {/* Rejection Alert */}
       {rejectionComment && campaign.status === "draft" && (
         <Alert variant="destructive" className="mb-6 border-destructive/30 bg-destructive/5">
@@ -843,6 +921,55 @@ export default function CampaignDetail() {
 
         {/* Video Tab */}
         <TabsContent value="video" className="space-y-6">
+          {/* Job Status List */}
+          {videoJobs.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Loader2 className={cn("h-5 w-5", hasActiveJobs && "animate-spin text-primary")} />
+                  Statut de génération
+                </CardTitle>
+                <CardDescription>
+                  {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} prête{jobsCompleted > 1 ? "s" : ""}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {videoJobs.map((job) => {
+                    const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+                      queued: { label: "En file d'attente", color: "text-muted-foreground", icon: <Clock className="h-4 w-4" /> },
+                      processing: { label: "En cours", color: "text-primary", icon: <Loader2 className="h-4 w-4 animate-spin" /> },
+                      completed: { label: "Terminée", color: "text-primary", icon: <CheckCircle2 className="h-4 w-4" /> },
+                      failed: { label: "Échouée", color: "text-destructive", icon: <AlertTriangle className="h-4 w-4" /> },
+                    };
+                    const cfg = statusConfig[job.status] || statusConfig.queued;
+                    return (
+                      <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                        <div className={cfg.color}>{cfg.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            Destinataire #{job.recipient_id.slice(0, 8)}
+                          </p>
+                          <p className={cn("text-xs", cfg.color)}>{cfg.label}</p>
+                        </div>
+                        {job.error_message && (
+                          <p className="text-xs text-destructive max-w-[200px] truncate" title={job.error_message}>
+                            {job.error_message}
+                          </p>
+                        )}
+                        {job.started_at && (
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(job.started_at), "HH:mm", { locale: fr })}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Vidéo de la campagne</CardTitle>
