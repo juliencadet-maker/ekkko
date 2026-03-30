@@ -243,7 +243,6 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
 
     setRecordingError(null);
     chunksRef.current = [];
-    audioChunksRef.current = [];
     setShowTeleprompter(true);
     
     try {
