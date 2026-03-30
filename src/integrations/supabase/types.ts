@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_conversations: {
+        Row: {
+          campaign_id: string
+          context_snapshot: Json | null
+          created_at: string
+          feedback: string | null
+          id: string
+          messages: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          context_snapshot?: Json | null
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          context_snapshot?: Json | null
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_conversations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_requests: {
         Row: {
           approval_token: string | null
@@ -224,6 +265,127 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_outcomes: {
+        Row: {
+          calibration_weight: number | null
+          campaign_id: string
+          created_at: string
+          final_des: number | null
+          final_patterns: Json | null
+          id: string
+          notes: string | null
+          outcome: string
+          outcome_at: string | null
+        }
+        Insert: {
+          calibration_weight?: number | null
+          campaign_id: string
+          created_at?: string
+          final_des?: number | null
+          final_patterns?: Json | null
+          id?: string
+          notes?: string | null
+          outcome: string
+          outcome_at?: string | null
+        }
+        Update: {
+          calibration_weight?: number | null
+          campaign_id?: string
+          created_at?: string
+          final_des?: number | null
+          final_patterns?: Json | null
+          id?: string
+          notes?: string | null
+          outcome?: string
+          outcome_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_outcomes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_scores: {
+        Row: {
+          alerts: Json | null
+          avg_watch_depth: number | null
+          blocker_count: number | null
+          breadth: number | null
+          campaign_id: string
+          cold_start_regime: string | null
+          created_at: string
+          des: number | null
+          engagement_half_life: number | null
+          event_velocity: number | null
+          graph_centralization: number | null
+          id: string
+          metadata: Json | null
+          momentum: string | null
+          multi_threading_score: number | null
+          recommended_action: Json | null
+          scored_at: string
+          sponsor_count: number | null
+          stage_signal_gap: number | null
+          viewer_count: number | null
+        }
+        Insert: {
+          alerts?: Json | null
+          avg_watch_depth?: number | null
+          blocker_count?: number | null
+          breadth?: number | null
+          campaign_id: string
+          cold_start_regime?: string | null
+          created_at?: string
+          des?: number | null
+          engagement_half_life?: number | null
+          event_velocity?: number | null
+          graph_centralization?: number | null
+          id?: string
+          metadata?: Json | null
+          momentum?: string | null
+          multi_threading_score?: number | null
+          recommended_action?: Json | null
+          scored_at?: string
+          sponsor_count?: number | null
+          stage_signal_gap?: number | null
+          viewer_count?: number | null
+        }
+        Update: {
+          alerts?: Json | null
+          avg_watch_depth?: number | null
+          blocker_count?: number | null
+          breadth?: number | null
+          campaign_id?: string
+          cold_start_regime?: string | null
+          created_at?: string
+          des?: number | null
+          engagement_half_life?: number | null
+          event_velocity?: number | null
+          graph_centralization?: number | null
+          id?: string
+          metadata?: Json | null
+          momentum?: string | null
+          multi_threading_score?: number | null
+          recommended_action?: Json | null
+          scored_at?: string
+          sponsor_count?: number | null
+          stage_signal_gap?: number | null
+          viewer_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_scores_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -625,6 +787,53 @@ export type Database = {
           },
         ]
       }
+      recommendation_outcomes: {
+        Row: {
+          action_taken: string | null
+          campaign_id: string
+          confidence_at_rec: number | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          outcome_30d: string | null
+          outcome_7d: string | null
+          recommended_action: string
+          taken_at: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          campaign_id: string
+          confidence_at_rec?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          outcome_30d?: string | null
+          outcome_7d?: string | null
+          recommended_action: string
+          taken_at?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          campaign_id?: string
+          confidence_at_rec?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          outcome_30d?: string | null
+          outcome_7d?: string | null
+          recommended_action?: string
+          taken_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_outcomes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       script_versions: {
         Row: {
           campaign_id: string
@@ -773,6 +982,81 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_events: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          device_type: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_country: string | null
+          position_sec: number | null
+          referred_by_hash: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          video_id: string
+          viewer_domain: string | null
+          viewer_email: string | null
+          viewer_hash: string
+          viewer_name: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          device_type?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_country?: string | null
+          position_sec?: number | null
+          referred_by_hash?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          video_id: string
+          viewer_domain?: string | null
+          viewer_email?: string | null
+          viewer_hash: string
+          viewer_name?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          device_type?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_country?: string | null
+          position_sec?: number | null
+          referred_by_hash?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          video_id?: string
+          viewer_domain?: string | null
+          viewer_email?: string | null
+          viewer_hash?: string
+          viewer_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_events_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
             referencedColumns: ["id"]
           },
         ]
@@ -1050,6 +1334,163 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      viewer_relationships: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          evidence: Json | null
+          forward_probability: number | null
+          id: string
+          relationship_type: string | null
+          source_viewer_id: string
+          target_viewer_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          evidence?: Json | null
+          forward_probability?: number | null
+          id?: string
+          relationship_type?: string | null
+          source_viewer_id: string
+          target_viewer_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          evidence?: Json | null
+          forward_probability?: number | null
+          id?: string
+          relationship_type?: string | null
+          source_viewer_id?: string
+          target_viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viewer_relationships_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viewer_relationships_source_viewer_id_fkey"
+            columns: ["source_viewer_id"]
+            isOneToOne: false
+            referencedRelation: "viewers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viewer_relationships_target_viewer_id_fkey"
+            columns: ["target_viewer_id"]
+            isOneToOne: false
+            referencedRelation: "viewers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      viewers: {
+        Row: {
+          blocker_score: number | null
+          campaign_id: string
+          company: string | null
+          contact_score: number | null
+          created_at: string
+          cta_clicked: boolean | null
+          domain: string | null
+          email: string | null
+          fingerprint: string | null
+          first_seen_at: string | null
+          id: string
+          influence_score: number | null
+          is_known: boolean | null
+          last_event_at: string | null
+          metadata: Json | null
+          name: string | null
+          replay_count: number | null
+          share_count: number | null
+          sponsor_score: number | null
+          status: string | null
+          title: string | null
+          total_watch_depth: number | null
+          updated_at: string
+          via_viewer_id: string | null
+          viewer_hash: string
+          viewers_generated: number | null
+        }
+        Insert: {
+          blocker_score?: number | null
+          campaign_id: string
+          company?: string | null
+          contact_score?: number | null
+          created_at?: string
+          cta_clicked?: boolean | null
+          domain?: string | null
+          email?: string | null
+          fingerprint?: string | null
+          first_seen_at?: string | null
+          id?: string
+          influence_score?: number | null
+          is_known?: boolean | null
+          last_event_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          replay_count?: number | null
+          share_count?: number | null
+          sponsor_score?: number | null
+          status?: string | null
+          title?: string | null
+          total_watch_depth?: number | null
+          updated_at?: string
+          via_viewer_id?: string | null
+          viewer_hash: string
+          viewers_generated?: number | null
+        }
+        Update: {
+          blocker_score?: number | null
+          campaign_id?: string
+          company?: string | null
+          contact_score?: number | null
+          created_at?: string
+          cta_clicked?: boolean | null
+          domain?: string | null
+          email?: string | null
+          fingerprint?: string | null
+          first_seen_at?: string | null
+          id?: string
+          influence_score?: number | null
+          is_known?: boolean | null
+          last_event_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          replay_count?: number | null
+          share_count?: number | null
+          sponsor_score?: number | null
+          status?: string | null
+          title?: string | null
+          total_watch_depth?: number | null
+          updated_at?: string
+          via_viewer_id?: string | null
+          viewer_hash?: string
+          viewers_generated?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viewers_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viewers_via_viewer_id_fkey"
+            columns: ["via_viewer_id"]
+            isOneToOne: false
+            referencedRelation: "viewers"
             referencedColumns: ["id"]
           },
         ]

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Pause, ExternalLink, Send, Share2, MessageSquare, ThumbsUp, Heart, Flame, Star, Sparkles, Lock, Mail, UserPlus } from "lucide-react";
+import { useVideoEventTracker } from "@/hooks/useVideoEventTracker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,6 +99,20 @@ export default function VideoLandingPage() {
   const viewerHashRef = useRef(generateViewerHash());
   const lastReportedRef = useRef(0);
   const watchSecondsRef = useRef(0);
+  const lastSeekFromRef = useRef(0);
+  const segmentReplayCountRef = useRef<Record<string, number>>({});
+
+  const { trackEvent } = useVideoEventTracker();
+
+  const baseTrackParams = useCallback(() => ({
+    video_id: videoId || "",
+    campaign_id: campaignId || "",
+    viewer_hash: viewerHashRef.current,
+    viewer_email: viewerEmail || undefined,
+    viewer_name: viewerName || undefined,
+    referred_by_hash: referredBy || undefined,
+    referrer: document.referrer || undefined,
+  }), [videoId, campaignId, viewerEmail, viewerName, referredBy]);
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -228,10 +243,19 @@ export default function VideoLandingPage() {
     }
   }, [videoId, referredBy, viewerName, viewerEmail]);
 
-  // Track video progress
+  // Track video progress + granular events
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoId) return;
+
+    // page_landed event on mount
+    trackEvent({ ...baseTrackParams(), event_type: "page_landed", event_data: { referrer: document.referrer } });
+
+    const onPlay = () => {
+      if (video.currentTime < 1) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_started", position_sec: 0, event_data: { autoplay: false } });
+      }
+    };
 
     const onTimeUpdate = () => {
       if (!video.duration) return;
@@ -241,22 +265,87 @@ export default function VideoLandingPage() {
       if (rounded > lastReportedRef.current) {
         lastReportedRef.current = rounded;
         reportProgress(percentage);
+        trackEvent({ ...baseTrackParams(), event_type: "watch_progress", position_sec: video.currentTime, event_data: { percent: Math.round(percentage), elapsed_sec: Math.round(video.currentTime) } });
+      }
+    };
+
+    const onPause = () => {
+      if (!video.ended) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_paused", position_sec: video.currentTime, event_data: { duration_sec: video.duration } });
+      }
+    };
+
+    const onSeeking = () => {
+      lastSeekFromRef.current = video.currentTime;
+    };
+
+    const onSeeked = () => {
+      const from = lastSeekFromRef.current;
+      const to = video.currentTime;
+      const direction = to < from ? "backward" : "forward";
+      trackEvent({ ...baseTrackParams(), event_type: "video_seeked", position_sec: to, event_data: { from_sec: Math.round(from), to_sec: Math.round(to), direction } });
+
+      // Detect segment replay (backward seek)
+      if (direction === "backward") {
+        const segKey = `${Math.floor(to / 10) * 10}`;
+        segmentReplayCountRef.current[segKey] = (segmentReplayCountRef.current[segKey] || 0) + 1;
+        if (segmentReplayCountRef.current[segKey] >= 2) {
+          trackEvent({ ...baseTrackParams(), event_type: "segment_replayed", position_sec: to, event_data: { segment_start: Math.floor(to / 10) * 10, segment_end: Math.floor(to / 10) * 10 + 10, replay_count: segmentReplayCountRef.current[segKey] } });
+        }
       }
     };
 
     const onEnded = () => {
       reportProgress(100);
       setVideoEnded(true);
+      trackEvent({ ...baseTrackParams(), event_type: "video_completed", position_sec: video.duration, event_data: { total_watch_pct: 100, total_time_sec: Math.round(video.duration) } });
     };
 
+    const onRateChange = () => {
+      trackEvent({ ...baseTrackParams(), event_type: "speed_changed", position_sec: video.currentTime, event_data: { to_speed: video.playbackRate } });
+    };
+
+    const onFullscreenChange = () => {
+      const isFullscreen = !!document.fullscreenElement;
+      trackEvent({ ...baseTrackParams(), event_type: "fullscreen_toggled", position_sec: video.currentTime, event_data: { direction: isFullscreen ? "enter" : "exit" } });
+    };
+
+    const onVisibilityChange = () => {
+      trackEvent({ ...baseTrackParams(), event_type: "tab_visibility_changed", position_sec: video.currentTime, event_data: { state: document.hidden ? "hidden" : "visible" } });
+    };
+
+    const onBeforeUnload = () => {
+      const pct = video.duration ? (video.currentTime / video.duration) * 100 : 0;
+      if (pct > 0 && pct < 90) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_dropped", position_sec: video.currentTime, event_data: { drop_pct: Math.round(pct), drop_position_sec: Math.round(video.currentTime) } });
+      }
+      trackEvent({ ...baseTrackParams(), event_type: "page_exit", event_data: { last_action: "unload" } });
+    };
+
+    video.addEventListener("play", onPlay);
     video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("seeking", onSeeking);
+    video.addEventListener("seeked", onSeeked);
     video.addEventListener("ended", onEnded);
+    video.addEventListener("ratechange", onRateChange);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("beforeunload", onBeforeUnload);
 
     return () => {
+      video.removeEventListener("play", onPlay);
       video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("seeking", onSeeking);
+      video.removeEventListener("seeked", onSeeked);
       video.removeEventListener("ended", onEnded);
+      video.removeEventListener("ratechange", onRateChange);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("beforeunload", onBeforeUnload);
     };
-  }, [videoId, reportProgress]);
+  }, [videoId, reportProgress, trackEvent, baseTrackParams]);
 
   const handleVideoToggle = () => {
     const video = videoRef.current;
@@ -270,6 +359,7 @@ export default function VideoLandingPage() {
   const handleEmojiReaction = async (emoji: string) => {
     if (!videoId || !campaignId) return;
     setSelectedEmoji(emoji);
+    trackEvent({ ...baseTrackParams(), event_type: "reaction_added", event_data: { reaction_type: emoji } });
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -294,6 +384,7 @@ export default function VideoLandingPage() {
 
   const handleCommentSubmit = async () => {
     if (!comment.trim() || !videoId || !campaignId) return;
+    trackEvent({ ...baseTrackParams(), event_type: "comment_submitted", event_data: { comment_text: comment.trim() } });
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -346,6 +437,7 @@ export default function VideoLandingPage() {
           }],
         }),
       });
+      trackEvent({ ...baseTrackParams(), event_type: "page_shared", event_data: { share_method: "invite_dialog", recipient_hint: inviteEmail.trim() } });
       toast.success(`Invitation envoyée à ${inviteName}`);
       setShowInviteDialog(false);
       setInviteName("");
@@ -604,7 +696,7 @@ export default function VideoLandingPage() {
               size="lg"
               className="px-6 md:px-8 py-5 md:py-6 text-base md:text-lg font-semibold rounded-xl transition-transform hover:scale-105"
               style={{ backgroundColor: config.brandColor, color: "white" }}
-              onClick={() => window.open(config.ctaUrl, "_blank")}
+              onClick={() => { trackEvent({ ...baseTrackParams(), event_type: "cta_clicked", event_data: { cta_type: config.ctaText, position_in_page: "main" } }); window.open(config.ctaUrl, "_blank"); }}
             >
               {config.ctaText}
               <ExternalLink className="ml-2 h-5 w-5" />
