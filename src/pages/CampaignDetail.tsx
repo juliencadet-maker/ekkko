@@ -140,6 +140,10 @@ export default function CampaignDetail() {
   const [scriptVersions, setScriptVersions] = useState<any[]>([]);
   const [showDiffDialog, setShowDiffDialog] = useState(false);
   const [showLandingPageEditor, setShowLandingPageEditor] = useState(false);
+  const [showAgent, setShowAgent] = useState(false);
+  const [showDealClose, setShowDealClose] = useState(false);
+  const [dealScore, setDealScore] = useState<any>(null);
+  const [viewers, setViewers] = useState<any[]>([]);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
