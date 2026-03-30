@@ -471,6 +471,7 @@ export default function Onboarding() {
                       <div className="space-y-4">
                         <VideoRecorder
                           onVideoReady={handleVideoReady}
+                          onAudioReady={handleAudioReady}
                           consentGiven={true}
                           onConsentChange={() => {}}
                           userInfo={{ firstName, lastName, company, title }}
