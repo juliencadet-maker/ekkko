@@ -51,7 +51,8 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
 
   const steps = [
     { key: "profile", label: "Profil" },
-    { key: "video", label: "Vidéo" },
+    { key: "guide", label: "Préparation" },
+    { key: "video", label: "Enregistrement" },
     { key: "confirm", label: "Confirmation" },
   ];
   
