@@ -310,17 +310,22 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
           </div>
         )}
 
+        {/* Guide Step */}
+        {currentStep === "guide" && (
+          <RecordingGuide onStartRecording={() => setCurrentStep("video")} />
+        )}
+
         {/* Video Step */}
         {currentStep === "video" && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <Video className="h-5 w-5" />
-              <h3 className="font-semibold">Vidéo de référence</h3>
+              <h3 className="font-semibold">Enregistrement vidéo</h3>
             </div>
             
             <p className="text-sm text-muted-foreground mb-4">
-              Enregistrez une courte vidéo de vous-même (10 à 30 secondes).
-              Elle servira à créer votre avatar visuel (Tavus) et à cloner votre voix (Voxtral TTS).
+              Enregistrez 2 minutes : consentement en anglais (~15s), parole libre (~1 min), écoute silencieuse (~1 min).
+              Le téléprompter vous guidera à chaque phase.
             </p>
 
             <VideoRecorder
@@ -336,7 +341,7 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
             />
 
             <div className="flex justify-between pt-4">
-              <Button variant="outline" onClick={() => setCurrentStep("profile")}>
+              <Button variant="outline" onClick={() => setCurrentStep("guide")}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Retour
               </Button>
