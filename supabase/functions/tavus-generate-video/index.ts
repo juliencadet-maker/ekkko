@@ -17,15 +17,18 @@ const MISTRAL_API_URL = "https://api.mistral.ai/v1/audio/speech";
 async function generateVoxtralAudio(
   serviceClient: ReturnType<typeof createClient>,
   mistralApiKey: string,
-  identity: { reference_video_path: string; id: string },
+  identity: { reference_video_path: string; id: string; metadata: Record<string, unknown> | null },
   personalizedScript: string,
   campaignId: string,
   recipientId: string,
 ): Promise<{ audioUrl: string; error?: string }> {
-  // Signed URL for reference video
+  // Prefer dedicated voice reference, fall back to reference video
+  const voiceReferencePath = (identity.metadata?.voice_reference_path as string) || identity.reference_video_path;
+
+  // Signed URL for voice reference
   const { data: signedUrlData, error: signedUrlError } = await serviceClient.storage
     .from("identity_assets")
-    .createSignedUrl(identity.reference_video_path, 3600);
+    .createSignedUrl(voiceReferencePath, 3600);
 
   if (signedUrlError || !signedUrlData?.signedUrl) {
     return { audioUrl: "", error: "Failed to get reference video URL" };
