@@ -21,7 +21,7 @@ import { VideoRecorder } from "./VideoRecorder";
 import { RecordingGuide } from "./RecordingGuide";
 import { IDENTITY_TYPES } from "@/lib/constants";
 
-type Step = "profile" | "video" | "confirm";
+type Step = "profile" | "guide" | "video" | "confirm";
 
 interface CreateIdentityDialogProps {
   open: boolean;
