@@ -341,9 +341,13 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         clearInterval(scrollIntervalRef.current);
         scrollIntervalRef.current = null;
       }
-      if (audioRecorderRef.current && audioRecorderRef.current.state !== "inactive") {
-        audioRecorderRef.current.stop();
-        audioRecorderRef.current = null;
+      if (wavRecorderRef.current && wavRecorderRef.current.isRecording) {
+        wavRecorderRef.current.stop().then((wavBlob) => {
+          if (wavBlob.size > 0 && onAudioReady) {
+            onAudioReady(wavBlob);
+          }
+        }).catch(err => console.warn("WAV stop error:", err));
+        wavRecorderRef.current = null;
       }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
