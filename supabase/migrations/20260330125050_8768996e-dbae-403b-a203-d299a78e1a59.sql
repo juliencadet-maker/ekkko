@@ -1,0 +1,2 @@
+UPDATE public.approval_requests SET status = 'approved', decided_at = now(), decided_by_user_id = 'd856fc88-4f3a-4587-8303-62113dec6ff5' WHERE id = '5794062e-611f-4d4a-8ee3-364d2cd1d9c7';
+UPDATE public.campaigns SET status = 'approved', approved_at = now(), approved_by_user_id = 'd856fc88-4f3a-4587-8303-62113dec6ff5' WHERE id = (SELECT campaign_id FROM approval_requests WHERE id = '5794062e-611f-4d4a-8ee3-364d2cd1d9c7');
