@@ -7,10 +7,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Video, Building2, Layers, Zap, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { Plus, Search, LayoutList } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Campaign } from "@/types/database";
@@ -22,6 +20,14 @@ interface DealScoreRow {
   viewer_count: number | null;
   sponsor_count: number | null;
   blocker_count: number | null;
+  alerts: any;
+}
+
+interface ViewerSummary {
+  campaign_id: string;
+  name: string | null;
+  email: string | null;
+  contact_score: number | null;
 }
 
 export default function Campaigns() {
@@ -29,6 +35,7 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [dealScores, setDealScores] = useState<Record<string, DealScoreRow>>({});
+  const [viewers, setViewers] = useState<Record<string, ViewerSummary[]>>({});
 
   const navigate = useNavigate();
   const { membership } = useAuthContext();
@@ -42,18 +49,19 @@ export default function Campaigns() {
           .from("campaigns")
           .select("*, identities(display_name)")
           .eq("org_id", membership.org_id)
+          .is("parent_campaign_id", null)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
         const campaignList = (data as Campaign[]) || [];
         setCampaigns(campaignList);
 
-        // Fetch latest deal scores for all campaigns
         const campaignIds = campaignList.map((c) => c.id);
         if (campaignIds.length > 0) {
+          // Fetch scores
           const { data: scores } = await supabase
             .from("deal_scores")
-            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count")
+            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count, alerts")
             .in("campaign_id", campaignIds)
             .order("scored_at", { ascending: false });
 
@@ -64,51 +72,89 @@ export default function Campaigns() {
             }
             setDealScores(scoreMap);
           }
+
+          // Fetch viewers for avatars
+          const { data: viewerData } = await supabase
+            .from("viewers")
+            .select("campaign_id, name, email, contact_score")
+            .in("campaign_id", campaignIds)
+            .order("contact_score", { ascending: false });
+
+          if (viewerData) {
+            const viewerMap: Record<string, ViewerSummary[]> = {};
+            viewerData.forEach((v: any) => {
+              if (!viewerMap[v.campaign_id]) viewerMap[v.campaign_id] = [];
+              viewerMap[v.campaign_id].push(v);
+            });
+            setViewers(viewerMap);
+          }
         }
-      } catch {
-        console.error("Fetch campaigns failed");
-      } finally {
-        setIsLoading(false);
-      }
+      } catch { console.error("Fetch campaigns failed"); }
+      finally { setIsLoading(false); }
     };
 
     fetchCampaigns();
   }, [membership?.org_id]);
 
-  const parentCampaigns = useMemo(() => {
-    const parents = campaigns.filter((c) => !c.parent_campaign_id);
-    return parents.map((p) => ({
-      ...p,
-      sub_campaigns: campaigns.filter((c) => c.parent_campaign_id === p.id),
-    }));
-  }, [campaigns]);
-
-  const displayCampaigns = useMemo(() => {
-    return parentCampaigns.filter((p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.sub_campaigns?.some((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const sortedCampaigns = useMemo(() => {
+    let filtered = campaigns.filter((c) =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [parentCampaigns, searchQuery]);
 
-  const getStatusSummary = (subs: Campaign[]) => {
-    if (subs.length === 0) return null;
-    const completed = subs.filter((s) => s.status === "completed").length;
-    const generating = subs.filter((s) => s.status === "generating").length;
-    const draft = subs.filter((s) => s.status === "draft").length;
-    return { completed, generating, draft, total: subs.length };
+    // Sort by urgency: critical alerts first, then by DES ascending
+    filtered.sort((a, b) => {
+      const scoreA = dealScores[a.id];
+      const scoreB = dealScores[b.id];
+      const desA = scoreA?.des ?? 100;
+      const desB = scoreB?.des ?? 100;
+      const alertA = desA < 40 ? 0 : desA < 70 ? 1 : 2;
+      const alertB = desB < 40 ? 0 : desB < 70 ? 1 : 2;
+      if (alertA !== alertB) return alertA - alertB;
+      return desA - desB;
+    });
+
+    return filtered;
+  }, [campaigns, searchQuery, dealScores]);
+
+  const getDesClass = (des: number | null) => {
+    if (des === null) return "des-pill bg-muted text-muted-foreground";
+    if (des >= 70) return "des-pill des-pill-high";
+    if (des >= 40) return "des-pill des-pill-medium";
+    return "des-pill des-pill-low";
   };
 
-  const getMomentumIcon = (momentum: string | null) => {
-    if (momentum === "rising") return <TrendingUp className="h-3 w-3 text-emerald-600" />;
-    if (momentum === "declining") return <TrendingDown className="h-3 w-3 text-red-600" />;
-    return null;
+  const getBorderColor = (score: DealScoreRow | undefined) => {
+    if (!score?.des) return "border-l-transparent";
+    if (score.des < 40) return "border-l-destructive";
+    if (score.des >= 70) return "border-l-signal";
+    return "border-l-transparent";
   };
 
-  const getDesColor = (des: number | null) => {
-    if (des === null) return "bg-muted text-muted-foreground";
-    if (des >= 70) return "bg-emerald-500/15 text-emerald-700 border-emerald-500/30";
-    if (des >= 40) return "bg-amber-500/15 text-amber-700 border-amber-500/30";
-    return "bg-red-500/15 text-red-700 border-red-500/30";
+  const getAvatarColor = (contactScore: number | null) => {
+    if (contactScore === null) return "bg-info"; // unknown = blue
+    if (contactScore > 70) return "bg-signal";
+    if (contactScore > 30) return "bg-warning";
+    return "bg-destructive";
+  };
+
+  const getSignalBadges = (score: DealScoreRow | undefined): string[] => {
+    const badges: string[] = [];
+    if (!score) return badges;
+    if (score.blocker_count && score.blocker_count > 0) badges.push(`${score.blocker_count} bloqueur${score.blocker_count > 1 ? "s" : ""}`);
+    if (score.momentum === "declining") badges.push("Decay signal");
+    if (score.alerts && Array.isArray(score.alerts)) {
+      (score.alerts as any[]).slice(0, 2).forEach((a: any) => {
+        if (typeof a === "string") badges.push(a);
+        else if (a?.message) badges.push(a.message);
+      });
+    }
+    return badges.slice(0, 3);
+  };
+
+  const getTimeSinceSignal = (campaign: Campaign) => {
+    const days = Math.floor((Date.now() - new Date(campaign.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+    if (days === 0) return "Aujourd'hui";
+    return `il y a ${days}j`;
   };
 
   return (
@@ -117,12 +163,10 @@ export default function Campaigns() {
         title="Deals"
         description="Gérez vos deals et leur présence exécutive vidéo"
         actions={
-          <div className="flex gap-2">
-            <Button onClick={() => navigate("/app/campaigns/new")}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau deal
-            </Button>
-          </div>
+          <Button onClick={() => navigate("/app/campaigns/new")} className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+            <Plus className="mr-2 h-4 w-4" />
+            Nouveau deal
+          </Button>
         }
       />
 
@@ -130,7 +174,7 @@ export default function Campaigns() {
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher un compte..."
+            placeholder="Rechercher un deal..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -142,129 +186,77 @@ export default function Campaigns() {
         <div className="flex items-center justify-center h-64">
           <div className="animate-pulse text-muted-foreground">Chargement...</div>
         </div>
-      ) : displayCampaigns.length === 0 ? (
+      ) : sortedCampaigns.length === 0 ? (
         <EmptyState
-          icon={Video}
-          title="Aucun compte"
-          description={searchQuery ? "Aucun résultat pour cette recherche" : "Créez votre premier compte cible"}
-          action={
-            searchQuery
-              ? undefined
-              : {
-                  label: "Créer un compte",
-                  onClick: () => navigate("/app/campaigns/new"),
-                }
-          }
+          icon={LayoutList}
+          title="Aucun deal"
+          description={searchQuery ? "Aucun résultat pour cette recherche" : "Créez votre premier deal"}
+          action={searchQuery ? undefined : { label: "Créer un deal", onClick: () => navigate("/app/campaigns/new") }}
           className="py-16"
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {displayCampaigns.map((campaign) => {
-            const subs = campaign.sub_campaigns || [];
-            const statusSummary = getStatusSummary(subs);
+        <div className="space-y-2">
+          {sortedCampaigns.map((campaign) => {
             const score = dealScores[campaign.id];
+            const campaignViewers = viewers[campaign.id] || [];
+            const signalBadges = getSignalBadges(score);
 
             return (
-              <Card
+              <div
                 key={campaign.id}
-                className="cursor-pointer group hover:shadow-lg transition-all duration-200 hover:border-primary/30"
+                className={`flex items-center gap-4 p-4 bg-card rounded-card shadow-card border-l-4 ${getBorderColor(score)} cursor-pointer hover:shadow-lg transition-all`}
                 onClick={() => navigate(`/app/campaigns/${campaign.id}`)}
               >
-                <CardContent className="p-5">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        <Building2 className="h-5 w-5" />
+                {/* Deal info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-foreground">{campaign.name}</h3>
+                    <StatusBadge status={campaign.status} />
+                    <span className="text-xs text-muted-foreground">· Signal {getTimeSinceSignal(campaign)}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {(campaign as any).identities?.display_name || "—"}
+                  </p>
+
+                  {/* Signal badges */}
+                  {signalBadges.length > 0 && (
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                      {signalBadges.map((badge, i) => (
+                        <span key={i} className="signal-badge">{badge}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Buying committee avatars */}
+                {campaignViewers.length > 0 && (
+                  <div className="flex -space-x-1.5 flex-shrink-0">
+                    {campaignViewers.slice(0, 5).map((v, i) => (
+                      <div
+                        key={i}
+                        className={`w-[22px] h-[22px] rounded-full ${getAvatarColor(v.contact_score)} border-2 border-card flex items-center justify-center`}
+                        title={v.name || v.email || "Inconnu"}
+                      >
+                        <span className="text-[8px] font-bold text-white">
+                          {(v.name || v.email || "?")[0].toUpperCase()}
+                        </span>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                          {campaign.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          {(campaign as any).identities?.display_name || "—"}
-                        </p>
+                    ))}
+                    {campaignViewers.length > 5 && (
+                      <div className="w-[22px] h-[22px] rounded-full bg-muted border-2 border-card flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-muted-foreground">+{campaignViewers.length - 5}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {score?.des != null && (
-                        <Badge variant="outline" className={`text-[10px] font-bold px-1.5 py-0 ${getDesColor(score.des)}`}>
-                          <Zap className="h-2.5 w-2.5 mr-0.5" />
-                          {score.des}
-                        </Badge>
-                      )}
-                      <StatusBadge status={campaign.status} />
-                    </div>
+                    )}
                   </div>
+                )}
 
-                  {campaign.description && (
-                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                      {campaign.description}
-                    </p>
-                  )}
-
-                  {/* Deal Intelligence Row */}
-                  {score && (
-                    <div className="flex items-center gap-3 mb-3 p-2 rounded-lg bg-muted/50">
-                      {score.viewer_count != null && score.viewer_count > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Users className="h-3 w-3" />
-                          <span>{score.viewer_count}</span>
-                        </div>
-                      )}
-                      {score.sponsor_count != null && score.sponsor_count > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-emerald-600">
-                          <span>👍 {score.sponsor_count}</span>
-                        </div>
-                      )}
-                      {score.blocker_count != null && score.blocker_count > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-red-600">
-                          <span>⚠ {score.blocker_count}</span>
-                        </div>
-                      )}
-                      {score.momentum && getMomentumIcon(score.momentum)}
-                    </div>
-                  )}
-
-                  {/* Sub-campaigns count */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      {subs.length} sous-campagne{subs.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  {statusSummary && statusSummary.total > 0 && (
-                    <div className="flex gap-1.5 flex-wrap mb-3">
-                      {statusSummary.completed > 0 && (
-                        <Badge variant="secondary" className="text-xs bg-accent/10 text-accent-foreground border-0">
-                          {statusSummary.completed} terminée{statusSummary.completed > 1 ? "s" : ""}
-                        </Badge>
-                      )}
-                      {statusSummary.generating > 0 && (
-                        <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-0">
-                          {statusSummary.generating} en cours
-                        </Badge>
-                      )}
-                      {statusSummary.draft > 0 && (
-                        <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground border-0">
-                          {statusSummary.draft} brouillon{statusSummary.draft > 1 ? "s" : ""}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Footer */}
-                  <div className="pt-3 border-t flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      Créé le {format(new Date(campaign.created_at), "d MMM yyyy", { locale: fr })}
-                    </span>
-                    <span className="text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                      Voir →
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* DES Pill */}
+                <div className="flex-shrink-0">
+                  <span className={getDesClass(score?.des ?? null)}>
+                    {score?.des != null ? score.des : "—"}
+                  </span>
+                </div>
+              </div>
             );
           })}
         </div>

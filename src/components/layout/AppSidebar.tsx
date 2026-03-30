@@ -4,71 +4,44 @@ import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  LayoutDashboard,
-  Video,
+  LayoutList,
+  Brain,
+  MessageSquare,
   Users,
   CheckSquare,
-  Settings,
-  FileText,
   LogOut,
-  Shield,
   Building2,
-  LineChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { ROLE_LABELS } from "@/lib/constants";
 import { NotificationBell } from "./NotificationBell";
 
 const navigationItems = [
   {
-    label: "Tableau de bord",
-    href: "/app/dashboard",
-    icon: LayoutDashboard,
-    roles: ["org_owner", "org_admin", "org_manager", "org_user"],
-  },
-  {
     label: "Deals",
     href: "/app/campaigns",
-    icon: Video,
-    roles: ["org_owner", "org_admin", "org_manager", "org_user"],
+    icon: LayoutList,
+  },
+  {
+    label: "Deal Intelligence",
+    href: "/app/deal-intelligence",
+    icon: Brain,
+  },
+  {
+    label: "Agent Ekko",
+    href: "/app/dashboard",
+    icon: MessageSquare,
   },
   {
     label: "Identités",
     href: "/app/identities",
     icon: Users,
-    roles: ["org_owner", "org_admin", "org_manager", "org_user"],
-  },
-  {
-    label: "Deal Intelligence",
-    href: "/app/deal-intelligence",
-    icon: LineChart,
-    roles: ["org_owner", "org_admin", "org_manager"],
   },
   {
     label: "Validations",
     href: "/app/approvals",
     icon: CheckSquare,
-    roles: ["org_owner", "org_admin", "org_manager", "org_user"],
     badgeKey: "pendingApprovals" as const,
-  },
-  {
-    label: "Journal d'audit",
-    href: "/app/audit",
-    icon: FileText,
-    roles: ["org_owner", "org_admin"],
-  },
-  {
-    label: "Gouvernance",
-    href: "/app/governance",
-    icon: Shield,
-    roles: ["org_owner", "org_admin"],
-  },
-  {
-    label: "Paramètres",
-    href: "/app/settings",
-    icon: Settings,
-    roles: ["org_owner", "org_admin"],
   },
 ];
 
@@ -104,34 +77,30 @@ export function AppSidebar() {
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
 
-  const filteredNavItems = navigationItems.filter(
-    (item) => item.roles.includes(userRole)
-  );
-
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-marine text-ivory border-r border-marine-3">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center justify-between px-6 border-b border-sidebar-border">
+        <div className="flex h-16 items-center justify-between px-6 border-b border-marine-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-signal font-bold text-marine text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               E
             </div>
-            <span className="text-xl font-bold text-sidebar-foreground">Ekko</span>
+            <span className="ekko-logo-text text-xl text-ivory">Ekko</span>
           </div>
           <NotificationBell />
         </div>
 
         {/* Organization */}
         {org && (
-          <div className="px-4 py-4 border-b border-sidebar-border">
-            <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-sidebar-accent">
-              <Building2 className="w-4 h-4 text-sidebar-accent-foreground" />
+          <div className="px-4 py-4 border-b border-marine-3">
+            <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-marine-2">
+              <Building2 className="w-4 h-4 text-slate-light" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-accent-foreground truncate">
+                <p className="text-sm font-medium text-ivory truncate">
                   {org.name}
                 </p>
-                <p className="text-xs text-sidebar-foreground/60">
+                <p className="text-xs text-slate-light">
                   {ROLE_LABELS[userRole]}
                 </p>
               </div>
@@ -142,8 +111,9 @@ export function AppSidebar() {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3">
           <ul className="space-y-1">
-            {filteredNavItems.map((item) => {
-              const isActive = location.pathname === item.href;
+            {navigationItems.map((item) => {
+              const isActive = location.pathname === item.href || 
+                (item.href === "/app/campaigns" && location.pathname.startsWith("/app/campaigns"));
               const Icon = item.icon;
               const showBadge = item.badgeKey === "pendingApprovals" && pendingCount > 0;
 
@@ -154,11 +124,11 @@ export function AppSidebar() {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        ? "bg-marine-2 text-signal"
+                        : "text-ivory/70 hover:bg-marine-2 hover:text-ivory"
                     )}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5" strokeWidth={1.5} />
                     <span className="flex-1">{item.label}</span>
                     {showBadge && (
                       <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold px-1.5">
@@ -172,23 +142,21 @@ export function AppSidebar() {
           </ul>
         </nav>
 
-        <Separator className="bg-sidebar-border" />
-
         {/* User Section */}
-        <div className="p-4">
+        <div className="p-4 border-t border-marine-3">
           {profile && (
             <div className="mb-4 px-2">
-              <p className="text-sm font-medium text-sidebar-foreground">
+              <p className="text-sm font-medium text-ivory">
                 {profile.first_name} {profile.last_name}
               </p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">
+              <p className="text-xs text-slate-light truncate">
                 {profile.email}
               </p>
             </div>
           )}
           <Button
             variant="ghost"
-            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="w-full justify-start text-ivory/70 hover:bg-marine-2 hover:text-ivory"
             onClick={signOut}
           >
             <LogOut className="w-4 h-4 mr-3" />

@@ -15,20 +15,19 @@ export const ONBOARDING_STEPS = [
 
 // Video Upload Constraints — aligned with Tavus Phoenix-3 replica requirements
 export const VIDEO_CONSTRAINTS = {
-  MIN_DURATION_SECONDS: 120, // 2 minutes: 1 min speaking + 1 min listening (Tavus requirement)
-  MAX_DURATION_SECONDS: 300, // 5 minutes max
-  SPEAKING_PHASE_SECONDS: 60, // 1 minute of speaking
-  LISTENING_PHASE_SECONDS: 60, // 1 minute of silent listening
-  RECOMMENDED_DURATION_SECONDS: 120, // 2 minutes ideal (exact Tavus spec)
-  MAX_FILE_SIZE_MB: 750, // Tavus max upload size
-  MIN_RESOLUTION_HEIGHT: 1080, // Minimum 1080p
-  MIN_FPS: 25, // Minimum 25 fps
+  MIN_DURATION_SECONDS: 120,
+  MAX_DURATION_SECONDS: 300,
+  SPEAKING_PHASE_SECONDS: 60,
+  LISTENING_PHASE_SECONDS: 60,
+  RECOMMENDED_DURATION_SECONDS: 120,
+  MAX_FILE_SIZE_MB: 750,
+  MIN_RESOLUTION_HEIGHT: 1080,
+  MIN_FPS: 25,
 } as const;
 
-// Tavus consent statement (must be spoken in English at the start of the video)
+// Tavus consent statement
 export const TAVUS_CONSENT_SCRIPT_EN = `I, [YOUR FULL NAME], am currently speaking and give consent to Tavus to create an AI clone of me by using the audio and video samples I provide. I understand that this AI clone can be used to create videos that look and sound like me.`;
 
-// French speaking script for the speaking phase (after consent)
 export const TAVUS_SPEAKING_SCRIPT_FR = `Bonjour, je m'appelle [votre prénom] [votre nom].
 
 Je travaille chez [votre entreprise] en tant que [votre fonction].
@@ -51,12 +50,12 @@ Je suis ravi(e) de pouvoir créer des vidéos personnalisées avec Ekko pour mie
 
 Merci de votre attention !`;
 
-// Identity Types
+// Identity Types — updated terminology
 export const IDENTITY_TYPES = [
-  { value: "executive", label: "Dirigeant(e)" },
-  { value: "sales_rep", label: "Commercial(e)" },
-  { value: "hr", label: "Ressources Humaines" },
-  { value: "marketing", label: "Marketing" },
+  { value: "executive", label: "Exec clone" },
+  { value: "sales_rep", label: "AE facecam" },
+  { value: "hr", label: "RH clone" },
+  { value: "marketing", label: "Marketing clone" },
   { value: "other", label: "Autre" },
 ] as const;
 
@@ -84,6 +83,15 @@ export const ROLE_LABELS: Record<string, string> = {
   org_manager: "Manager",
   org_user: "Utilisateur",
 } as const;
+
+// Deal Stages
+export const DEAL_STAGES = [
+  { value: "qualification", label: "Qualification" },
+  { value: "rfp", label: "RFP" },
+  { value: "shortlist", label: "Shortlist" },
+  { value: "negotiation", label: "Négociation" },
+  { value: "close", label: "Close" },
+] as const;
 
 // API Routes
 export const API_ROUTES = {
@@ -113,11 +121,11 @@ export const AUDIT_EVENT_LABELS: Record<string, string> = {
   identity_created: "Identité créée",
   identity_updated: "Identité modifiée",
   identity_status_changed: "Statut identité modifié",
-  campaign_created: "Campagne créée",
-  campaign_updated: "Campagne modifiée",
-  campaign_submitted: "Campagne soumise",
-  campaign_approved: "Campagne approuvée",
-  campaign_rejected: "Campagne refusée",
+  campaign_created: "Deal créé",
+  campaign_updated: "Deal modifié",
+  campaign_submitted: "Deal soumis",
+  campaign_approved: "Deal approuvé",
+  campaign_rejected: "Deal refusé",
   video_job_created: "Génération lancée",
   video_job_completed: "Génération terminée",
   video_job_failed: "Génération échouée",

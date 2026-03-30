@@ -4,33 +4,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { MetricCard } from "@/components/ui/MetricCard";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  Video, 
-  Eye, 
-  CheckSquare, 
   AlertTriangle, 
   Plus,
   ArrowRight,
   Clock,
+  Zap,
+  CheckSquare,
+  LayoutList,
 } from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { Campaign, ApprovalRequest } from "@/types/database";
-
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
-    videosGenerated: 0,
-    totalViews: 0,
-    pendingApprovals: 0,
-    complianceAlerts: 0,
+    dealsEnAlerte: 0,
+    nouveauxSignaux: 0,
+    validationsEnAttente: 0,
+    dealsActifs: 0,
   });
   const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
-  
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
 
   const navigate = useNavigate();
@@ -38,51 +35,68 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!membership?.org_id) {
-        setIsLoading(false);
-        return;
-      }
+      if (!membership?.org_id) { setIsLoading(false); return; }
 
       try {
-        // Fetch video count
-        const { count: videoCount } = await supabase
-          .from("videos")
+        // Deals actifs (not completed/cancelled)
+        const { count: activeDeals } = await supabase
+          .from("campaigns")
           .select("*", { count: "exact", head: true })
-          .eq("org_id", membership.org_id);
+          .eq("org_id", membership.org_id)
+          .not("status", "in", '("completed","cancelled")');
 
-        // Fetch total views
-        const { data: videos } = await supabase
-          .from("videos")
-          .select("view_count")
-          .eq("org_id", membership.org_id);
-        
-        const totalViews = videos?.reduce((sum, v) => sum + (v.view_count || 0), 0) || 0;
-
-        // Fetch pending approvals count
+        // Pending approvals
         const { count: pendingCount } = await supabase
           .from("approval_requests")
           .select("*", { count: "exact", head: true })
           .eq("org_id", membership.org_id)
           .eq("status", "pending");
 
+        // Deal scores with alerts
+        const { data: scores } = await supabase
+          .from("deal_scores")
+          .select("campaign_id, des, alerts")
+          .eq("campaign_id", membership.org_id); // This will naturally filter
+
+        // Count deals with critical alerts (DES < 40)
+        const { data: allScores } = await supabase
+          .from("deal_scores")
+          .select("campaign_id, des")
+          .order("scored_at", { ascending: false });
+
+        const latestScores: Record<string, number> = {};
+        allScores?.forEach(s => {
+          if (!latestScores[s.campaign_id] && s.des != null) {
+            latestScores[s.campaign_id] = s.des;
+          }
+        });
+        const alertCount = Object.values(latestScores).filter(d => d < 40).length;
+
+        // Today's signals (video events from today)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const { count: signalCount } = await supabase
+          .from("video_events")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", today.toISOString());
+
         setStats({
-          videosGenerated: videoCount || 0,
-          totalViews,
-          pendingApprovals: pendingCount || 0,
-          complianceAlerts: 0,
+          dealsEnAlerte: alertCount,
+          nouveauxSignaux: signalCount || 0,
+          validationsEnAttente: pendingCount || 0,
+          dealsActifs: activeDeals || 0,
         });
 
-        // Fetch recent campaigns
+        // Recent campaigns
         const { data: campaigns } = await supabase
           .from("campaigns")
           .select("*, identities(display_name)")
           .eq("org_id", membership.org_id)
           .order("created_at", { ascending: false })
           .limit(5);
-
         setRecentCampaigns(campaigns as Campaign[] || []);
 
-        // Fetch pending approval requests
+        // Pending approvals
         const { data: approvals } = await supabase
           .from("approval_requests")
           .select("*, campaigns(name, script)")
@@ -90,14 +104,10 @@ export default function Dashboard() {
           .eq("status", "pending")
           .order("created_at", { ascending: false })
           .limit(5);
-
         setPendingApprovals(approvals as ApprovalRequest[] || []);
 
-      } catch {
-        console.error("Dashboard fetch failed");
-      } finally {
-        setIsLoading(false);
-      }
+      } catch { console.error("Dashboard fetch failed"); }
+      finally { setIsLoading(false); }
     };
 
     fetchDashboardData();
@@ -113,74 +123,105 @@ export default function Dashboard() {
     );
   }
 
+  const metricCards = [
+    {
+      label: "Deals en alerte",
+      value: stats.dealsEnAlerte,
+      icon: AlertTriangle,
+      color: stats.dealsEnAlerte > 0 ? "text-destructive" : "text-muted-foreground",
+      bgColor: stats.dealsEnAlerte > 0 ? "bg-destructive/10" : "bg-muted",
+      onClick: () => navigate("/app/campaigns"),
+    },
+    {
+      label: "Nouveaux signaux aujourd'hui",
+      value: stats.nouveauxSignaux,
+      icon: Zap,
+      color: "text-info",
+      bgColor: "bg-info/10",
+      onClick: () => navigate("/app/deal-intelligence"),
+    },
+    {
+      label: "Validations en attente",
+      value: stats.validationsEnAttente,
+      icon: CheckSquare,
+      color: stats.validationsEnAttente > 0 ? "text-warning" : "text-muted-foreground",
+      bgColor: stats.validationsEnAttente > 0 ? "bg-warning/10" : "bg-muted",
+      onClick: () => navigate("/app/approvals"),
+    },
+    {
+      label: "Deals actifs",
+      value: stats.dealsActifs,
+      icon: LayoutList,
+      color: "text-foreground",
+      bgColor: "bg-primary/10",
+      onClick: () => navigate("/app/campaigns"),
+    },
+  ];
+
   return (
     <AppLayout>
       <PageHeader 
         title={`Bonjour, ${profile?.first_name || "utilisateur"} 👋`}
-        description="Présence exécutive et impact sur vos deals"
+        description="Vue d'ensemble de vos deals et signaux"
         actions={
-          <Button onClick={() => navigate("/app/campaigns/new")}>
+          <Button onClick={() => navigate("/app/campaigns/new")} className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="mr-2 h-4 w-4" />
             Nouveau deal
           </Button>
         }
       />
 
-      {/* Metrics */}
+      {/* 4 Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <MetricCard
-          icon={Video}
-          value={stats.videosGenerated}
-          label="Deals avec présence exécutive"
-          onClick={() => navigate("/app/campaigns")}
-        />
-        <MetricCard
-          icon={Eye}
-          value={stats.totalViews}
-          label="Vues par les décideurs"
-          onClick={() => navigate("/app/deal-intelligence")}
-        />
-        <MetricCard
-          icon={CheckSquare}
-          value={stats.pendingApprovals}
-          label="Validations en attente"
-          onClick={() => navigate("/app/approvals")}
-        />
-        <MetricCard
-          icon={AlertTriangle}
-          value={stats.complianceAlerts}
-          label="Alertes conformité"
-          onClick={() => navigate("/app/governance")}
-        />
+        {metricCards.map((m) => {
+          const Icon = m.icon;
+          const isZero = m.value === 0;
+          return (
+            <div
+              key={m.label}
+              className={`metric-card cursor-pointer hover:shadow-lg transition-all ${isZero ? "opacity-70" : ""}`}
+              onClick={m.onClick}
+              role="button"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className={`${isZero ? "text-lg" : "text-3xl"} font-bold text-foreground`}>
+                    {m.value}
+                  </p>
+                  <p className="metric-label">{m.label}</p>
+                </div>
+                <div className={`p-2 rounded-lg ${m.bgColor}`}>
+                  <Icon className={`w-5 h-5 ${m.color}`} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Campaigns */}
-        <Card className="lg:col-span-2">
+        {/* Recent Deals */}
+        <Card className="lg:col-span-2 rounded-card">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Campagnes récentes</CardTitle>
+            <CardTitle className="text-lg">Deals récents</CardTitle>
             <Button variant="ghost" size="sm" onClick={() => navigate("/app/campaigns")}>
-              Voir tout
-              <ArrowRight className="ml-2 h-4 w-4" />
+              Voir tout <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardHeader>
           <CardContent>
             {recentCampaigns.length === 0 ? (
               <EmptyState
-                icon={Video}
-                title="Aucune campagne"
-                description="Créez votre première campagne vidéo pour commencer"
-                action={{
-                  label: "Créer une campagne",
-                  onClick: () => navigate("/app/campaigns/new"),
-                }}
+                icon={LayoutList}
+                title="Aucun deal"
+                description="Créez votre premier deal pour commencer"
+                action={{ label: "Créer un deal", onClick: () => navigate("/app/campaigns/new") }}
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {recentCampaigns.map((campaign) => (
                   <div
                     key={campaign.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
                     onClick={() => navigate(`/app/campaigns/${campaign.id}`)}
                   >
                     <div>
@@ -198,7 +239,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Pending Approvals */}
-        <Card>
+        <Card className="rounded-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Validations en attente</CardTitle>
             {pendingApprovals.length > 0 && (
@@ -214,18 +255,16 @@ export default function Dashboard() {
                 <p className="text-sm">Aucune validation en attente</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {pendingApprovals.map((approval) => (
                   <div
                     key={approval.id}
-                    className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    className="p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
                     onClick={() => navigate("/app/approvals")}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Clock className="h-4 w-4 text-warning" />
-                      <p className="font-medium text-sm">
-                        {(approval as any).campaigns?.name}
-                      </p>
+                      <p className="font-medium text-sm">{(approval as any).campaigns?.name}</p>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2">
                       {(approval as any).campaigns?.script?.substring(0, 100)}...
@@ -236,22 +275,6 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Quick Actions — deal-first */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Button variant="default" className="h-auto py-5 flex-col gap-1.5" onClick={() => navigate("/app/campaigns/new")}>
-          <Plus className="h-6 w-6" />
-          <span className="text-sm font-semibold">Nouveau deal</span>
-        </Button>
-        <Button variant="outline" className="h-auto py-5 flex-col gap-1.5" onClick={() => navigate("/app/identities")}>
-          <Video className="h-6 w-6" />
-          <span className="text-sm font-semibold">Gérer les identités</span>
-        </Button>
-        <Button variant="outline" className="h-auto py-5 flex-col gap-1.5" onClick={() => navigate("/app/deal-intelligence")}>
-          <Eye className="h-6 w-6" />
-          <span className="text-sm font-semibold">Deal Intelligence</span>
-        </Button>
       </div>
     </AppLayout>
   );
