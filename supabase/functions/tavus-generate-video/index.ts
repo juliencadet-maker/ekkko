@@ -42,12 +42,12 @@ async function generateVoxtralAudio(
   const refBytes = await refResponse.arrayBuffer();
   const refBase64 = btoa(String.fromCharCode(...new Uint8Array(refBytes)));
 
-  const ext = identity.reference_video_path.split('.').pop()?.toLowerCase() || 'webm';
+  const ext = voiceReferencePath.split('.').pop()?.toLowerCase() || 'webm';
   const mimeMap: Record<string, string> = {
-    'webm': 'video/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
+    'webm': 'audio/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
     'mp3': 'audio/mp3', 'm4a': 'audio/m4a',
   };
-  const mimeType = mimeMap[ext] || 'video/webm';
+  const mimeType = mimeMap[ext] || 'audio/webm';
 
   // Call Voxtral TTS
   const ttsResponse = await fetch(MISTRAL_API_URL, {
