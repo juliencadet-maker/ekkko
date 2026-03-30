@@ -65,7 +65,7 @@ async function generateVoxtralAudio(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "mistral-tts-latest",
+      model: "voxtral-mini-tts-2603",
       input: personalizedScript,
       ref_audio: refBase64,
       response_format: "wav",

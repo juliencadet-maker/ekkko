@@ -134,7 +134,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "mistral-tts-latest",
+        model: "voxtral-mini-tts-2603",
         input: script,
         ref_audio: refVideoBase64,
         response_format: "wav",
