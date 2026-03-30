@@ -51,6 +51,8 @@ import {
   Loader2,
   Globe,
   RefreshCw,
+  Zap,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
