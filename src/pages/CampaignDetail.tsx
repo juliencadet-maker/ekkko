@@ -47,6 +47,7 @@ import {
   MessageSquare,
   GitCompareArrows,
   Loader2,
+  Globe,
   RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
