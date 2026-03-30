@@ -78,13 +78,27 @@ async function generateVoxtralAudio(
     return { audioUrl: "", error: `Voxtral TTS error: ${errText}` };
   }
 
+  // Parse JSON response — Voxtral returns { audio_data: "<base64>" }
+  const ttsJson = await ttsResponse.json();
+  const audioBase64 = ttsJson.audio_data;
+  if (!audioBase64) {
+    console.error("Voxtral TTS: no audio_data in response", Object.keys(ttsJson));
+    return { audioUrl: "", error: "Voxtral TTS returned no audio data" };
+  }
+
+  // Decode base64 to binary
+  const binaryStr = atob(audioBase64);
+  const audioBytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    audioBytes[i] = binaryStr.charCodeAt(i);
+  }
+
   // Store audio
-  const audioBuffer = await ttsResponse.arrayBuffer();
   const audioPath = `generated_audio/${campaignId}/${recipientId}/${Date.now()}.wav`;
 
   const { error: uploadError } = await serviceClient.storage
     .from("generated_videos")
-    .upload(audioPath, audioBuffer, { contentType: "audio/wav", upsert: true });
+    .upload(audioPath, audioBytes.buffer, { contentType: "audio/wav", upsert: true });
 
   if (uploadError) {
     console.error("Audio upload error:", uploadError);

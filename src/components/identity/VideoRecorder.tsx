@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { VIDEO_CONSTRAINTS, SUGGESTED_SCRIPT } from "@/lib/constants";
+import { WavRecorder } from "@/lib/wavRecorder";
 
 // User info for personalized teleprompter
 export interface VideoRecorderUserInfo {
@@ -108,10 +109,9 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioRecorderRef = useRef<MediaRecorder | null>(null);
+  const wavRecorderRef = useRef<WavRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const teleprompterRef = useRef<HTMLDivElement>(null);
@@ -243,7 +243,6 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
 
     setRecordingError(null);
     chunksRef.current = [];
-    audioChunksRef.current = [];
     setShowTeleprompter(true);
     
     try {
@@ -294,35 +293,16 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
       mediaRecorder.start(1000);
       mediaRecorderRef.current = mediaRecorder;
 
-      // Audio-only recorder (for voice reference / Voxtral cloning)
+      // Audio-only WAV recorder (for voice reference / Voxtral cloning)
       const audioTracks = streamRef.current.getAudioTracks();
       if (audioTracks.length > 0 && onAudioReady) {
         try {
           const audioStream = new MediaStream(audioTracks);
-          const audioMime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-            ? "audio/webm;codecs=opus"
-            : "audio/webm";
-          const audioRecorder = new MediaRecorder(audioStream, { mimeType: audioMime });
-
-          audioRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) {
-              audioChunksRef.current.push(e.data);
-            }
-          };
-
-          audioRecorder.onstop = () => {
-            if (audioChunksRef.current.length > 0) {
-              const audioBlob = new Blob(audioChunksRef.current, { type: audioMime });
-              if (audioBlob.size > 0) {
-                onAudioReady(audioBlob);
-              }
-            }
-          };
-
-          audioRecorder.start(1000);
-          audioRecorderRef.current = audioRecorder;
+          const wavRec = new WavRecorder();
+          wavRec.start(audioStream);
+          wavRecorderRef.current = wavRec;
         } catch (audioErr) {
-          console.warn("Audio-only recorder failed (non-blocking):", audioErr);
+          console.warn("WAV audio recorder failed (non-blocking):", audioErr);
         }
       }
 
@@ -360,9 +340,13 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         clearInterval(scrollIntervalRef.current);
         scrollIntervalRef.current = null;
       }
-      if (audioRecorderRef.current && audioRecorderRef.current.state !== "inactive") {
-        audioRecorderRef.current.stop();
-        audioRecorderRef.current = null;
+      if (wavRecorderRef.current && wavRecorderRef.current.isRecording) {
+        wavRecorderRef.current.stop().then((wavBlob) => {
+          if (wavBlob.size > 0 && onAudioReady) {
+            onAudioReady(wavBlob);
+          }
+        }).catch(err => console.warn("WAV stop error:", err));
+        wavRecorderRef.current = null;
       }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();

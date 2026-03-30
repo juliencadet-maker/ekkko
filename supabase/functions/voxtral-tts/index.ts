@@ -150,14 +150,30 @@ serve(async (req) => {
       );
     }
 
-    // Store generated audio in storage
-    const audioBuffer = await voxtralResponse.arrayBuffer();
+    // Parse JSON response — Voxtral returns { audio_data: "<base64>" }
+    const ttsJson = await voxtralResponse.json();
+    const audioBase64Data = ttsJson.audio_data;
+    if (!audioBase64Data) {
+      console.error("Voxtral TTS: no audio_data in response", Object.keys(ttsJson));
+      return new Response(
+        JSON.stringify({ error: "Voxtral TTS returned no audio data" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Decode base64 to binary
+    const binaryStr = atob(audioBase64Data);
+    const audioBytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      audioBytes[i] = binaryStr.charCodeAt(i);
+    }
+
     const timestamp = Date.now();
     const audioPath = `generated_audio/${campaign_id || 'manual'}/${identity_id}/${timestamp}.wav`;
 
     const { error: uploadError } = await serviceClient.storage
       .from("generated_videos")
-      .upload(audioPath, audioBuffer, {
+      .upload(audioPath, audioBytes.buffer, {
         contentType: "audio/wav",
         upsert: true,
       });

@@ -235,14 +235,14 @@ export default function Onboarding() {
       // Upload audio reference separately (for Voxtral voice cloning)
       let voiceReferencePath: string | null = null;
       if (audioBlob) {
-        voiceReferencePath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_voice_reference.webm`;
+        voiceReferencePath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_voice_reference.wav`;
         const { error: audioUploadError } = await supabase.storage
           .from("identity_assets")
-          .upload(voiceReferencePath, audioBlob, { contentType: "audio/webm", upsert: true });
+          .upload(voiceReferencePath, audioBlob, { contentType: "audio/wav", upsert: true });
 
         if (audioUploadError) {
           console.warn("Audio upload failed (non-blocking):", audioUploadError);
-          voiceReferencePath = null; // Fall back to extracting from video
+          voiceReferencePath = null;
         }
       }
 
