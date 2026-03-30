@@ -100,7 +100,8 @@ serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${serviceKey}`,
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")!}`,
+            "x-service-role-key": serviceKey,
           },
           body: JSON.stringify({ campaign_id: campaignId }),
         });
