@@ -256,8 +256,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           replica_id: replicaId,
-          script: personalizedScript,
-          audio_url: audioUrl, // Voxtral-generated audio for lip-sync
+          audio_url: audioUrl, // Voxtral-generated audio for lip-sync (no script when audio_url is provided)
           video_name: `${campaign.name} - ${recipient.first_name || recipient.email}`,
           callback_url: callbackUrl,
         }),
