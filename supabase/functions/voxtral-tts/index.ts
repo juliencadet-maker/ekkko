@@ -109,7 +109,14 @@ serve(async (req) => {
       );
     }
     const refVideoBytes = await refVideoResponse.arrayBuffer();
-    const refVideoBase64 = btoa(String.fromCharCode(...new Uint8Array(refVideoBytes)));
+    const uint8 = new Uint8Array(refVideoBytes);
+    let refVideoBase64 = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8.length; i += chunkSize) {
+      const chunk = uint8.subarray(i, Math.min(i + chunkSize, uint8.length));
+      refVideoBase64 += String.fromCharCode(...chunk);
+    }
+    refVideoBase64 = btoa(refVideoBase64);
 
     // Determine MIME type from file extension
     const ext = voiceReferencePath.split('.').pop()?.toLowerCase() || 'webm';
@@ -127,18 +134,10 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "mistral-tts-latest",
+        model: "voxtral-mini-tts-2603",
         input: script,
-        voice: {
-          type: "voice_preset",
-          // Use reference audio for zero-shot voice cloning
-          reference_audio: {
-            content: refVideoBase64,
-            content_type: mimeType,
-          },
-        },
+        ref_audio: refVideoBase64,
         response_format: "wav",
-        language: "fr",
       }),
     });
 

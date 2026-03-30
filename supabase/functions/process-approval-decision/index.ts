@@ -92,20 +92,22 @@ serve(async (req) => {
         metadata: { approved_via: "external_link" },
       });
 
-      // Auto-trigger video generation
+      // Auto-trigger video generation using service role key
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       try {
-        await fetch(`${supabaseUrl}/functions/v1/tavus-generate-video`, {
+        const genRes = await fetch(`${supabaseUrl}/functions/v1/tavus-generate-video`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabaseAnonKey}`,
+            "Authorization": `Bearer ${serviceKey}`,
           },
           body: JSON.stringify({ campaign_id: campaignId }),
         });
+        const genData = await genRes.json();
+        console.log("Video generation triggered:", genRes.status, JSON.stringify(genData));
       } catch (genError) {
-        console.error("Auto video generation trigger failed");
+        console.error("Auto video generation trigger failed:", genError);
       }
     } else {
       await admin.from("campaigns").update({ status: "draft" }).eq("id", campaignId);

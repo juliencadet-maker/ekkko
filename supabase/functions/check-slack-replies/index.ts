@@ -27,6 +27,18 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Allow service-to-service calls (pg_cron) - validate service role key if present
+  const authHeader = req.headers.get("Authorization");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (authHeader) {
+    const token = authHeader.replace("Bearer ", "");
+    if (token !== serviceRoleKey && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SLACK_API_KEY = Deno.env.get("SLACK_API_KEY");

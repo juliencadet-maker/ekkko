@@ -40,7 +40,15 @@ async function generateVoxtralAudio(
     return { audioUrl: "", error: "Failed to download reference video" };
   }
   const refBytes = await refResponse.arrayBuffer();
-  const refBase64 = btoa(String.fromCharCode(...new Uint8Array(refBytes)));
+  // Chunk-based base64 encoding to avoid stack overflow on large files
+  const uint8 = new Uint8Array(refBytes);
+  let refBase64 = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < uint8.length; i += chunkSize) {
+    const chunk = uint8.subarray(i, Math.min(i + chunkSize, uint8.length));
+    refBase64 += String.fromCharCode(...chunk);
+  }
+  refBase64 = btoa(refBase64);
 
   const ext = voiceReferencePath.split('.').pop()?.toLowerCase() || 'webm';
   const mimeMap: Record<string, string> = {
@@ -57,17 +65,10 @@ async function generateVoxtralAudio(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "mistral-tts-latest",
+      model: "voxtral-mini-tts-2603",
       input: personalizedScript,
-      voice: {
-        type: "voice_preset",
-        reference_audio: {
-          content: refBase64,
-          content_type: mimeType,
-        },
-      },
+      ref_audio: refBase64,
       response_format: "wav",
-      language: "fr",
     }),
   });
 
@@ -124,7 +125,7 @@ serve(async (req) => {
       );
     }
 
-    // Authenticate user
+    // Authenticate: accept user JWT or service role key
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -133,19 +134,33 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const isServiceRole = token === serviceRoleKey;
+
+    let supabase;
+    if (isServiceRole) {
+      // Internal call from another edge function (e.g. process-approval-decision)
+      supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        serviceRoleKey,
+        { auth: { autoRefreshToken: false, persistSession: false } }
       );
+    } else {
+      // User call: validate JWT
+      supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const { campaign_id, video_job_id } = await req.json();
