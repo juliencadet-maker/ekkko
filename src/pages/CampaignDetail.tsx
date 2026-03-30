@@ -945,6 +945,117 @@ export default function CampaignDetail() {
           )}
         </TabsContent>
 
+        {/* Deal Intelligence Tab */}
+        <TabsContent value="intelligence" className="space-y-6">
+          {/* DES + Momentum + Cold Start */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <MetricCard icon={Zap} value={dealScore?.des ?? "—"} label="DES Score" />
+            <MetricCard icon={Users} value={viewers.length.toString()} label="Contacts identifiés" />
+            <MetricCard icon={TrendingUp} value={dealScore?.sponsor_count ?? 0} label="Sponsors" />
+            <MetricCard icon={AlertTriangle} value={dealScore?.blocker_count ?? 0} label="Bloqueurs" />
+            <MetricCard icon={Eye} value={`${Math.round((dealScore?.avg_watch_depth ?? 0) * 100) / 100}%`} label="Watch depth moy." />
+          </div>
+
+          {/* Momentum + Cold Start */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {dealScore?.momentum && (
+              <Card>
+                <CardContent className="pt-6 flex items-center gap-4">
+                  {dealScore.momentum === "rising" ? <TrendingUp className="h-8 w-8 text-emerald-600" /> :
+                   dealScore.momentum === "declining" ? <TrendingUp className="h-8 w-8 text-red-600 rotate-180" /> :
+                   <TrendingUp className="h-8 w-8 text-amber-600" />}
+                  <div>
+                    <p className="font-semibold text-foreground">Momentum : {dealScore.momentum === "rising" ? "En hausse ↑" : dealScore.momentum === "declining" ? "En baisse ↓" : "Stable →"}</p>
+                    <p className="text-sm text-muted-foreground">Velocity : {dealScore.event_velocity ?? 0} events/jour • Multi-threading : {dealScore.multi_threading_score ?? 0}/100</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {dealScore?.cold_start_regime && (
+              <Card>
+                <CardContent className="pt-6 flex items-center gap-4">
+                  <Sparkles className="h-8 w-8 text-amber-600" />
+                  <div>
+                    <p className="font-semibold text-foreground">
+                      Régime : {dealScore.cold_start_regime === "cold_global" ? "Cold Global" :
+                        dealScore.cold_start_regime === "cold_account" ? "Cold Account" :
+                        dealScore.cold_start_regime === "warm_account" ? "Warm Account" : "Mature"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {dealScore.cold_start_regime === "cold_global" ? "Heuristiques génériques — fiabilité limitée" :
+                        dealScore.cold_start_regime === "cold_account" ? "Benchmarks industrie" :
+                        dealScore.cold_start_regime === "warm_account" ? "Patterns compte activés" : "Insights complets"}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Alerts */}
+          {dealScore?.alerts && Array.isArray(dealScore.alerts) && (dealScore.alerts as any[]).length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Alertes</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {(dealScore.alerts as any[]).map((a: any, i: number) => (
+                  <div key={i} className={`p-3 rounded-lg border text-sm ${
+                    a.type === "danger" ? "bg-red-500/10 border-red-500/20 text-red-700" :
+                    a.type === "warning" ? "bg-amber-500/10 border-amber-500/20 text-amber-700" :
+                    "bg-blue-500/10 border-blue-500/20 text-blue-700"
+                  }`}>
+                    {a.text}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Buying Committee */}
+          {viewers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Buying Committee</CardTitle>
+                <CardDescription>{viewers.length} contacts identifiés</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {viewers.map((v: any) => (
+                    <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                      <div className={`w-2.5 h-2.5 rounded-full ${
+                        v.status === "sponsor_actif" ? "bg-emerald-500" :
+                        v.status === "bloqueur_potentiel" ? "bg-red-500" :
+                        v.status === "neutre" ? "bg-amber-500" : "bg-blue-400"
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{v.name || v.email?.split("@")[0] || "Inconnu"}</p>
+                        <p className="text-xs text-muted-foreground">{v.title || v.domain || "—"}</p>
+                      </div>
+                      <div className="flex gap-4 text-xs text-muted-foreground">
+                        <span>Score: {v.contact_score ?? "—"}</span>
+                        <span>Watch: {v.total_watch_depth ?? 0}%</span>
+                        <span>Shares: {v.share_count ?? 0}</span>
+                        <span>Replays: {v.replay_count ?? 0}</span>
+                      </div>
+                      {v.cta_clicked && <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 text-[10px]">CTA ✓</Badge>}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No data state */}
+          {!dealScore && viewers.length === 0 && (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Zap className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">Aucune donnée de deal intelligence disponible</p>
+                <p className="text-sm text-muted-foreground mt-1">Partagez la landing page pour commencer à collecter des signaux</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         {/* Video Tab */}
         <TabsContent value="video" className="space-y-6">
           {/* Job Status List */}
