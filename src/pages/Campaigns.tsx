@@ -10,15 +10,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Video, Building2, Layers, Eye, TrendingUp } from "lucide-react";
+import { Plus, Search, Video, Building2, Layers, Zap, TrendingUp, TrendingDown, Users } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Campaign } from "@/types/database";
+
+interface DealScoreRow {
+  campaign_id: string;
+  des: number | null;
+  momentum: string | null;
+  viewer_count: number | null;
+  sponsor_count: number | null;
+  blocker_count: number | null;
+}
 
 export default function Campaigns() {
   const [isLoading, setIsLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dealScores, setDealScores] = useState<Record<string, DealScoreRow>>({});
 
   const navigate = useNavigate();
   const { membership } = useAuthContext();
@@ -35,7 +45,26 @@ export default function Campaigns() {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setCampaigns((data as Campaign[]) || []);
+        const campaignList = (data as Campaign[]) || [];
+        setCampaigns(campaignList);
+
+        // Fetch latest deal scores for all campaigns
+        const campaignIds = campaignList.map((c) => c.id);
+        if (campaignIds.length > 0) {
+          const { data: scores } = await supabase
+            .from("deal_scores")
+            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count")
+            .in("campaign_id", campaignIds)
+            .order("scored_at", { ascending: false });
+
+          if (scores) {
+            const scoreMap: Record<string, DealScoreRow> = {};
+            for (const s of scores as DealScoreRow[]) {
+              if (!scoreMap[s.campaign_id]) scoreMap[s.campaign_id] = s;
+            }
+            setDealScores(scoreMap);
+          }
+        }
       } catch {
         console.error("Fetch campaigns failed");
       } finally {
@@ -46,7 +75,6 @@ export default function Campaigns() {
     fetchCampaigns();
   }, [membership?.org_id]);
 
-  // Group: parent campaigns (no parent) with their children
   const parentCampaigns = useMemo(() => {
     const parents = campaigns.filter((c) => !c.parent_campaign_id);
     return parents.map((p) => ({
@@ -55,9 +83,6 @@ export default function Campaigns() {
     }));
   }, [campaigns]);
 
-  // Also include orphan campaigns (old ones without parent) that are not children
-  const childIds = new Set(campaigns.filter((c) => c.parent_campaign_id).map((c) => c.id));
-  
   const displayCampaigns = useMemo(() => {
     return parentCampaigns.filter((p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -71,6 +96,19 @@ export default function Campaigns() {
     const generating = subs.filter((s) => s.status === "generating").length;
     const draft = subs.filter((s) => s.status === "draft").length;
     return { completed, generating, draft, total: subs.length };
+  };
+
+  const getMomentumIcon = (momentum: string | null) => {
+    if (momentum === "rising") return <TrendingUp className="h-3 w-3 text-emerald-600" />;
+    if (momentum === "declining") return <TrendingDown className="h-3 w-3 text-red-600" />;
+    return null;
+  };
+
+  const getDesColor = (des: number | null) => {
+    if (des === null) return "bg-muted text-muted-foreground";
+    if (des >= 70) return "bg-emerald-500/15 text-emerald-700 border-emerald-500/30";
+    if (des >= 40) return "bg-amber-500/15 text-amber-700 border-amber-500/30";
+    return "bg-red-500/15 text-red-700 border-red-500/30";
   };
 
   return (
@@ -88,7 +126,6 @@ export default function Campaigns() {
         }
       />
 
-      {/* Search */}
       <div className="mb-6">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -101,7 +138,6 @@ export default function Campaigns() {
         </div>
       </div>
 
-      {/* Account Cards */}
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="animate-pulse text-muted-foreground">Chargement...</div>
@@ -126,6 +162,7 @@ export default function Campaigns() {
           {displayCampaigns.map((campaign) => {
             const subs = campaign.sub_campaigns || [];
             const statusSummary = getStatusSummary(subs);
+            const score = dealScores[campaign.id];
 
             return (
               <Card
@@ -149,14 +186,44 @@ export default function Campaigns() {
                         </p>
                       </div>
                     </div>
-                    <StatusBadge status={campaign.status} />
+                    <div className="flex items-center gap-1.5">
+                      {score?.des != null && (
+                        <Badge variant="outline" className={`text-[10px] font-bold px-1.5 py-0 ${getDesColor(score.des)}`}>
+                          <Zap className="h-2.5 w-2.5 mr-0.5" />
+                          {score.des}
+                        </Badge>
+                      )}
+                      <StatusBadge status={campaign.status} />
+                    </div>
                   </div>
 
-                  {/* Description */}
                   {campaign.description && (
                     <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
                       {campaign.description}
                     </p>
+                  )}
+
+                  {/* Deal Intelligence Row */}
+                  {score && (
+                    <div className="flex items-center gap-3 mb-3 p-2 rounded-lg bg-muted/50">
+                      {score.viewer_count != null && score.viewer_count > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          <span>{score.viewer_count}</span>
+                        </div>
+                      )}
+                      {score.sponsor_count != null && score.sponsor_count > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-emerald-600">
+                          <span>👍 {score.sponsor_count}</span>
+                        </div>
+                      )}
+                      {score.blocker_count != null && score.blocker_count > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-red-600">
+                          <span>⚠ {score.blocker_count}</span>
+                        </div>
+                      )}
+                      {score.momentum && getMomentumIcon(score.momentum)}
+                    </div>
                   )}
 
                   {/* Sub-campaigns count */}
@@ -167,7 +234,6 @@ export default function Campaigns() {
                     </span>
                   </div>
 
-                  {/* Status summary */}
                   {statusSummary && statusSummary.total > 0 && (
                     <div className="flex gap-1.5 flex-wrap mb-3">
                       {statusSummary.completed > 0 && (
