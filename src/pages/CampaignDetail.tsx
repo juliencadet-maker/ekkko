@@ -649,6 +649,45 @@ export default function CampaignDetail() {
         })()}
       </div>
 
+      {/* Video Generation Progress Banner */}
+      {(hasActiveJobs || (jobsTotal > 0 && ["generating", "approved"].includes(campaign.status))) && (
+        <Alert className="mb-6 border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-3">
+            {hasActiveJobs ? (
+              <Loader2 className="h-5 w-5 text-primary animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+            )}
+            <div className="flex-1">
+              <AlertTitle className="font-semibold text-foreground">
+                {hasActiveJobs
+                  ? "Génération vidéo en cours..."
+                  : jobsFailed > 0
+                    ? "Génération terminée avec des erreurs"
+                    : "Génération terminée ✓"}
+              </AlertTitle>
+              <AlertDescription className="mt-1">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} terminée{jobsCompleted > 1 ? "s" : ""}
+                    {jobsFailed > 0 && (
+                      <span className="text-destructive ml-1">• {jobsFailed} erreur{jobsFailed > 1 ? "s" : ""}</span>
+                    )}
+                  </span>
+                  {isVideoPolling && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      Actualisation auto
+                    </span>
+                  )}
+                </div>
+                <Progress value={jobsProgress} className="h-2 mt-2" />
+              </AlertDescription>
+            </div>
+          </div>
+        </Alert>
+      )}
+
       {/* Rejection Alert */}
       {rejectionComment && campaign.status === "draft" && (
         <Alert variant="destructive" className="mb-6 border-destructive/30 bg-destructive/5">
