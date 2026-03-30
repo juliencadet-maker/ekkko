@@ -275,6 +275,7 @@ export default function Onboarding() {
           reference_video_path: videoPath,
           reference_video_duration: videoDuration,
           provider_identity_id: isExecFlow ? EXEC_TAVUS_REPLICA_ID : null,
+          is_shareable: isExecFlow ? true : false,
           consent_given: true,
           consent_given_at: new Date().toISOString(),
           metadata: {
@@ -356,6 +357,7 @@ export default function Onboarding() {
         type: "executive" as any,
         status: "ready",
         clone_status: "ready",
+        is_shareable: true,
         consent_given: true,
         consent_given_at: new Date().toISOString(),
         metadata: { demo: true, skipped_onboarding: true },

@@ -1,0 +1,1 @@
+UPDATE public.identities SET is_shareable = true WHERE id = '43fc577a-c7f5-41ba-9ebc-6eb8fae1501e';
