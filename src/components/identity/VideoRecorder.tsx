@@ -204,19 +204,17 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
       });
       
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await new Promise<void>((resolve, reject) => {
-          if (videoRef.current) {
-            videoRef.current.onloadedmetadata = () => resolve();
-            videoRef.current.onerror = () => reject(new Error("Erreur de chargement vidéo"));
-            setTimeout(() => reject(new Error("Timeout lors du chargement")), 10000);
-          } else {
-            reject(new Error("Référence vidéo manquante"));
-          }
-        });
-      }
       setHasPermission(true);
+      
+      // Wait for next render so videoRef is mounted, then attach stream
+      requestAnimationFrame(() => {
+        if (videoRef.current && streamRef.current) {
+          videoRef.current.srcObject = streamRef.current;
+          videoRef.current.play().catch(() => {
+            // autoPlay may handle it
+          });
+        }
+      });
     } catch (error: unknown) {
       console.error("Camera error:", error);
       setHasPermission(false);
