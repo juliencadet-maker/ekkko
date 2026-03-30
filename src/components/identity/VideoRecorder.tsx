@@ -243,6 +243,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
 
     setRecordingError(null);
     chunksRef.current = [];
+    audioChunksRef.current = [];
     setShowTeleprompter(true);
     
     try {
@@ -252,6 +253,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         return;
       }
 
+      // Video+audio recorder
       const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType });
 
       mediaRecorder.ondataavailable = (e) => {
@@ -291,6 +293,39 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
 
       mediaRecorder.start(1000);
       mediaRecorderRef.current = mediaRecorder;
+
+      // Audio-only recorder (for voice reference / Voxtral cloning)
+      const audioTracks = streamRef.current.getAudioTracks();
+      if (audioTracks.length > 0 && onAudioReady) {
+        try {
+          const audioStream = new MediaStream(audioTracks);
+          const audioMime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ? "audio/webm;codecs=opus"
+            : "audio/webm";
+          const audioRecorder = new MediaRecorder(audioStream, { mimeType: audioMime });
+
+          audioRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+              audioChunksRef.current.push(e.data);
+            }
+          };
+
+          audioRecorder.onstop = () => {
+            if (audioChunksRef.current.length > 0) {
+              const audioBlob = new Blob(audioChunksRef.current, { type: audioMime });
+              if (audioBlob.size > 0) {
+                onAudioReady(audioBlob);
+              }
+            }
+          };
+
+          audioRecorder.start(1000);
+          audioRecorderRef.current = audioRecorder;
+        } catch (audioErr) {
+          console.warn("Audio-only recorder failed (non-blocking):", audioErr);
+        }
+      }
+
       setIsRecording(true);
       setRecordingDuration(0);
 
@@ -313,7 +348,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
       setRecordingError("Impossible de démarrer l'enregistrement. Veuillez actualiser la page.");
       setShowTeleprompter(false);
     }
-  }, [toast]);
+  }, [toast, onAudioReady]);
 
   const stopRecording = useCallback(() => {
     try {
