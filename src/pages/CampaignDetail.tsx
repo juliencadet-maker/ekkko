@@ -921,6 +921,55 @@ export default function CampaignDetail() {
 
         {/* Video Tab */}
         <TabsContent value="video" className="space-y-6">
+          {/* Job Status List */}
+          {videoJobs.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Loader2 className={cn("h-5 w-5", hasActiveJobs && "animate-spin text-primary")} />
+                  Statut de génération
+                </CardTitle>
+                <CardDescription>
+                  {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} prête{jobsCompleted > 1 ? "s" : ""}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {videoJobs.map((job) => {
+                    const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+                      queued: { label: "En file d'attente", color: "text-muted-foreground", icon: <Clock className="h-4 w-4" /> },
+                      processing: { label: "En cours", color: "text-primary", icon: <Loader2 className="h-4 w-4 animate-spin" /> },
+                      completed: { label: "Terminée", color: "text-primary", icon: <CheckCircle2 className="h-4 w-4" /> },
+                      failed: { label: "Échouée", color: "text-destructive", icon: <AlertTriangle className="h-4 w-4" /> },
+                    };
+                    const cfg = statusConfig[job.status] || statusConfig.queued;
+                    return (
+                      <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                        <div className={cfg.color}>{cfg.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            Destinataire #{job.recipient_id.slice(0, 8)}
+                          </p>
+                          <p className={cn("text-xs", cfg.color)}>{cfg.label}</p>
+                        </div>
+                        {job.error_message && (
+                          <p className="text-xs text-destructive max-w-[200px] truncate" title={job.error_message}>
+                            {job.error_message}
+                          </p>
+                        )}
+                        {job.started_at && (
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(job.started_at), "HH:mm", { locale: fr })}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Vidéo de la campagne</CardTitle>
