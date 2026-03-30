@@ -776,6 +776,7 @@ export default function CampaignDetail() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
           <TabsTrigger value="video">Vidéo</TabsTrigger>
         </TabsList>
 
