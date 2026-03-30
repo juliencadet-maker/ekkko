@@ -349,6 +349,7 @@ export default function VideoLandingPage() {
   const handleEmojiReaction = async (emoji: string) => {
     if (!videoId || !campaignId) return;
     setSelectedEmoji(emoji);
+    trackEvent({ ...baseTrackParams(), event_type: "reaction_added", event_data: { reaction_type: emoji } });
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
