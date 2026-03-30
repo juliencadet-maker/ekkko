@@ -147,6 +147,13 @@ serve(async (req) => {
     const expectedSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     // Also check if the Authorization bearer matches service role key
     const bearerToken = authHeader?.replace("Bearer ", "") || "";
+    console.log("Auth debug:", { 
+      hasInternalSecret: !!internalSecret, internalLen: internalSecret?.length,
+      expectedLen: expectedSecret?.length, 
+      bearerLen: bearerToken.length,
+      secretMatch: internalSecret === expectedSecret,
+      bearerMatch: bearerToken === expectedSecret,
+    });
     const isServiceRole = (internalSecret && internalSecret === expectedSecret) || 
                           (bearerToken === expectedSecret);
 
