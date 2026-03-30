@@ -686,7 +686,7 @@ export default function VideoLandingPage() {
               size="lg"
               className="px-6 md:px-8 py-5 md:py-6 text-base md:text-lg font-semibold rounded-xl transition-transform hover:scale-105"
               style={{ backgroundColor: config.brandColor, color: "white" }}
-              onClick={() => window.open(config.ctaUrl, "_blank")}
+              onClick={() => { trackEvent({ ...baseTrackParams(), event_type: "cta_clicked", event_data: { cta_type: config.ctaText, position_in_page: "main" } }); window.open(config.ctaUrl, "_blank"); }}
             >
               {config.ctaText}
               <ExternalLink className="ml-2 h-5 w-5" />
