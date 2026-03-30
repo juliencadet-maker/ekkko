@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { VIDEO_CONSTRAINTS, SUGGESTED_SCRIPT } from "@/lib/constants";
+import { WavRecorder } from "@/lib/wavRecorder";
 
 // User info for personalized teleprompter
 export interface VideoRecorderUserInfo {
