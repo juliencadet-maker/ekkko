@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
+import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
 import {
   ArrowLeft,
   Play,
