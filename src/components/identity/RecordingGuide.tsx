@@ -1,31 +1,79 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Video, Mic, Eye } from "lucide-react";
-import recordingDoImg from "@/assets/recording-do.jpg";
-import recordingDontImg from "@/assets/recording-dont.jpg";
+import { Badge } from "@/components/ui/badge";
+import { 
+  CheckCircle2, 
+  XCircle, 
+  Mic, 
+  Eye, 
+  Clock, 
+  Monitor,
+  Volume2,
+  Smile,
+  MessageSquare,
+  EarOff,
+  ShieldCheck,
+  Timer
+} from "lucide-react";
 
 interface RecordingGuideProps {
   onStartRecording: () => void;
 }
 
-const TIPS = [
-  { text: "Parlez avec énergie — voix expressive = avatar expressif", positive: true },
-  { text: "Gardez une position stable dans le cadre", positive: true },
-  { text: "Regardez directement la caméra", positive: true },
-  { text: "Éclairage naturel, face à une fenêtre de préférence", positive: true },
-  { text: "Environnement calme pour un clonage vocal optimal", positive: true },
-  { text: "Arrière-plan dégagé et neutre", positive: false },
-  { text: "Pas de casque ni d'écouteurs visibles", positive: false },
-  { text: "Évitez les mouvements brusques de la tête", positive: false },
+const PHASES = [
+  {
+    step: 1,
+    icon: ShieldCheck,
+    title: "Consentement (en anglais)",
+    duration: "~15 sec",
+    description: "Lisez la phrase de consentement affichée à l'écran. C'est une obligation légale de Tavus.",
+    color: "text-amber-500",
+  },
+  {
+    step: 2,
+    icon: MessageSquare,
+    title: "Parole libre",
+    duration: "~1 min",
+    description: "Parlez naturellement en suivant le script affiché. Articulez clairement, montrez vos dents quand vous parlez.",
+    color: "text-primary",
+  },
+  {
+    step: 3,
+    icon: EarOff,
+    title: "Écoute silencieuse",
+    duration: "~1 min",
+    description: "Restez immobile, lèvres fermées, regard vers la caméra. Un sourire léger occasionnel est bienvenu.",
+    color: "text-emerald-500",
+  },
+];
+
+const DO_TIPS = [
+  "Position assise, cadrage buste (style Zoom)",
+  "Regard direct vers la caméra, tête stable",
+  "Éclairage diffus, face à une fenêtre de préférence",
+  "Cou et mâchoire entièrement visibles",
+  "Cheveux derrière les épaules, pas sur le visage",
+  "Micro intégré de l'appareil (pas d'AirPods/casque)",
+  "Articulez bien — dents visibles quand vous parlez",
+  "Environnement calme, arrière-plan fixe et neutre",
+];
+
+const DONT_TIPS = [
+  "Pas de casque, écouteurs ou micro externe visible",
+  "Pas de col haut ni de vêtement cachant le cou",
+  "Pas de bijoux (collier, boucles d'oreilles, lunettes)",
+  "Pas de gestes des mains ni mouvements brusques",
+  "Pas de suppression de bruit ou effets audio",
+  "Ne tournez pas la tête, restez face à la caméra",
 ];
 
 export function RecordingGuide({ onStartRecording }: RecordingGuideProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold">Enregistrez votre vidéo de référence</h3>
+        <h3 className="text-lg font-semibold">Créez votre avatar vidéo</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Cette vidéo unique servira à créer votre avatar visuel et à cloner votre voix. 
-          Un téléprompter vous guidera pendant l'enregistrement.
+          Cet enregistrement unique de <strong>2 minutes</strong> servira à créer votre clone visuel et vocal. 
+          Un téléprompter vous guidera à chaque étape.
         </p>
       </div>
 
@@ -35,48 +83,88 @@ export function RecordingGuide({ onStartRecording }: RecordingGuideProps) {
           <Eye className="h-5 w-5 text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">Clone visuel</p>
-            <p className="text-xs text-muted-foreground">Votre apparence & expressions</p>
+            <p className="text-xs text-muted-foreground">Apparence, expressions & lip-sync</p>
           </div>
         </div>
         <div className="flex items-center gap-2.5 p-3 bg-muted/50 rounded-lg border">
           <Mic className="h-5 w-5 text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">Clone vocal</p>
-            <p className="text-xs text-muted-foreground">Votre timbre & intonation</p>
+            <p className="text-xs text-muted-foreground">Timbre, intonation & rythme</p>
           </div>
         </div>
       </div>
 
-      {/* DO / DON'T images */}
-      <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-xl border">
-        <div className="relative rounded-lg overflow-hidden">
-          <img src={recordingDoImg} alt="Bon exemple d'enregistrement" className="w-full aspect-video object-cover" />
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            À FAIRE
-          </div>
+      {/* Recording structure: 3 phases */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Timer className="h-4 w-4 text-muted-foreground" />
+          <h4 className="text-sm font-semibold">Structure de l'enregistrement</h4>
+          <Badge variant="secondary" className="text-xs">~2 min</Badge>
         </div>
-        <div className="relative rounded-lg overflow-hidden">
-          <img src={recordingDontImg} alt="Mauvais exemple d'enregistrement" className="w-full aspect-video object-cover" />
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-            <XCircle className="h-3.5 w-3.5" />
-            À ÉVITER
-          </div>
+        <div className="space-y-2">
+          {PHASES.map((phase) => (
+            <div key={phase.step} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg border">
+              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-muted text-xs font-bold shrink-0 mt-0.5">
+                {phase.step}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <phase.icon className={`h-4 w-4 ${phase.color} shrink-0`} />
+                  <span className="text-sm font-medium">{phase.title}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{phase.duration}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{phase.description}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Tips list */}
-      <div className="space-y-2.5">
-        {TIPS.map((tip, index) => (
-          <div key={index} className="flex items-start gap-2.5">
-            {tip.positive ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-            ) : (
-              <XCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
-            )}
-            <span className="text-sm">{tip.text}</span>
-          </div>
-        ))}
+      {/* Technical requirements */}
+      <div className="grid grid-cols-2 gap-2 p-3 bg-muted/30 rounded-lg border">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Monitor className="h-3.5 w-3.5 shrink-0" />
+          Résolution min. 1080p
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="h-3.5 w-3.5 shrink-0" />
+          25 fps minimum
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Volume2 className="h-3.5 w-3.5 shrink-0" />
+          Micro intégré uniquement
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Smile className="h-3.5 w-3.5 shrink-0" />
+          Grand sourire au début
+        </div>
+      </div>
+
+      {/* DO / DON'T */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 text-emerald-600">
+            <CheckCircle2 className="h-4 w-4" /> À faire
+          </h4>
+          {DO_TIPS.map((tip, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+              <span className="text-xs">{tip}</span>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 text-red-500">
+            <XCircle className="h-4 w-4" /> À éviter
+          </h4>
+          {DONT_TIPS.map((tip, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <XCircle className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" />
+              <span className="text-xs">{tip}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Start recording CTA */}
