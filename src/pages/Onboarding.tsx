@@ -216,7 +216,7 @@ export default function Onboarding() {
         return;
       }
 
-      // Real account flow: upload single video
+      // Real account flow: upload video + audio
       const timestamp = Date.now();
       const videoPath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_reference.webm`;
 
@@ -226,7 +226,21 @@ export default function Onboarding() {
 
       if (uploadError) throw uploadError;
 
-      await logEvent({ eventType: "onboarding_video_recorded", metadata: { videoPath, duration: videoDuration } });
+      // Upload audio reference separately (for Voxtral voice cloning)
+      let voiceReferencePath: string | null = null;
+      if (audioBlob) {
+        voiceReferencePath = `identities/${membership.org_id}/onboarding/${user.id}/${timestamp}_voice_reference.webm`;
+        const { error: audioUploadError } = await supabase.storage
+          .from("identity_assets")
+          .upload(voiceReferencePath, audioBlob, { contentType: "audio/webm", upsert: true });
+
+        if (audioUploadError) {
+          console.warn("Audio upload failed (non-blocking):", audioUploadError);
+          voiceReferencePath = null; // Fall back to extracting from video
+        }
+      }
+
+      await logEvent({ eventType: "onboarding_video_recorded", metadata: { videoPath, voiceReferencePath, duration: videoDuration } });
 
       setCloneStatus("creating");
 
@@ -239,7 +253,7 @@ export default function Onboarding() {
 
       const displayName = `${title} – ${firstName} ${lastName}`;
 
-      // Single video serves as both training (Tavus) and voice reference (Voxtral)
+      // Video for Tavus visual training, audio reference for Voxtral voice cloning
       const { data: identity, error: identityError } = await supabase
         .from("identities")
         .insert({
@@ -254,7 +268,12 @@ export default function Onboarding() {
           reference_video_duration: videoDuration,
           consent_given: true,
           consent_given_at: new Date().toISOString(),
-          metadata: { title, company, consent_code: scriptData?.code },
+          metadata: {
+            title,
+            company,
+            consent_code: scriptData?.code,
+            voice_reference_path: voiceReferencePath,
+          },
         })
         .select()
         .single();
@@ -273,7 +292,6 @@ export default function Onboarding() {
       setCloneStatus("pending");
       
       // Trigger Tavus replica creation (visual clone) - non-blocking
-      // The same video stored in reference_video_path will be used by Voxtral for voice cloning at generation time
       try {
         await tavusApi.createReplica(identity.id);
       } catch {
