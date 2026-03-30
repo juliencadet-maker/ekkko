@@ -314,6 +314,14 @@ export default function VideoLandingPage() {
       trackEvent({ ...baseTrackParams(), event_type: "tab_visibility_changed", position_sec: video.currentTime, event_data: { state: document.hidden ? "hidden" : "visible" } });
     };
 
+    const onBeforeUnload = () => {
+      const pct = video.duration ? (video.currentTime / video.duration) * 100 : 0;
+      if (pct > 0 && pct < 90) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_dropped", position_sec: video.currentTime, event_data: { drop_pct: Math.round(pct), drop_position_sec: Math.round(video.currentTime) } });
+      }
+      trackEvent({ ...baseTrackParams(), event_type: "page_exit", event_data: { last_action: "unload" } });
+    };
+
     video.addEventListener("play", onPlay);
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("pause", onPause);
@@ -323,6 +331,7 @@ export default function VideoLandingPage() {
     video.addEventListener("ratechange", onRateChange);
     document.addEventListener("fullscreenchange", onFullscreenChange);
     document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("beforeunload", onBeforeUnload);
 
     return () => {
       video.removeEventListener("play", onPlay);
@@ -334,6 +343,7 @@ export default function VideoLandingPage() {
       video.removeEventListener("ratechange", onRateChange);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
       document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("beforeunload", onBeforeUnload);
     };
   }, [videoId, reportProgress, trackEvent, baseTrackParams]);
 
