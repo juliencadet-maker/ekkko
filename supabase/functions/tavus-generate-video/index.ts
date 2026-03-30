@@ -139,11 +139,15 @@ serve(async (req) => {
       );
     }
 
-    // Authenticate: accept user JWT or service role key (via header or Bearer token)
+    // Authenticate: accept user JWT or internal service call
     const authHeader = req.headers.get("Authorization");
-    const internalKey = req.headers.get("x-service-role-key");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const isServiceRole = internalKey === serviceRoleKey;
+    // For internal calls from other edge functions, use x-internal-secret header
+    const internalSecret = req.headers.get("x-internal-secret");
+    const expectedSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    // Also check if the Authorization bearer matches service role key
+    const bearerToken = authHeader?.replace("Bearer ", "") || "";
+    const isServiceRole = (internalSecret && internalSecret === expectedSecret) || 
+                          (bearerToken === expectedSecret);
 
     if (!isServiceRole && !authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -154,14 +158,12 @@ serve(async (req) => {
 
     let supabase;
     if (isServiceRole) {
-      // Internal call from another edge function (e.g. process-approval-decision)
       supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
-        serviceRoleKey,
+        expectedSecret!,
         { auth: { autoRefreshToken: false, persistSession: false } }
       );
     } else {
-      // User call: validate JWT
       const token = authHeader!.replace("Bearer ", "");
       supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
