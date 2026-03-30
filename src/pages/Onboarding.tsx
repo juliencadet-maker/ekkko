@@ -259,7 +259,9 @@ export default function Onboarding() {
 
       const displayName = `${title} – ${firstName} ${lastName}`;
 
-      // Video for Tavus visual training, audio reference for Voxtral voice cloning
+      // For exec account: reuse existing Tavus replica, just store voice reference
+      // For real accounts: create new identity with pending clone status
+      const isExecFlow = isExecAccount;
       const { data: identity, error: identityError } = await supabase
         .from("identities")
         .insert({
@@ -268,10 +270,11 @@ export default function Onboarding() {
           provider_id: provider?.id || null,
           display_name: displayName,
           type: identityType as any,
-          status: "pending_approval",
-          clone_status: "pending",
+          status: isExecFlow ? "ready" : "pending_approval",
+          clone_status: isExecFlow ? "ready" : "pending",
           reference_video_path: videoPath,
           reference_video_duration: videoDuration,
+          provider_identity_id: isExecFlow ? EXEC_TAVUS_REPLICA_ID : null,
           consent_given: true,
           consent_given_at: new Date().toISOString(),
           metadata: {
@@ -279,6 +282,11 @@ export default function Onboarding() {
             company,
             consent_code: scriptData?.code,
             voice_reference_path: voiceReferencePath,
+            ...(isExecFlow ? {
+              tavus_replica_id: EXEC_TAVUS_REPLICA_ID,
+              tavus_clone_status: "ready",
+              voice_clone_status: "ready",
+            } : {}),
           },
         })
         .select()
@@ -297,11 +305,13 @@ export default function Onboarding() {
 
       setCloneStatus("pending");
       
-      // Trigger Tavus replica creation (visual clone) - non-blocking
-      try {
-        await tavusApi.createReplica(identity.id);
-      } catch {
-        console.error("Avatar creation failed (non-blocking)");
+      // Only trigger Tavus replica creation for non-exec real accounts
+      if (!isExecFlow) {
+        try {
+          await tavusApi.createReplica(identity.id);
+        } catch {
+          console.error("Avatar creation failed (non-blocking)");
+        }
       }
 
       toast({ title: "Configuration terminée ! 🎉", description: "Votre clone est en cours de création." });
