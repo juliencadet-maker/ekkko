@@ -82,6 +82,8 @@ function checkBrowserSupport(): { supported: boolean; reason?: string } {
 
 interface VideoRecorderProps {
   onVideoReady: (blob: Blob, duration: number) => void;
+  /** Called with audio-only blob extracted from the recording (for voice cloning) */
+  onAudioReady?: (blob: Blob) => void;
   consentGiven: boolean;
   onConsentChange: (checked: boolean) => void;
   userInfo?: VideoRecorderUserInfo;
