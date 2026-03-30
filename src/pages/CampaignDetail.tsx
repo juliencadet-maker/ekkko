@@ -1013,39 +1013,19 @@ export default function CampaignDetail() {
             </Card>
           )}
 
-          {/* Buying Committee */}
-          {viewers.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Buying Committee</CardTitle>
-                <CardDescription>{viewers.length} contacts identifiés</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {viewers.map((v: any) => (
-                    <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                      <div className={`w-2.5 h-2.5 rounded-full ${
-                        v.status === "sponsor_actif" ? "bg-emerald-500" :
-                        v.status === "bloqueur_potentiel" ? "bg-red-500" :
-                        v.status === "neutre" ? "bg-amber-500" : "bg-blue-400"
-                      }`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{v.name || v.email?.split("@")[0] || "Inconnu"}</p>
-                        <p className="text-xs text-muted-foreground">{v.title || v.domain || "—"}</p>
-                      </div>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span>Score: {v.contact_score ?? "—"}</span>
-                        <span>Watch: {v.total_watch_depth ?? 0}%</span>
-                        <span>Shares: {v.share_count ?? 0}</span>
-                        <span>Replays: {v.replay_count ?? 0}</span>
-                      </div>
-                      {v.cta_clicked && <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 text-[10px]">CTA ✓</Badge>}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Power Map */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Share2 className="h-5 w-5" />
+                Power Map
+              </CardTitle>
+              <CardDescription>Cartographie des interactions et de l'influence du buying committee</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
+            </CardContent>
+          </Card>
 
           {/* No data state */}
           {!dealScore && viewers.length === 0 && (
@@ -1056,6 +1036,42 @@ export default function CampaignDetail() {
                 <p className="text-sm text-muted-foreground mt-1">Partagez la landing page pour commencer à collecter des signaux</p>
               </CardContent>
             </Card>
+          )}
+
+          {/* Next Best Action Sticky */}
+          {dealScore?.recommended_action && (
+            <div className="sticky bottom-0 z-10 -mx-6 px-6 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+              <div className={`flex items-center gap-4 p-4 rounded-xl border shadow-lg ${
+                (dealScore.recommended_action as any).priority === "high"
+                  ? "bg-primary/5 border-primary/30"
+                  : "bg-amber-500/5 border-amber-500/30"
+              }`}>
+                <div className={`p-2.5 rounded-lg ${
+                  (dealScore.recommended_action as any).priority === "high"
+                    ? "bg-primary/10"
+                    : "bg-amber-500/10"
+                }`}>
+                  <Zap className={`h-5 w-5 ${
+                    (dealScore.recommended_action as any).priority === "high"
+                      ? "text-primary"
+                      : "text-amber-600"
+                  }`} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Next Best Action</p>
+                  <p className="text-sm font-medium text-foreground">{(dealScore.recommended_action as any).label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Coût d'exécution : {(dealScore.recommended_action as any).cost}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={(dealScore.recommended_action as any).priority === "high" ? "default" : "outline"}
+                  onClick={() => { setShowAgent(true); }}
+                >
+                  <MessageSquare className="mr-2 h-3.5 w-3.5" />
+                  Demander à l'agent
+                </Button>
+              </div>
+            </div>
           )}
         </TabsContent>
 
