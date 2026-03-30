@@ -118,6 +118,7 @@ async function generateVoxtralAudio(
 }
 
 serve(async (req) => {
+  console.log("tavus-generate-video called:", req.method, req.url);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
