@@ -317,8 +317,8 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
             </div>
             
             <p className="text-sm text-muted-foreground mb-4">
-              Enregistrez une vidéo de vous-même qui servira de référence pour générer des vidéos personnalisées.
-              La vidéo doit durer entre 30 et 90 secondes.
+              Enregistrez une courte vidéo de vous-même (10 à 30 secondes).
+              Elle servira à créer votre avatar visuel (Tavus) et à cloner votre voix (Voxtral TTS).
             </p>
 
             <VideoRecorder
