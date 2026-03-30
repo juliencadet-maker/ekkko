@@ -1019,6 +1019,17 @@ export default function CampaignDetail() {
           versions={scriptVersions}
         />
       )}
+
+      <LandingPageEditor
+        open={showLandingPageEditor}
+        onOpenChange={setShowLandingPageEditor}
+        campaignId={campaign.id}
+        campaignName={campaign.name}
+        videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id))}
+        orgId={membership?.org_id || ""}
+        initialConfig={landingPageConfig as LandingPageConfig | undefined}
+        onSave={handleSaveLandingPageConfig}
+      />
     </AppLayout>
   );
 }
