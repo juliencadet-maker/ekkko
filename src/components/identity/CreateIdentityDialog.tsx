@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Video, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { VideoRecorder } from "./VideoRecorder";
+import { RecordingGuide } from "./RecordingGuide";
 import { IDENTITY_TYPES } from "@/lib/constants";
 
 type Step = "profile" | "video" | "confirm";
