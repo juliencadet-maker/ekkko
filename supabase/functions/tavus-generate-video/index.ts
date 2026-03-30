@@ -17,15 +17,18 @@ const MISTRAL_API_URL = "https://api.mistral.ai/v1/audio/speech";
 async function generateVoxtralAudio(
   serviceClient: ReturnType<typeof createClient>,
   mistralApiKey: string,
-  identity: { reference_video_path: string; id: string },
+  identity: { reference_video_path: string; id: string; metadata: Record<string, unknown> | null },
   personalizedScript: string,
   campaignId: string,
   recipientId: string,
 ): Promise<{ audioUrl: string; error?: string }> {
-  // Signed URL for reference video
+  // Prefer dedicated voice reference, fall back to reference video
+  const voiceReferencePath = (identity.metadata?.voice_reference_path as string) || identity.reference_video_path;
+
+  // Signed URL for voice reference
   const { data: signedUrlData, error: signedUrlError } = await serviceClient.storage
     .from("identity_assets")
-    .createSignedUrl(identity.reference_video_path, 3600);
+    .createSignedUrl(voiceReferencePath, 3600);
 
   if (signedUrlError || !signedUrlData?.signedUrl) {
     return { audioUrl: "", error: "Failed to get reference video URL" };
@@ -39,12 +42,12 @@ async function generateVoxtralAudio(
   const refBytes = await refResponse.arrayBuffer();
   const refBase64 = btoa(String.fromCharCode(...new Uint8Array(refBytes)));
 
-  const ext = identity.reference_video_path.split('.').pop()?.toLowerCase() || 'webm';
+  const ext = voiceReferencePath.split('.').pop()?.toLowerCase() || 'webm';
   const mimeMap: Record<string, string> = {
-    'webm': 'video/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
+    'webm': 'audio/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
     'mp3': 'audio/mp3', 'm4a': 'audio/m4a',
   };
-  const mimeType = mimeMap[ext] || 'video/webm';
+  const mimeType = mimeMap[ext] || 'audio/webm';
 
   // Call Voxtral TTS
   const ttsResponse = await fetch(MISTRAL_API_URL, {

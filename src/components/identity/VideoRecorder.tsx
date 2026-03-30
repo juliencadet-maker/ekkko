@@ -82,6 +82,8 @@ function checkBrowserSupport(): { supported: boolean; reason?: string } {
 
 interface VideoRecorderProps {
   onVideoReady: (blob: Blob, duration: number) => void;
+  /** Called with audio-only blob extracted from the recording (for voice cloning) */
+  onAudioReady?: (blob: Blob) => void;
   consentGiven: boolean;
   onConsentChange: (checked: boolean) => void;
   userInfo?: VideoRecorderUserInfo;
@@ -91,7 +93,7 @@ interface VideoRecorderProps {
   minDurationSeconds?: number;
 }
 
-export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, userInfo, customScript, minDurationSeconds }: VideoRecorderProps) {
+export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onConsentChange, userInfo, customScript, minDurationSeconds }: VideoRecorderProps) {
   const minDuration = minDurationSeconds ?? VIDEO_CONSTRAINTS.MIN_DURATION_SECONDS;
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
@@ -106,8 +108,10 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const teleprompterRef = useRef<HTMLDivElement>(null);
@@ -239,6 +243,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
 
     setRecordingError(null);
     chunksRef.current = [];
+    audioChunksRef.current = [];
     setShowTeleprompter(true);
     
     try {
@@ -248,6 +253,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
         return;
       }
 
+      // Video+audio recorder
       const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType });
 
       mediaRecorder.ondataavailable = (e) => {
@@ -287,6 +293,39 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
 
       mediaRecorder.start(1000);
       mediaRecorderRef.current = mediaRecorder;
+
+      // Audio-only recorder (for voice reference / Voxtral cloning)
+      const audioTracks = streamRef.current.getAudioTracks();
+      if (audioTracks.length > 0 && onAudioReady) {
+        try {
+          const audioStream = new MediaStream(audioTracks);
+          const audioMime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ? "audio/webm;codecs=opus"
+            : "audio/webm";
+          const audioRecorder = new MediaRecorder(audioStream, { mimeType: audioMime });
+
+          audioRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+              audioChunksRef.current.push(e.data);
+            }
+          };
+
+          audioRecorder.onstop = () => {
+            if (audioChunksRef.current.length > 0) {
+              const audioBlob = new Blob(audioChunksRef.current, { type: audioMime });
+              if (audioBlob.size > 0) {
+                onAudioReady(audioBlob);
+              }
+            }
+          };
+
+          audioRecorder.start(1000);
+          audioRecorderRef.current = audioRecorder;
+        } catch (audioErr) {
+          console.warn("Audio-only recorder failed (non-blocking):", audioErr);
+        }
+      }
+
       setIsRecording(true);
       setRecordingDuration(0);
 
@@ -309,7 +348,7 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
       setRecordingError("Impossible de démarrer l'enregistrement. Veuillez actualiser la page.");
       setShowTeleprompter(false);
     }
-  }, [toast]);
+  }, [toast, onAudioReady]);
 
   const stopRecording = useCallback(() => {
     try {
@@ -320,6 +359,10 @@ export function VideoRecorder({ onVideoReady, consentGiven, onConsentChange, use
       if (scrollIntervalRef.current) {
         clearInterval(scrollIntervalRef.current);
         scrollIntervalRef.current = null;
+      }
+      if (audioRecorderRef.current && audioRecorderRef.current.state !== "inactive") {
+        audioRecorderRef.current.stop();
+        audioRecorderRef.current = null;
       }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();

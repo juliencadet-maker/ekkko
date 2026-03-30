@@ -55,7 +55,7 @@ serve(async (req) => {
       );
     }
 
-    // Fetch identity to get reference video path (audio source)
+    // Fetch identity to get voice reference (audio or video source)
     const { data: identity, error: identityError } = await supabase
       .from("identities")
       .select("*")
@@ -69,9 +69,13 @@ serve(async (req) => {
       );
     }
 
-    if (!identity.reference_video_path) {
+    // Prefer dedicated voice reference audio, fall back to reference video
+    const metadata = (identity.metadata as Record<string, unknown>) || {};
+    const voiceReferencePath = (metadata.voice_reference_path as string) || identity.reference_video_path;
+
+    if (!voiceReferencePath) {
       return new Response(
-        JSON.stringify({ error: "Identity has no reference video for voice cloning" }),
+        JSON.stringify({ error: "Identity has no voice reference for cloning" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -84,7 +88,7 @@ serve(async (req) => {
 
     const { data: signedUrlData, error: signedUrlError } = await serviceClient.storage
       .from("identity_assets")
-      .createSignedUrl(identity.reference_video_path, 3600);
+      .createSignedUrl(voiceReferencePath, 3600);
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error("Signed URL error:", signedUrlError);
@@ -94,7 +98,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating Voxtral TTS for identity ${identity_id}, script length: ${script.length}`);
+    console.log(`Generating Voxtral TTS for identity ${identity_id}, voice ref: ${voiceReferencePath}, script length: ${script.length}`);
 
     // Download the reference video to use as voice prompt
     const refVideoResponse = await fetch(signedUrlData.signedUrl);
@@ -108,12 +112,12 @@ serve(async (req) => {
     const refVideoBase64 = btoa(String.fromCharCode(...new Uint8Array(refVideoBytes)));
 
     // Determine MIME type from file extension
-    const ext = identity.reference_video_path.split('.').pop()?.toLowerCase() || 'webm';
+    const ext = voiceReferencePath.split('.').pop()?.toLowerCase() || 'webm';
     const mimeMap: Record<string, string> = {
-      'webm': 'video/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
+      'webm': 'audio/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
       'mp3': 'audio/mp3', 'm4a': 'audio/m4a',
     };
-    const mimeType = mimeMap[ext] || 'video/webm';
+    const mimeType = mimeMap[ext] || 'audio/webm';
 
     // Call Voxtral TTS with voice cloning (zero-shot)
     const voxtralResponse = await fetch(MISTRAL_API_URL, {
