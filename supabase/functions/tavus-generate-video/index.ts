@@ -40,7 +40,15 @@ async function generateVoxtralAudio(
     return { audioUrl: "", error: "Failed to download reference video" };
   }
   const refBytes = await refResponse.arrayBuffer();
-  const refBase64 = btoa(String.fromCharCode(...new Uint8Array(refBytes)));
+  // Chunk-based base64 encoding to avoid stack overflow on large files
+  const uint8 = new Uint8Array(refBytes);
+  let refBase64 = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < uint8.length; i += chunkSize) {
+    const chunk = uint8.subarray(i, Math.min(i + chunkSize, uint8.length));
+    refBase64 += String.fromCharCode(...chunk);
+  }
+  refBase64 = btoa(refBase64);
 
   const ext = voiceReferencePath.split('.').pop()?.toLowerCase() || 'webm';
   const mimeMap: Record<string, string> = {
