@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.generate-script]
 verify_jwt = false
+
+[functions.voxtral-tts]
+verify_jwt = false
