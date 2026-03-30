@@ -356,6 +356,7 @@ export default function Onboarding() {
         type: "executive" as any,
         status: "ready",
         clone_status: "ready",
+        is_shareable: true,
         consent_given: true,
         consent_given_at: new Date().toISOString(),
         metadata: { demo: true, skipped_onboarding: true },
