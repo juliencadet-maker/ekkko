@@ -1,0 +1,1 @@
+UPDATE public.identities SET provider_identity_id = 'rc6d207ec3ca', clone_status = 'ready', status = 'ready' WHERE id = '43fc577a-c7f5-41ba-9ebc-6eb8fae1501e';
