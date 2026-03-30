@@ -112,12 +112,12 @@ serve(async (req) => {
     const refVideoBase64 = btoa(String.fromCharCode(...new Uint8Array(refVideoBytes)));
 
     // Determine MIME type from file extension
-    const ext = identity.reference_video_path.split('.').pop()?.toLowerCase() || 'webm';
+    const ext = voiceReferencePath.split('.').pop()?.toLowerCase() || 'webm';
     const mimeMap: Record<string, string> = {
-      'webm': 'video/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
+      'webm': 'audio/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
       'mp3': 'audio/mp3', 'm4a': 'audio/m4a',
     };
-    const mimeType = mimeMap[ext] || 'video/webm';
+    const mimeType = mimeMap[ext] || 'audio/webm';
 
     // Call Voxtral TTS with voice cloning (zero-shot)
     const voxtralResponse = await fetch(MISTRAL_API_URL, {
