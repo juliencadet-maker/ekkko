@@ -720,6 +720,63 @@ export type Database = {
           },
         ]
       }
+      video_access_list: {
+        Row: {
+          access_type: string
+          campaign_id: string
+          created_at: string
+          created_by_user_id: string | null
+          domain: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          org_id: string
+          title: string | null
+        }
+        Insert: {
+          access_type?: string
+          campaign_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          domain?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          org_id: string
+          title?: string | null
+        }
+        Update: {
+          access_type?: string
+          campaign_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          domain?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          org_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_access_list_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_access_list_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_jobs: {
         Row: {
           campaign_id: string
@@ -800,6 +857,60 @@ export type Database = {
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_reactions: {
+        Row: {
+          campaign_id: string
+          comment: string | null
+          created_at: string
+          emoji: string | null
+          id: string
+          reaction_type: string
+          video_id: string
+          viewer_email: string | null
+          viewer_hash: string
+          viewer_name: string | null
+        }
+        Insert: {
+          campaign_id: string
+          comment?: string | null
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          reaction_type?: string
+          video_id: string
+          viewer_email?: string | null
+          viewer_hash: string
+          viewer_name?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          comment?: string | null
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          reaction_type?: string
+          video_id?: string
+          viewer_email?: string | null
+          viewer_hash?: string
+          viewer_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_reactions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_reactions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
             referencedColumns: ["id"]
           },
         ]
