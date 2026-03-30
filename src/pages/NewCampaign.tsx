@@ -309,9 +309,9 @@ export default function NewCampaign() {
                             <p className="text-xs text-muted-foreground">{getIdentityRoleLabel(identity)}</p>
                           </div>
                           <span className={`text-xs font-medium px-2 py-0.5 rounded-badge ${
-                            identity.clone_status === "ready" ? "bg-signal-pale text-marine" : "bg-warning/10 text-warning"
+                            (identity as any).clone_status === "ready" ? "bg-signal-pale text-marine" : "bg-warning/10 text-warning"
                           }`}>
-                            {identity.clone_status === "ready" ? "Prêt" : "En attente"}
+                            {(identity as any).clone_status === "ready" ? "Prêt" : "En attente"}
                           </span>
                         </div>
                       ))}

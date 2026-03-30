@@ -77,7 +77,7 @@ export default function Identities() {
   };
 
   const getStatusBadge = (identity: Identity) => {
-    const status = identity.clone_status;
+    const status = (identity as any).clone_status;
     if (status === "ready") return <Badge className="bg-signal-pale text-marine border-0 text-xs">Prêt</Badge>;
     if (status === "error" || status === "failed") return <Badge className="bg-destructive/10 text-destructive border-0 text-xs">Erreur</Badge>;
     return <Badge className="bg-warning/10 text-warning border-0 text-xs">En attente</Badge>;
