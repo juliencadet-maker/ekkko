@@ -31,8 +31,7 @@ export default function Index() {
       <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">E</div>
-            <span className="text-xl font-semibold">Ekko</span>
+            <EkkoLogo size={32} textSize={22} onDark={false} />
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" onClick={() => navigate("/auth")}>Connexion</Button>
