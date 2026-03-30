@@ -294,35 +294,16 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
       mediaRecorder.start(1000);
       mediaRecorderRef.current = mediaRecorder;
 
-      // Audio-only recorder (for voice reference / Voxtral cloning)
+      // Audio-only WAV recorder (for voice reference / Voxtral cloning)
       const audioTracks = streamRef.current.getAudioTracks();
       if (audioTracks.length > 0 && onAudioReady) {
         try {
           const audioStream = new MediaStream(audioTracks);
-          const audioMime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-            ? "audio/webm;codecs=opus"
-            : "audio/webm";
-          const audioRecorder = new MediaRecorder(audioStream, { mimeType: audioMime });
-
-          audioRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) {
-              audioChunksRef.current.push(e.data);
-            }
-          };
-
-          audioRecorder.onstop = () => {
-            if (audioChunksRef.current.length > 0) {
-              const audioBlob = new Blob(audioChunksRef.current, { type: audioMime });
-              if (audioBlob.size > 0) {
-                onAudioReady(audioBlob);
-              }
-            }
-          };
-
-          audioRecorder.start(1000);
-          audioRecorderRef.current = audioRecorder;
+          const wavRec = new WavRecorder();
+          wavRec.start(audioStream);
+          wavRecorderRef.current = wavRec;
         } catch (audioErr) {
-          console.warn("Audio-only recorder failed (non-blocking):", audioErr);
+          console.warn("WAV audio recorder failed (non-blocking):", audioErr);
         }
       }
 
