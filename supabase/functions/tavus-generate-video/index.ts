@@ -67,15 +67,8 @@ async function generateVoxtralAudio(
     body: JSON.stringify({
       model: "mistral-tts-latest",
       input: personalizedScript,
-      voice: {
-        type: "voice_preset",
-        reference_audio: {
-          content: refBase64,
-          content_type: mimeType,
-        },
-      },
+      ref_audio: refBase64,
       response_format: "wav",
-      language: "fr",
     }),
   });
 
