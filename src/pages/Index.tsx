@@ -487,8 +487,7 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">E</div>
-              <span className="font-semibold">Ekko</span>
+              <EkkoLogo size={24} textSize={18} onDark={false} />
               <span className="text-muted-foreground text-sm ml-2">— Executive Deal Presence</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">

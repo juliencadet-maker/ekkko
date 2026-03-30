@@ -173,7 +173,7 @@ export default function ApprovalReview() {
     <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Minimal header */}
       <header className="flex items-center justify-center py-4 border-b">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">E</div>
+        <EkkoLogo size={28} showText={false} onDark={false} />
       </header>
 
       <div className="flex-1 flex flex-col px-5 py-6 max-w-md mx-auto w-full">
