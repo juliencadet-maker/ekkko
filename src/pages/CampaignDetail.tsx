@@ -1027,8 +1027,8 @@ export default function CampaignDetail() {
         campaignName={campaign.name}
         videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id))}
         orgId={membership?.org_id || ""}
-        initialConfig={landingPageConfig as LandingPageConfig | undefined}
-        onSave={handleSaveLandingPageConfig}
+        initialConfig={landingPageConfig as unknown as LandingPageConfig | undefined}
+        onSave={(config) => handleSaveLandingPageConfig(config as unknown as Record<string, unknown>)}
       />
     </AppLayout>
   );
