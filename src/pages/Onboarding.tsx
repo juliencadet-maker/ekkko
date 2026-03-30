@@ -123,6 +123,11 @@ export default function Onboarding() {
     setVideoDuration(duration);
   }, []);
 
+  const handleAudioReady = useCallback((blob: Blob) => {
+    setAudioBlob(blob);
+    console.log("Audio reference captured:", blob.size, "bytes");
+  }, []);
+
   const handleStartRecording = () => {
     if (!scriptData) {
       setScriptData(generateCombinedScript(firstName, lastName, company, title));

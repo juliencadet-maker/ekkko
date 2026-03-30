@@ -360,6 +360,10 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
         clearInterval(scrollIntervalRef.current);
         scrollIntervalRef.current = null;
       }
+      if (audioRecorderRef.current && audioRecorderRef.current.state !== "inactive") {
+        audioRecorderRef.current.stop();
+        audioRecorderRef.current = null;
+      }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
