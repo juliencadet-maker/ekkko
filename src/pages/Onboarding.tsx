@@ -144,6 +144,8 @@ export default function Onboarding() {
   };
 
   const isDemoAccount = profile?.email === "demo@ekko.app";
+  const isExecAccount = profile?.email === "exec@ekko.app";
+  const EXEC_TAVUS_REPLICA_ID = "35687b4153974f7ca564d3a3ba7c455e";
 
   const handleComplete = async () => {
     if (!isDemoAccount && !videoBlob) {
