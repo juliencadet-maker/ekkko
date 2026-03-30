@@ -136,16 +136,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "mistral-tts-latest",
         input: script,
-        voice: {
-          type: "voice_preset",
-          // Use reference audio for zero-shot voice cloning
-          reference_audio: {
-            content: refVideoBase64,
-            content_type: mimeType,
-          },
-        },
+        ref_audio: refVideoBase64,
         response_format: "wav",
-        language: "fr",
       }),
     });
 
