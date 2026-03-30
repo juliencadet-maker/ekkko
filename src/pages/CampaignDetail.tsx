@@ -19,6 +19,8 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
+import { EkkoAgent } from "@/components/campaign/EkkoAgent";
+import { DealCloseModal } from "@/components/campaign/DealCloseModal";
 import {
   ArrowLeft,
   Play,
