@@ -325,6 +325,81 @@ export default function Onboarding() {
     }
   };
 
+  const canSkip = isDemoAccount || isExecAccount;
+
+  const handleSkipOnboarding = async () => {
+    setIsLoading(true);
+    try {
+      const { data: membership } = await supabase
+        .from("org_memberships")
+        .select("org_id")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .single();
+
+      if (!membership) throw new Error("No org membership");
+
+      const { data: provider } = await supabase
+        .from("providers")
+        .select("id")
+        .eq("org_id", membership.org_id)
+        .eq("is_active", true)
+        .single();
+
+      const displayName = isExecAccount ? "CEO - Demo – Marc Lefevre" : "Sales Lead – Demo";
+
+      const identityData: any = {
+        org_id: membership.org_id,
+        owner_user_id: user.id,
+        provider_id: provider?.id || null,
+        display_name: displayName,
+        type: "executive" as any,
+        status: "ready",
+        clone_status: "ready",
+        consent_given: true,
+        consent_given_at: new Date().toISOString(),
+        metadata: { demo: true, skipped_onboarding: true },
+      };
+
+      if (isExecAccount) {
+        identityData.provider_identity_id = EXEC_TAVUS_REPLICA_ID;
+        identityData.metadata = {
+          ...identityData.metadata,
+          tavus_replica_id: EXEC_TAVUS_REPLICA_ID,
+          tavus_clone_status: "ready",
+          voice_clone_status: "ready",
+        };
+      }
+
+      const { data: identity, error: identityError } = await supabase
+        .from("identities")
+        .insert(identityData)
+        .select()
+        .single();
+
+      if (identityError) throw identityError;
+
+      await supabase.from("profiles").update({
+        first_name: isExecAccount ? "Marc" : "Sophie",
+        last_name: isExecAccount ? "Lefevre" : "Martin",
+        title: isExecAccount ? "CEO - Demo" : "Sales Lead",
+        company: "Acme Corp",
+        default_identity_id: identity.id,
+        onboarding_completed: true,
+        onboarding_step: 4,
+      }).eq("user_id", user.id);
+
+      toast({ title: "Onboarding skippé ✓", description: "Identité démo créée." });
+      await refreshUser();
+      navigate("/app/dashboard", { replace: true });
+    } catch (error) {
+      console.error("Skip onboarding error:", error);
+      toast({ title: "Erreur", description: "Impossible de skipper l'onboarding", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const goToDashboard = async () => {
     await refreshUser();
     navigate("/app/dashboard", { replace: true });
