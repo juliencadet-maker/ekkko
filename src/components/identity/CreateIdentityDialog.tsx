@@ -90,7 +90,7 @@ export function CreateIdentityDialog({ open, onOpenChange, onIdentityCreated }: 
       });
       return;
     }
-    setCurrentStep("video");
+    setCurrentStep("guide");
   };
 
   const handleVideoNext = () => {
