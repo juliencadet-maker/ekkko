@@ -620,6 +620,10 @@ export default function CampaignDetail() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowLandingPageEditor(true)}>
+              <Globe className="mr-2 h-4 w-4" />
+              Landing page
+            </Button>
             <Button variant="outline">
               <Download className="mr-2 h-4 w-4" />
               Exporter
