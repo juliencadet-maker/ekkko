@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -30,12 +29,14 @@ const TONE_OPTIONS = [
   { value: "empathique", label: "Empathique et à l'écoute" },
 ];
 
+// Objectif = stages du cycle de vente
 const PURPOSE_OPTIONS = [
-  { value: "prospection", label: "Prospection commerciale" },
+  { value: "qualification", label: "Qualification" },
+  { value: "rfp", label: "RFP" },
+  { value: "shortlist", label: "Shortlist" },
+  { value: "negotiation", label: "Négociation" },
+  { value: "close", label: "Close" },
   { value: "followup", label: "Suivi / Relance" },
-  { value: "demo", label: "Proposition de démo" },
-  { value: "introduction", label: "Prise de contact" },
-  { value: "remerciement", label: "Remerciement" },
   { value: "autre", label: "Autre" },
 ];
 
@@ -58,27 +59,22 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
     recipientCompany: "",
     purpose: "",
     tone: "professionnel",
-    keyPoints: "",
+    keyPoint1: "",
+    keyPoint2: "",
+    keyPoint3: "",
     callToAction: "",
   });
   const { toast } = useToast();
 
   const handleGenerate = async () => {
     if (!context.purpose) {
-      toast({
-        title: "Objectif requis",
-        description: "Veuillez sélectionner l'objectif de la vidéo",
-        variant: "destructive",
-      });
+      toast({ title: "Objectif requis", description: "Veuillez sélectionner l'objectif de la vidéo", variant: "destructive" });
       return;
     }
 
-    if (!context.keyPoints.trim()) {
-      toast({
-        title: "Points clés requis",
-        description: "Veuillez indiquer les points clés à mentionner",
-        variant: "destructive",
-      });
+    const keyPoints = [context.keyPoint1, context.keyPoint2, context.keyPoint3].filter(Boolean).join("\n");
+    if (!keyPoints.trim()) {
+      toast({ title: "Points clés requis", description: "Veuillez indiquer au moins un point clé", variant: "destructive" });
       return;
     }
 
@@ -88,6 +84,7 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
         body: {
           context: {
             ...context,
+            keyPoints,
             senderName,
             senderTitle,
           },
@@ -95,36 +92,20 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
       });
 
       if (error) throw error;
-
-      if (data?.error) {
-        toast({
-          title: "Erreur",
-          description: data.error,
-          variant: "destructive",
-        });
-        return;
-      }
+      if (data?.error) { toast({ title: "Erreur", description: data.error, variant: "destructive" }); return; }
 
       if (data?.script) {
-        // Pass both script and recipient data to parent
         onScriptGenerated(data.script, data.recipientData);
         setIsOpen(false);
-        
-        const hasRecipientData = data.recipientData?.firstName || data.recipientData?.company;
         toast({
           title: "Script généré !",
-          description: hasRecipientData 
+          description: data.recipientData?.firstName 
             ? "Le script et les informations du destinataire ont été ajoutés."
             : "Le script a été ajouté. Vous pouvez le modifier si nécessaire.",
         });
       }
-    } catch (error) {
-      console.error("Generation error:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de générer le script. Réessayez.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de générer le script. Réessayez.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -133,15 +114,15 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" type="button" className="gap-2">
-          <Sparkles className="h-4 w-4" />
+        <Button variant="outline" type="button" className="gap-2" size="sm">
+          <Sparkles className="h-3.5 w-3.5" />
           Générer avec l'IA
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Wand2 className="h-5 w-5 text-primary" />
+            <Wand2 className="h-5 w-5 text-accent" />
             Assistant de rédaction
           </SheetTitle>
           <SheetDescription>
@@ -149,22 +130,15 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-6 py-6">
-          {/* Purpose */}
+        <div className="space-y-5 py-6">
+          {/* Purpose — deal stages */}
           <div className="space-y-2">
             <Label>Objectif de la vidéo *</Label>
-            <Select
-              value={context.purpose}
-              onValueChange={(value) => setContext({ ...context, purpose: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez l'objectif" />
-              </SelectTrigger>
+            <Select value={context.purpose} onValueChange={(value) => setContext({ ...context, purpose: value })}>
+              <SelectTrigger><SelectValue placeholder="Sélectionnez l'objectif" /></SelectTrigger>
               <SelectContent>
                 {PURPOSE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -173,99 +147,75 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
           {/* Tone */}
           <div className="space-y-2">
             <Label>Ton du message</Label>
-            <Select
-              value={context.tone}
-              onValueChange={(value) => setContext({ ...context, tone: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez le ton" />
-              </SelectTrigger>
+            <Select value={context.tone} onValueChange={(value) => setContext({ ...context, tone: value })}>
+              <SelectTrigger><SelectValue placeholder="Sélectionnez le ton" /></SelectTrigger>
               <SelectContent>
                 {TONE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Key Points */}
-          <div className="space-y-2">
-            <Label htmlFor="keyPoints">Points clés à mentionner *</Label>
-            <Textarea
-              id="keyPoints"
-              value={context.keyPoints}
-              onChange={(e) => setContext({ ...context, keyPoints: e.target.value })}
-              placeholder="Ex: Notre solution permet de réduire les coûts de 30%, intégration en 2 jours, support 24/7..."
-              rows={3}
+          {/* 3 Key Points */}
+          <div className="space-y-3">
+            <Label>Points clés à mentionner *</Label>
+            <Input
+              value={context.keyPoint1}
+              onChange={(e) => setContext({ ...context, keyPoint1: e.target.value })}
+              placeholder="Point clé 1"
             />
-            <p className="text-xs text-muted-foreground">
-              Listez les arguments ou informations importantes à inclure
-            </p>
+            <Input
+              value={context.keyPoint2}
+              onChange={(e) => setContext({ ...context, keyPoint2: e.target.value })}
+              placeholder="Point clé 2"
+            />
+            <Input
+              value={context.keyPoint3}
+              onChange={(e) => setContext({ ...context, keyPoint3: e.target.value })}
+              placeholder="Point clé 3"
+            />
           </div>
 
-          {/* Call to Action */}
+          {/* CTA */}
           <div className="space-y-2">
-            <Label htmlFor="callToAction">Call-to-action souhaité</Label>
+            <Label>Call-to-action souhaité</Label>
             <Input
-              id="callToAction"
               value={context.callToAction}
               onChange={(e) => setContext({ ...context, callToAction: e.target.value })}
-              placeholder="Ex: Réserver une démo, Répondre à cet email, Visiter notre site..."
+              placeholder="Ex: Réserver une démo, Répondre à cet email..."
             />
           </div>
 
-          {/* Recipient info — used for script personalization */}
-          <div className="space-y-4 pt-4 border-t">
+          {/* Recipient info */}
+          <div className="space-y-3 pt-4 border-t">
             <p className="text-sm font-medium text-muted-foreground">
-              Destinataire : ces informations seront intégrées dans le script final
+              Destinataire : ces informations seront intégrées dans le script
             </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="recipientName">Prénom exemple</Label>
-                <Input
-                  id="recipientName"
-                  value={context.recipientName}
-                  onChange={(e) => setContext({ ...context, recipientName: e.target.value })}
-                  placeholder="Marie"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="recipientCompany">Entreprise exemple</Label>
-                <Input
-                  id="recipientCompany"
-                  value={context.recipientCompany}
-                  onChange={(e) => setContext({ ...context, recipientCompany: e.target.value })}
-                  placeholder="TechCorp"
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                value={context.recipientName}
+                onChange={(e) => setContext({ ...context, recipientName: e.target.value })}
+                placeholder="Prénom exemple"
+              />
+              <Input
+                value={context.recipientCompany}
+                onChange={(e) => setContext({ ...context, recipientCompany: e.target.value })}
+                placeholder="Entreprise exemple"
+              />
             </div>
           </div>
 
-          {/* Generate Button */}
-          <Button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full gap-2"
-            size="lg"
-          >
+          <Button onClick={handleGenerate} disabled={isGenerating} className="w-full gap-2 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
             {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Génération en cours...
-              </>
+              <><Loader2 className="h-4 w-4 animate-spin" />Génération en cours...</>
             ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Générer le script
-              </>
+              <><Sparkles className="h-4 w-4" />Générer le script</>
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Le script généré utilisera les variables {"{prénom}"}, {"{nom}"} et {"{entreprise}"} 
-            pour la personnalisation automatique
+            Le script généré utilisera les variables {"{prénom}"}, {"{nom}"} et {"{entreprise}"} pour la personnalisation automatique
           </p>
         </div>
       </SheetContent>
