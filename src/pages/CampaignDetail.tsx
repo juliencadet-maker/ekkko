@@ -142,6 +142,42 @@ export default function CampaignDetail() {
 
   const isParent = campaign && !campaign.parent_campaign_id && subCampaigns.length > 0;
 
+  // Video generation polling
+  const {
+    jobs: videoJobs,
+    isPolling: isVideoPolling,
+    hasActiveJobs,
+    completedCount: jobsCompleted,
+    failedCount: jobsFailed,
+    totalCount: jobsTotal,
+    progressPercent: jobsProgress,
+    refetch: refetchJobs,
+  } = useVideoJobPolling({
+    campaignId: id,
+    orgId: membership?.org_id,
+    enabled: !!campaign && ["generating", "approved"].includes(campaign?.status || ""),
+  });
+
+  // Auto-refresh campaign data when all jobs finish
+  const prevHasActiveRef = useRef(hasActiveJobs);
+  useEffect(() => {
+    if (prevHasActiveRef.current && !hasActiveJobs && jobsTotal > 0) {
+      // Jobs just finished — reload campaign & videos
+      const refreshData = async () => {
+        if (!id || !membership?.org_id) return;
+        const [campRes, vidRes] = await Promise.all([
+          supabase.from("campaigns").select("*, identities(display_name, type)").eq("id", id).single(),
+          supabase.from("videos").select("*, recipients(first_name, last_name, email, company)").eq("campaign_id", id).eq("org_id", membership.org_id),
+        ]);
+        if (campRes.data) setCampaign(campRes.data as Campaign);
+        if (vidRes.data) setVideos(vidRes.data as (VideoType & { recipient?: Recipient })[]);
+        toast.success("Génération vidéo terminée !");
+      };
+      refreshData();
+    }
+    prevHasActiveRef.current = hasActiveJobs;
+  }, [hasActiveJobs, jobsTotal, id, membership?.org_id]);
+
   useEffect(() => {
     const fetchCampaign = async () => {
       if (!id || !membership?.org_id) return;
