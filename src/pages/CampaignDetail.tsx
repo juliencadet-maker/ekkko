@@ -1030,6 +1030,27 @@ export default function CampaignDetail() {
 
       </Tabs>
 
+      {/* Ekko Agent Panel */}
+      {showAgent && (
+        <div className="fixed inset-y-0 right-0 w-full max-w-2xl z-50 shadow-2xl border-l bg-card">
+          <EkkoAgent
+            campaignId={campaign.id}
+            campaignName={campaign.name}
+            viewers={viewers}
+            dealScore={dealScore}
+            onClose={() => setShowAgent(false)}
+          />
+        </div>
+      )}
+
+      {/* Deal Close Modal */}
+      <DealCloseModal
+        open={showDealClose}
+        onOpenChange={setShowDealClose}
+        campaignId={campaign.id}
+        campaignName={campaign.name}
+      />
+
       {scriptVersions.length >= 2 && (
         <ScriptDiffDialog
           open={showDiffDialog}
