@@ -42,9 +42,25 @@ export function RecordingGuide({ onStartRecording }: RecordingGuideProps) {
         </p>
       </div>
 
-      {/* DO / DON'T side by side */}
+      {/* Visual framing examples */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2.5 p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30">
+        <div className="flex flex-col items-center gap-2 p-3 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
+          <img src={framingGood} alt="Bon cadrage" loading="lazy" width={160} height={160} className="rounded-md" />
+          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5" /> Bon cadrage
+          </span>
+        </div>
+        <div className="flex flex-col items-center gap-2 p-3 rounded-lg border border-red-200/50 dark:border-red-800/30 bg-red-50/50 dark:bg-red-950/20">
+          <img src={framingBad} alt="Mauvais cadrage" loading="lazy" width={160} height={160} className="rounded-md" />
+          <span className="text-xs font-semibold text-red-500 dark:text-red-400 flex items-center gap-1">
+            <XCircle className="h-3.5 w-3.5" /> Mauvais cadrage
+          </span>
+        </div>
+      </div>
+
+      {/* DO / DON'T tips */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2.5 p-4 rounded-lg border border-emerald-200/50 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
           <h4 className="text-sm font-semibold flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="h-4 w-4" /> À faire
           </h4>
@@ -55,7 +71,7 @@ export function RecordingGuide({ onStartRecording }: RecordingGuideProps) {
             </div>
           ))}
         </div>
-        <div className="space-y-2.5 p-4 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200/50 dark:border-red-800/30">
+        <div className="space-y-2.5 p-4 rounded-lg border border-red-200/50 dark:border-red-800/30 bg-red-50/50 dark:bg-red-950/20">
           <h4 className="text-sm font-semibold flex items-center gap-1.5 text-red-500 dark:text-red-400">
             <XCircle className="h-4 w-4" /> À éviter
           </h4>
