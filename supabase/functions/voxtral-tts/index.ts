@@ -55,7 +55,7 @@ serve(async (req) => {
       );
     }
 
-    // Fetch identity to get reference video path (audio source)
+    // Fetch identity to get voice reference (audio or video source)
     const { data: identity, error: identityError } = await supabase
       .from("identities")
       .select("*")
@@ -69,9 +69,13 @@ serve(async (req) => {
       );
     }
 
-    if (!identity.reference_video_path) {
+    // Prefer dedicated voice reference audio, fall back to reference video
+    const metadata = (identity.metadata as Record<string, unknown>) || {};
+    const voiceReferencePath = (metadata.voice_reference_path as string) || identity.reference_video_path;
+
+    if (!voiceReferencePath) {
       return new Response(
-        JSON.stringify({ error: "Identity has no reference video for voice cloning" }),
+        JSON.stringify({ error: "Identity has no voice reference for cloning" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
