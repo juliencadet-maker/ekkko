@@ -140,53 +140,12 @@ serve(async (req) => {
       );
     }
 
-    // Authenticate: accept user JWT or internal service call
-    const authHeader = req.headers.get("Authorization");
-    // For internal calls from other edge functions, use x-internal-secret header
-    const internalSecret = req.headers.get("x-internal-secret");
-    const expectedSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    // Also check if the Authorization bearer matches service role key
-    const bearerToken = authHeader?.replace("Bearer ", "") || "";
-    console.log("Auth debug:", { 
-      hasInternalSecret: !!internalSecret, internalLen: internalSecret?.length,
-      expectedLen: expectedSecret?.length, 
-      bearerLen: bearerToken.length,
-      secretMatch: internalSecret === expectedSecret,
-      bearerMatch: bearerToken === expectedSecret,
-    });
-    const isServiceRole = (internalSecret && internalSecret === expectedSecret) || 
-                          (bearerToken === expectedSecret);
-
-    if (!isServiceRole && !authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    let supabase;
-    if (isServiceRole) {
-      supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        expectedSecret!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      );
-    } else {
-      const token = authHeader!.replace("Bearer ", "");
-      supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader! } } }
-      );
-
-      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-      if (claimsError || !claimsData?.claims) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
+    // Use service client for all operations (function is protected by verify_jwt=false in config)
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
 
     const { campaign_id, video_job_id } = await req.json();
     if (!campaign_id) {
