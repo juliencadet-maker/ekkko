@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ROLE_LABELS } from "@/lib/constants";
 import { NotificationBell } from "./NotificationBell";
+import { EkkoLogo } from "@/components/ui/EkkoLogo";
 
 const navigationItems = [
   {
