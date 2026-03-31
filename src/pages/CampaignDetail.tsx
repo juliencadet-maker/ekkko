@@ -679,7 +679,28 @@ export default function CampaignDetail() {
         })()}
       </div>
 
-      {/* Video Generation Progress Banner */}
+      {/* Next Best Action */}
+      {dealScore?.recommended_action && (
+        <div className="border-l-4 border-signal rounded-lg p-4 bg-signal/5 mb-4 flex items-center gap-4">
+          <div className="p-2.5 rounded-lg bg-signal/10">
+            <Zap className="h-5 w-5 text-signal" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Next Best Action</p>
+            <p className="text-sm font-medium text-foreground">{(dealScore.recommended_action as any).label}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Coût d'exécution : {(dealScore.recommended_action as any).cost}</p>
+          </div>
+          <Button
+            size="sm"
+            variant={(dealScore.recommended_action as any).priority === "high" ? "default" : "outline"}
+            onClick={() => { setShowAgent(true); }}
+          >
+            <MessageSquare className="mr-2 h-3.5 w-3.5" />
+            Demander à l'agent
+          </Button>
+        </div>
+      )}
+
       {(hasActiveJobs || (jobsTotal > 0 && ["generating", "approved"].includes(campaign.status))) && (
         <Alert className="mb-6 border-primary/30 bg-primary/5">
           <div className="flex items-center gap-3">
