@@ -60,14 +60,28 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Campaign, Video as VideoType, Recipient } from "@/types/database";
 
+const DEMO_VIDEO_PATTERNS = [
+  "commondatastorage.googleapis.com",
+  "sample/BigBuckBunny",
+  "sample/ForBigger",
+];
+
+function isDemoUrl(url: string): boolean {
+  return DEMO_VIDEO_PATTERNS.some((p) => url.includes(p));
+}
+
 function getVideoUrl(video?: VideoType | null): string | null {
   if (!video) return null;
   const metadata = video.metadata as Record<string, unknown> | null;
-  if (metadata?.hosted_url) return metadata.hosted_url as string;
-  if (metadata?.stream_url) return metadata.stream_url as string;
-  if (metadata?.download_url) return metadata.download_url as string;
-  if (video.storage_path?.startsWith("http")) return video.storage_path;
-  return null;
+  const candidates = [
+    metadata?.hosted_url as string | undefined,
+    metadata?.stream_url as string | undefined,
+    metadata?.download_url as string | undefined,
+    video.storage_path?.startsWith("http") ? video.storage_path : undefined,
+  ];
+  const url = candidates.find(Boolean) ?? null;
+  if (url && isDemoUrl(url)) return null;
+  return url;
 }
 
 interface ViewEvent {
