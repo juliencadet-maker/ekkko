@@ -409,7 +409,7 @@ export default function NewCampaign() {
                 {/* Recipients */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="flex items-center gap-2"><Users className="h-4 w-4" /> Destinataire(s) *</Label>
+                    <Label className="flex items-center gap-2"><Users className="h-4 w-4" /> À qui envoyez-vous cette vidéo ? *</Label>
                     <Button type="button" variant="ghost" size="sm" onClick={addRecipient}>
                       <Plus className="h-3 w-3 mr-1" /> Ajouter
                     </Button>
