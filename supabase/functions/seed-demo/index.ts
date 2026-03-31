@@ -32,11 +32,20 @@ async function deleteUserAndData(admin: any, email: string) {
       if (videoIds.length > 0) {
         await admin.from("watch_progress").delete().in("video_id", videoIds);
         await admin.from("view_events").delete().in("video_id", videoIds);
+        await admin.from("video_events").delete().in("video_id", videoIds);
+        await admin.from("video_reactions").delete().in("video_id", videoIds);
       }
       await admin.from("videos").delete().in("campaign_id", campaignIds);
       await admin.from("video_jobs").delete().in("campaign_id", campaignIds);
       await admin.from("approval_requests").delete().in("campaign_id", campaignIds);
       await admin.from("recipients").delete().in("campaign_id", campaignIds);
+      await admin.from("viewer_relationships").delete().in("campaign_id", campaignIds);
+      await admin.from("viewers").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_scores").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_outcomes").delete().in("campaign_id", campaignIds);
+      await admin.from("recommendation_outcomes").delete().in("campaign_id", campaignIds);
+      await admin.from("agent_conversations").delete().in("campaign_id", campaignIds);
+      await admin.from("script_versions").delete().in("campaign_id", campaignIds);
     }
     await admin.from("campaigns").delete().eq("org_id", orgId);
     await admin.from("identities").delete().eq("org_id", orgId);
