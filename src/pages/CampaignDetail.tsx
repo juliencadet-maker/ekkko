@@ -802,20 +802,32 @@ export default function CampaignDetail() {
               </CardHeader>
               <CardContent>
                 <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
-                  <video
-                    id="campaign-video"
-                    src={getVideoUrl(videos.find((v) => v.campaign_id === id))}
-                    className="w-full h-full object-cover"
-                    poster="/placeholder.svg"
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    onEnded={() => setIsPlaying(false)}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
-                    <Button size="lg" variant="secondary" className="rounded-full h-16 w-16" onClick={handleVideoToggle}>
-                      {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
-                    </Button>
-                  </div>
+                {(() => {
+                  const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                  return url ? (
+                    <>
+                      <video
+                        id="campaign-video"
+                        src={url}
+                        className="w-full h-full object-cover"
+                        poster="/placeholder.svg"
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onEnded={() => setIsPlaying(false)}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
+                        <Button size="lg" variant="secondary" className="rounded-full h-16 w-16" onClick={handleVideoToggle}>
+                          {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full gap-3">
+                      <Video className="h-10 w-10 text-muted-foreground/50" />
+                      <p className="text-sm font-medium text-muted-foreground">Vidéo en cours de préparation</p>
+                    </div>
+                  );
+                })()}
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <div className="flex-1">
