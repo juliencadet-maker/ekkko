@@ -228,6 +228,12 @@ export default function Auth() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-lg">
+              {activeTab === "login" ? "Bon retour sur Ekko" : "Créer votre espace Ekko"}
+            </CardTitle>
+            <CardDescription>
+              {activeTab === "login" ? "Ravi de vous revoir." : "Votre espace est isolé — vos données ne sont jamais partagées avec d'autres organisations."}
+            </CardDescription>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "signup")}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Connexion</TabsTrigger>
