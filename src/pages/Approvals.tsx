@@ -133,7 +133,7 @@ export default function Approvals() {
     <AppLayout>
       <PageHeader 
         title="Validations"
-        description="Gérez les demandes de validation de scripts"
+        description="Scripts en attente de votre accord. Relisez, modifiez si besoin, approuvez en un clic."
       />
 
       {isLoading ? (
