@@ -38,6 +38,8 @@ function FadeIn({ children, className = "", delay = 0 }: { children: React.React
 
 export default function Index() {
   const navigate = useNavigate();
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistSource, setWaitlistSource] = useState("landing");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
