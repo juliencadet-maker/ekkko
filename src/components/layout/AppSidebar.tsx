@@ -18,6 +18,7 @@ import {
   Crown,
   ShieldCheck,
   User,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -39,6 +40,7 @@ const navigationItems = [
 ];
 
 const adminItems = [
+  { label: "Comptes", href: "/app/user-approvals", icon: UserCheck },
   { label: "Gouvernance", href: "/app/governance", icon: Shield },
   { label: "Intégrations", href: "/app/settings", icon: Zap },
   { label: "Audit", href: "/app/audit", icon: FileText },

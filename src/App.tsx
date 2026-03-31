@@ -20,6 +20,7 @@ import Approvals from "./pages/Approvals";
 import Audit from "./pages/Audit";
 import Governance from "./pages/Governance";
 import Settings from "./pages/Settings";
+import UserApprovals from "./pages/UserApprovals";
 import VideoLandingPage from "./pages/VideoLandingPage";
 import DealIntelligence from "./pages/DealIntelligence";
 import NotFound from "./pages/NotFound";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/app/deal-intelligence" element={<AuthGuard><DealIntelligence /></AuthGuard>} />
             <Route path="/app/governance" element={<AuthGuard><Governance /></AuthGuard>} />
             <Route path="/app/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+            <Route path="/app/user-approvals" element={<AuthGuard><UserApprovals /></AuthGuard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
