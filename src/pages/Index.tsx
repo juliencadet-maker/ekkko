@@ -298,7 +298,7 @@ export default function Index() {
             </Button>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── FOOTER ── */}
       <footer className="py-12 border-t bg-primary text-primary-foreground px-6">
