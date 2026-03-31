@@ -66,6 +66,7 @@ export default function VideoLandingPage() {
   const [campaignName, setCampaignName] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoId, setVideoId] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   // Access gate
