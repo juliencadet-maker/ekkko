@@ -195,7 +195,7 @@ export default function Index() {
       </motion.section>
 
       {/* ── SECTION SCREENSHOTS ── */}
-      <section className="py-16 bg-muted/20 px-6">
+      <motion.section className="py-16 bg-muted/20 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
           <div>
             <img src="/screenshots/buying-committee-demo.png" alt="Carte politique du deal" className="rounded-xl w-full" />
