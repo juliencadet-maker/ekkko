@@ -21,6 +21,7 @@ interface PolicyData {
 
 export default function Governance() {
   const { membership } = useAuthContext();
+  const userRole = membership?.role || "org_user";
   const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<PolicyData | null>(null);
   const [stats, setStats] = useState({ watermarkCompliance: 100, unapprovedVideos: 0, activeAlerts: 0, approvalRate: 100 });
