@@ -722,7 +722,7 @@ export default function CampaignDetail() {
       {rejectionComment && campaign.status === "draft" && (
         <Alert variant="destructive" className="mb-6 border-destructive/30 bg-destructive/5">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle className="font-semibold">Campagne refusée par l'exécutif</AlertTitle>
+          <AlertTitle className="font-semibold">Script refusé — modifier et resoumettre</AlertTitle>
           <AlertDescription className="mt-2">
             <p className="text-sm italic mb-3">« {rejectionComment} »</p>
             {!isEditingScript ? (
