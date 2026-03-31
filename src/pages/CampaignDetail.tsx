@@ -1133,36 +1133,50 @@ export default function CampaignDetail() {
             </CardHeader>
             <CardContent>
               <div className="max-w-3xl mx-auto">
-                <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
-                  {(() => {
-                    const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
-                    return url ? (
-                      <video
-                        src={url}
-                        className="w-full h-full"
-                        controls
-                        poster="/placeholder.svg"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full gap-3">
-                        <Video className="h-10 w-10 text-muted-foreground/50" />
-                        <p className="text-sm font-medium text-muted-foreground">Vidéo en cours de préparation</p>
+                {(() => {
+                  const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                  if (!url) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                        <Video className="h-12 w-12 text-muted-foreground/40" />
+                        <p className="font-medium text-foreground">
+                          {campaign.status === 'generating' ? 'Génération en cours...' :
+                           campaign.status === 'pending_approval' ? "En attente d'approbation" :
+                           'Vidéo en cours de préparation'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {campaign.status === 'generating' ?
+                            'La vidéo apparaîtra ici automatiquement dès qu\'elle est prête.' :
+                            'La vidéo sera générée dès que le script sera approuvé.'}
+                        </p>
                       </div>
                     );
-                  })()}
-                </div>
-                <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
-                  <div className="flex-1 max-w-md">
-                    <label className="text-sm font-medium mb-2 block">Lien de partage</label>
-                    <div className="flex gap-2">
-                      <Input value={shareLink} readOnly className="font-mono text-sm" />
-                      <Button variant="outline" onClick={() => copyShareLink(shareLink)}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copier
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  }
+                  return (
+                    <>
+                      <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
+                        <video
+                          src={url}
+                          className="w-full h-full"
+                          controls
+                          poster="/placeholder.svg"
+                        />
+                      </div>
+                      <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
+                        <div className="flex-1 max-w-md">
+                          <label className="text-sm font-medium mb-2 block">Lien de partage</label>
+                          <div className="flex gap-2">
+                            <Input value={shareLink} readOnly className="font-mono text-sm" />
+                            <Button variant="outline" onClick={() => copyShareLink(shareLink)}>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copier
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
