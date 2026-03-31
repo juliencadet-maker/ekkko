@@ -49,7 +49,7 @@ export default function Index() {
           <EkkoLogo size={32} textSize={22} onDark={false} />
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => navigate("/auth")}>Connexion</Button>
-            <Button className="rounded-full bg-primary text-accent font-semibold px-6" onClick={() => navigate("/auth")}>Demander une démo</Button>
+            <Button className="rounded-full bg-primary text-accent font-semibold px-6" onClick={() => { setWaitlistSource("nav"); setWaitlistOpen(true); }}>Demander une démo</Button>
           </div>
         </div>
       </nav>
