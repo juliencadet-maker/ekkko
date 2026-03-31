@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { canManageOrg } from "@/lib/roles";
 import { toast } from "sonner";
-import { Check, Loader2, ExternalLink, Link2, Link2Off, MessageSquare, Hash } from "lucide-react";
+import { Check, Loader2, ExternalLink, Link2, Link2Off, MessageSquare, Hash, ShieldOff } from "lucide-react";
 
 export default function Settings() {
   const { profile, org, membership } = useAuthContext();
