@@ -170,7 +170,7 @@ export default function Approvals() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                               <User className="h-3.5 w-3.5" />
-                              <span>Identité exec utilisée : {c?.identities?.display_name}</span>
+                              <span>Vidéo générée avec l'identité de {c?.identities?.display_name}</span>
                             </div>
                             {/* Script preview — fond ivoire */}
                             <div className="p-3 bg-ivory-2 rounded-lg">
