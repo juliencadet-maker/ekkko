@@ -351,6 +351,7 @@ export default function NewCampaign() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">Calibre les benchmarks de signal attendus sur ce deal.</p>
                 </div>
 
                 <Button 
