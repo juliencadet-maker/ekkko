@@ -397,6 +397,7 @@ export default function NewCampaign() {
                       />
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">Parlez comme vous parleriez à cette personne. Utilisez {'{prénom}'}, {'{nom}'}, {'{entreprise}'} pour personnaliser.</p>
                   <Textarea
                     value={script}
                     onChange={(e) => setScript(e.target.value)}
