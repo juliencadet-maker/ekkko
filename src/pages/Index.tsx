@@ -463,6 +463,8 @@ export default function Index() {
           © 2026 Ekko. Tous droits réservés.
         </div>
       </footer>
+
+      <WaitlistDialog open={waitlistOpen} onOpenChange={setWaitlistOpen} source={waitlistSource} />
     </div>
   );
 }
