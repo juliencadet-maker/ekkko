@@ -541,9 +541,9 @@ export default function CampaignDetail() {
           <TabsContent value="overview" className="space-y-6">
             {/* Aggregate KPIs */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <MetricCard icon={Eye} value={kpis.totalViews.toLocaleString()} label="Vues totales" />
-              <MetricCard icon={Users} value={kpis.uniqueViewers.toLocaleString()} label="Visiteurs uniques" />
-              <MetricCard icon={Clock} value={`${kpis.avgWatchTime}s`} label="Temps moyen" />
+              <MetricCard icon={Eye} value={kpis.totalViews.toLocaleString()} label="Ouvertures" />
+              <MetricCard icon={Users} value={kpis.uniqueViewers.toLocaleString()} label="Contacts identifiés" />
+              <MetricCard icon={Clock} value={`${kpis.avgWatchTime}s`} label="Attention moyenne" />
               <MetricCard icon={TrendingUp} value={`${kpis.completionRate}%`} label="Taux de complétion" />
             </div>
 
