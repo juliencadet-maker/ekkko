@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { canSeeAllDeals, canManageOrg } from "@/lib/roles";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,9 +16,18 @@ import {
   Zap,
   CheckSquare,
   LayoutList,
+  Users,
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { Campaign, ApprovalRequest } from "@/types/database";
+
+interface TeamMember {
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
+  activeCampaigns: number;
+  avgDes: number | null;
+}
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -29,9 +39,11 @@ export default function Dashboard() {
   });
   const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const navigate = useNavigate();
-  const { profile, membership } = useAuthContext();
+  const { profile, membership, user } = useAuthContext();
+  const userRole = membership?.role || "org_user";
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -113,12 +125,42 @@ export default function Dashboard() {
           .limit(5);
         setPendingApprovals(approvals as ApprovalRequest[] || []);
 
+        // Team activity (admin only)
+        if (canManageOrg(userRole) && membership.org_id) {
+          const { data: members } = await supabase
+            .from("org_memberships")
+            .select("user_id, profiles(first_name, last_name)")
+            .eq("org_id", membership.org_id)
+            .eq("is_active", true);
+
+          if (members) {
+            const memberList: TeamMember[] = [];
+            for (const m of members as any[]) {
+              const { count: activeCampaignCount } = await supabase
+                .from("campaigns")
+                .select("*", { count: "exact", head: true })
+                .eq("org_id", membership.org_id)
+                .eq("created_by_user_id", m.user_id)
+                .not("status", "in", '("completed","cancelled")');
+
+              memberList.push({
+                userId: m.user_id,
+                firstName: m.profiles?.first_name || null,
+                lastName: m.profiles?.last_name || null,
+                activeCampaigns: activeCampaignCount || 0,
+                avgDes: null,
+              });
+            }
+            setTeamMembers(memberList);
+          }
+        }
+
       } catch { console.error("Dashboard fetch failed"); }
       finally { setIsLoading(false); }
     };
 
     fetchDashboardData();
-  }, [membership?.org_id]);
+  }, [membership?.org_id, userRole]);
 
   if (isLoading) {
     return (
@@ -169,7 +211,7 @@ export default function Dashboard() {
     <AppLayout>
       <PageHeader 
         title={`Bonjour, ${profile?.first_name || "utilisateur"} 👋`}
-        description="Vue d'ensemble de vos deals et signaux"
+        description={canManageOrg(userRole) ? "Pipeline de votre équipe et signaux en temps réel." : "Vos deals actifs et signaux des dernières 24h."}
         actions={
           <Button onClick={() => navigate("/app/campaigns/new")} className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="mr-2 h-4 w-4" />
@@ -210,7 +252,7 @@ export default function Dashboard() {
         {/* Recent Deals */}
         <Card className="lg:col-span-2 rounded-card">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Deals récents</CardTitle>
+            <CardTitle className="text-lg">{canSeeAllDeals(userRole) ? "Deals de l'équipe" : "Mes deals actifs"}</CardTitle>
             <Button variant="ghost" size="sm" onClick={() => navigate("/app/campaigns")}>
               Voir tout <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -283,6 +325,40 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Team Activity (admin only) */}
+      {canManageOrg(userRole) && teamMembers.length > 0 && (
+        <Card className="rounded-card mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Activité de l'équipe
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {teamMembers.map((member) => {
+                const initials = `${(member.firstName || "?")[0]}${(member.lastName || "?")[0]}`.toUpperCase();
+                return (
+                  <div key={member.userId} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {member.firstName} {member.lastName}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {member.activeCampaigns} deal{member.activeCampaigns !== 1 ? "s" : ""} actif{member.activeCampaigns !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </AppLayout>
   );
 }

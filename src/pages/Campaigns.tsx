@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { canSeeAllDeals } from "@/lib/roles";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -38,19 +39,26 @@ export default function Campaigns() {
   const [viewers, setViewers] = useState<Record<string, ViewerSummary[]>>({});
 
   const navigate = useNavigate();
-  const { membership } = useAuthContext();
+  const { user, membership } = useAuthContext();
+  const userRole = membership?.role || "org_user";
 
   useEffect(() => {
     const fetchCampaigns = async () => {
       if (!membership?.org_id) return;
 
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from("campaigns")
           .select("*, identities(display_name)")
           .eq("org_id", membership.org_id)
           .is("parent_campaign_id", null)
           .order("created_at", { ascending: false });
+
+        if (!canSeeAllDeals(userRole)) {
+          query = query.eq("created_by_user_id", user.id);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         const campaignList = (data as Campaign[]) || [];
@@ -94,7 +102,7 @@ export default function Campaigns() {
     };
 
     fetchCampaigns();
-  }, [membership?.org_id]);
+  }, [membership?.org_id, userRole, user.id]);
 
   const sortedCampaigns = useMemo(() => {
     let filtered = campaigns.filter((c) =>
@@ -161,7 +169,7 @@ export default function Campaigns() {
     <AppLayout>
       <PageHeader
         title="Deals"
-        description="Gérez vos deals et leur présence exécutive vidéo"
+        description={canSeeAllDeals(userRole) ? "Tous les deals de l'équipe, triés par urgence." : "Vos deals, triés par urgence. Les signaux rouges en premier."}
         actions={
           <Button onClick={() => navigate("/app/campaigns/new")} className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="mr-2 h-4 w-4" />

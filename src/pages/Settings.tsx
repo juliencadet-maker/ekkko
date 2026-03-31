@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { canManageOrg } from "@/lib/roles";
 import { toast } from "sonner";
-import { Check, Loader2, ExternalLink, Link2, Link2Off, MessageSquare, Hash } from "lucide-react";
+import { Check, Loader2, ExternalLink, Link2, Link2Off, MessageSquare, Hash, ShieldOff } from "lucide-react";
 
 export default function Settings() {
   const { profile, org, membership } = useAuthContext();
@@ -24,6 +25,7 @@ export default function Settings() {
   const [isSavingSlack, setIsSavingSlack] = useState(false);
 
   const isOwnerOrAdmin = membership?.role === "org_owner" || membership?.role === "org_admin";
+  const userRole = membership?.role || "org_user";
 
   useEffect(() => {
     if (org?.settings) {
@@ -152,9 +154,22 @@ export default function Settings() {
     }
   };
 
+  if (!canManageOrg(userRole)) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+          <ShieldOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="text-muted-foreground">
+            Accès réservé aux administrateurs de l'organisation.
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
-      <PageHeader title="Paramètres" description="Configuration de votre organisation" />
+      <PageHeader title="Intégrations" description="Configuration de votre organisation" />
       <div className="space-y-6">
         <Card>
           <CardHeader><CardTitle>Organisation</CardTitle></CardHeader>
