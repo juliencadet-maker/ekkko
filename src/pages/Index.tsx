@@ -23,6 +23,8 @@ import {
   LineChart,
   BarChart3,
   Zap,
+  Share2,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function Index() {
@@ -58,20 +60,23 @@ export default function Index() {
                   <span className="text-muted-foreground">Votre revenue sécurisé.</span>
                 </h1>
                 <p className="text-lg md:text-xl text-muted-foreground max-w-xl mb-10 leading-relaxed">
-                  La vidéo exec personnalisée sur chaque deal critique. Approuvée en 1 clic. Mesurée en temps réel.
+                  Vos AEs envoient une vidéo exec personnalisée. Ekko vous montre qui l'a regardée, qui l'a partagée en interne, et qui va prendre la décision — en temps réel.
                 </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Pour les AE enterprise en cycle long, les VP Sales qui veulent un pipeline prévisible, et les executives qui veulent être présents sans mobiliser leur agenda.
+                </p>
+                <blockquote className='border-l-2 border-accent pl-4 py-2 my-6 rounded-r-md bg-primary/5 text-sm italic text-muted-foreground'>
+                  "Gong écoute ce que le prospect vous dit. Ekko observe ce qu'il fait quand vous n'êtes pas dans la pièce."
+                </blockquote>
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                   <Button size="lg" className="text-base px-8" onClick={() => navigate("/auth")}>
                     Demander une démo
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
-                  <Button size="lg" variant="outline" className="text-base px-8">
+                  <Button size="lg" variant="outline" className="text-base px-8" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>
                     Voir comment ça fonctionne
                   </Button>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Conçu pour les CRO, VP Sales et équipes commerciales en cycle de vente complexe.
-                </p>
               </div>
 
               {/* Product visual — real screenshot */}
@@ -87,6 +92,32 @@ export default function Index() {
                   Signal en temps réel
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Scènes concrètes */}
+      <section className='py-14 bg-muted/20 border-y border-border/50'>
+        <div className='container mx-auto px-4'>
+          <div className='grid md:grid-cols-3 gap-5 max-w-5xl mx-auto'>
+            <div className='flex items-start gap-4 p-5 bg-card rounded-lg border border-border/50'>
+              <div className='w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center shrink-0'>
+                <Eye className='h-5 w-5 text-info' /></div>
+              <div><p className='font-semibold text-sm mb-1'>Votre CFO a regardé la vidéo à 22h.</p>
+                <p className='text-xs text-muted-foreground leading-relaxed'>Sans Ekko, vous ne le sauriez pas avant votre prochain appel. Ekko vous alerte et suggère de le rappeler demain matin.</p></div>
+            </div>
+            <div className='flex items-start gap-4 p-5 bg-card rounded-lg border border-border/50'>
+              <div className='w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0'>
+                <Share2 className='h-5 w-5 text-accent' /></div>
+              <div><p className='font-semibold text-sm mb-1'>La vidéo circule en interne chez votre prospect.</p>
+                <p className='text-xs text-muted-foreground leading-relaxed'>3 nouveaux contacts l'ont visionnée. Ekko les identifie et vous dit qui pourrait bloquer la décision.</p></div>
+            </div>
+            <div className='flex items-start gap-4 p-5 bg-card rounded-lg border border-border/50'>
+              <div className='w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0'>
+                <AlertTriangle className='h-5 w-5 text-destructive' /></div>
+              <div><p className='font-semibold text-sm mb-1'>Votre deal stagne depuis 10 jours.</p>
+                <p className='text-xs text-muted-foreground leading-relaxed'>Personne n'a ouvert la dernière vidéo. Ekko détecte le refroidissement et propose une action de relance.</p></div>
             </div>
           </div>
         </div>
@@ -186,13 +217,12 @@ export default function Index() {
       <section className="py-24">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center mb-12">
+            <p className='text-base text-muted-foreground mb-2'>Gong analyse vos calls. Clari forecast sur votre CRM. Loom envoie des vidéos.</p>
             <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
-              Le copilote qui observe le buying committee<br />
-              <span className="text-muted-foreground">depuis l'intérieur de chaque deal.</span>
+              Ekko observe ce que fait votre prospect <span className='text-accent'>quand vous n'êtes pas là.</span>
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Ekko n'est pas un outil vidéo. C'est le seul moyen d'observer qui regarde, 
-              qui partage, qui hésite — et d'intervenir au bon moment pour closer.
+              La vidéo n'est pas le produit — c'est le capteur. Ce qui compte : qui regarde, qui partage en interne, qui hésite. Agir avant que le deal refroidisse.
             </p>
           </div>
           {/* Product screenshots — buying committee */}
@@ -298,7 +328,7 @@ export default function Index() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-24">
+      <section id="how-it-works" className="py-24">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">
@@ -368,43 +398,43 @@ export default function Index() {
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
                   <Briefcase className="h-6 w-6 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Équipes commerciales</h3>
+                <h3 className="text-xl font-semibold mb-4">Account Executives — cycles longs</h3>
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Se différencier dans les réponses RFP avec une vidéo exec personnalisée
+                    Savoir qui vous soutient, qui hésite, qui bloque — sans attendre le prochain appel
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Obtenir un executive sponsorship instantané sur les deals clés
+                    Recevoir une next best action claire basée sur des comportements réels, pas des intuitions
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Créer plus d'intimité et de confiance avec les décideurs
+                    Ne plus jamais perdre sans savoir ce qui s'est passé côté prospect
                   </li>
                 </ul>
               </CardContent>
             </Card>
 
-            {/* CRO second — buyer */}
+            {/* VP Sales / CRO second */}
             <Card className="border shadow-sm">
               <CardContent className="p-8">
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
                   <TrendingUp className="h-6 w-6 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">CRO / VP Sales</h3>
+                <h3 className="text-xl font-semibold mb-4">VP Sales & CRO</h3>
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Rendre le revenue prévisible et maîtrisé
+                    Un pipeline prévisible : les signaux révèlent quels deals vont vraiment closer avant votre forecast
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Déployer la présence exécutive comme levier de closing
+                    Présence exec sur 100% des deals stratégiques sans multiplier les réunions du leadership
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Mesurer l'impact sur le win ratio
+                    Corrélez engagement buying committee et win rate — ajustez les tactiques en temps réel
                   </li>
                 </ul>
               </CardContent>
@@ -419,15 +449,15 @@ export default function Index() {
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Être présent sur chaque deal sans exploser l'agenda
+                    Présent sur chaque deal critique via une vidéo personnalisée — sans bloquer votre agenda
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Garder le contrôle total sur son image et ses messages
+                    Contrôle total : vous approuvez chaque script avant génération. Aucune vidéo sans votre accord.
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Approuver en un clic, où qu'on soit
+                    Voir comment vos messages sont reçus par les décideurs côté prospect
                   </li>
                 </ul>
               </CardContent>
@@ -445,9 +475,11 @@ export default function Index() {
                 <h2 className="text-3xl md:text-4xl font-bold mb-6">
                   Pourquoi Ekko est différent
                 </h2>
-                <p className="text-lg text-primary-foreground/70 mb-8">
-                  Les autres outils font de la vidéo IA.<br />
-                  <span className="font-semibold text-accent">Ekko est le seul outil qui observe le comportement du buying committee depuis l'intérieur.</span>
+                <p className="text-lg text-primary-foreground/70 mb-4">
+                  Gong analyse vos calls. Clari forecast sur votre CRM. Loom et Vidyard envoient des vidéos.
+                </p>
+                <p className="text-xl font-semibold text-accent mb-8">
+                  Ekko observe ce que fait votre prospect quand vous n'êtes pas là — et vous dit quoi faire ensuite.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {[
@@ -540,7 +572,7 @@ export default function Index() {
               Sécurisez votre revenue.
             </h2>
             <p className="text-lg mb-8 opacity-80">
-              Scalez la présence exécutive sur chaque deal stratégique.
+              Rejoignez les équipes qui savent ce qui se passe dans leurs deals — avant même leur prochain appel.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
@@ -572,7 +604,7 @@ export default function Index() {
               <div className="flex items-center gap-2 mb-3">
                 <EkkoLogo size={24} textSize={18} onDark={false} />
               </div>
-              <p className="text-sm text-muted-foreground">Executive Deal Presence</p>
+              <p className="text-sm text-muted-foreground">Deal Intelligence · Buying Committee Signal · Exec Presence</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-sm">
               <div>
