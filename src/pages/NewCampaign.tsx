@@ -244,7 +244,7 @@ export default function NewCampaign() {
     <AppLayout>
       <PageHeader 
         title="Nouveau deal"
-        description="Créez un deal avec présence exécutive vidéo"
+        description="Choisissez une identité, rédigez le script, ajoutez les destinataires."
         actions={
           <Button variant="outline" onClick={() => navigate("/app/campaigns")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -276,12 +276,12 @@ export default function NewCampaign() {
           {currentStep === "identity-context" && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
-                <CardTitle>Identité + Contexte du deal</CardTitle>
+                <CardTitle>Qui parle, sur quel deal ?</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Identity selector — visual cards */}
                 <div className="space-y-2">
-                  <Label>Identité vidéo *</Label>
+                  <Label>Qui apparaît dans la vidéo ? *</Label>
                   {identities.length === 0 ? (
                     <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
                       Aucune identité disponible. Créez-en une dans la section Identités.
@@ -336,13 +336,13 @@ export default function NewCampaign() {
                   <Input
                     value={campaignName}
                     onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="Ex: TotalEnergies — RFP Q2"
+                    placeholder="Ex : TotalEnergies — RFP Q2"
                   />
                 </div>
 
                 {/* Stage */}
                 <div className="space-y-2">
-                  <Label>Stage</Label>
+                  <Label>Où en êtes-vous dans le cycle ?</Label>
                   <Select value={dealStage} onValueChange={setDealStage}>
                     <SelectTrigger><SelectValue placeholder="Sélectionnez le stage" /></SelectTrigger>
                     <SelectContent>
@@ -351,6 +351,7 @@ export default function NewCampaign() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">Calibre les benchmarks de signal attendus sur ce deal.</p>
                 </div>
 
                 <Button 
@@ -368,13 +369,13 @@ export default function NewCampaign() {
           {currentStep === "script-recipients" && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
-                <CardTitle>Script + Destinataires</CardTitle>
+                <CardTitle>Ce que vous allez dire, à qui</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Script */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Script *</Label>
+                    <Label>Script de la vidéo *</Label>
                     <div className="flex items-center gap-3">
                       {script.trim() && (
                         <span className="text-xs text-muted-foreground">
@@ -396,6 +397,7 @@ export default function NewCampaign() {
                       />
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">Parlez comme vous parleriez à cette personne. Utilisez {'{prénom}'}, {'{nom}'}, {'{entreprise}'} pour personnaliser.</p>
                   <Textarea
                     value={script}
                     onChange={(e) => setScript(e.target.value)}
@@ -407,7 +409,7 @@ export default function NewCampaign() {
                 {/* Recipients */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="flex items-center gap-2"><Users className="h-4 w-4" /> Destinataire(s) *</Label>
+                    <Label className="flex items-center gap-2"><Users className="h-4 w-4" /> À qui envoyez-vous cette vidéo ? *</Label>
                     <Button type="button" variant="ghost" size="sm" onClick={addRecipient}>
                       <Plus className="h-3 w-3 mr-1" /> Ajouter
                     </Button>
@@ -465,7 +467,7 @@ export default function NewCampaign() {
                     ) : requiresApproval() ? (
                       <><Send className="mr-2 h-4 w-4" />Envoyer en validation</>
                     ) : (
-                      <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal</>
+                      <><CheckCircle2 className="mr-2 h-4 w-4" />Générer la vidéo</>
                     )}
                   </Button>
                 </div>

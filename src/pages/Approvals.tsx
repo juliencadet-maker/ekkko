@@ -133,7 +133,7 @@ export default function Approvals() {
     <AppLayout>
       <PageHeader 
         title="Validations"
-        description="Gérez les demandes de validation de scripts"
+        description="Scripts en attente de votre accord. Relisez, modifiez si besoin, approuvez en un clic."
       />
 
       {isLoading ? (
@@ -150,11 +150,10 @@ export default function Approvals() {
             </h2>
             
             {pendingApprovals.length === 0 ? (
-              <Card className="rounded-card">
-                <CardContent className="py-12">
-                  <EmptyState icon={CheckSquare} title="Aucune validation en attente" description="Toutes les demandes ont été traitées" />
-                </CardContent>
-              </Card>
+              <div className="flex items-center gap-3 text-muted-foreground py-6 px-2">
+                <CheckCircle2 className="h-5 w-5 text-signal" />
+                <span className="text-sm">Tout est à jour — aucun script en attente.</span>
+              </div>
             ) : (
               <div className="space-y-3">
                 {pendingApprovals.map((approval) => {
@@ -170,7 +169,7 @@ export default function Approvals() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                               <User className="h-3.5 w-3.5" />
-                              <span>Identité exec utilisée : {c?.identities?.display_name}</span>
+                              <span>Vidéo générée avec l'identité de {c?.identities?.display_name}</span>
                             </div>
                             {/* Script preview — fond ivoire */}
                             <div className="p-3 bg-ivory-2 rounded-lg">
@@ -271,7 +270,7 @@ export default function Approvals() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {dialogMode === "review" ? "Relecture du script" : "Refuser cette demande ?"}
+              {dialogMode === "review" ? `Approuver le script — ${campaign?.name}` : "Refuser cette demande ?"}
             </DialogTitle>
             <DialogDescription>
               {dialogMode === "review"

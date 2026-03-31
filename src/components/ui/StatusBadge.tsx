@@ -45,7 +45,7 @@ const statusConfig: Record<StatusType, {
     icon: Clock,
   },
   pending_approval: {
-    label: "En attente de validation",
+    label: "Validation requise",
     className: "status-badge-pending",
     icon: Clock,
   },
@@ -60,7 +60,7 @@ const statusConfig: Record<StatusType, {
     icon: XCircle,
   },
   generating: {
-    label: "Génération en cours",
+    label: "Génération...",
     className: "status-badge-generating",
     icon: Loader2,
   },
@@ -71,7 +71,7 @@ const statusConfig: Record<StatusType, {
   },
   cancelled: {
     label: "Annulé",
-    className: "status-badge-rejected",
+    className: "status-badge-draft",
     icon: XCircle,
   },
   queued: {
