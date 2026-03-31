@@ -661,7 +661,7 @@ export default function CampaignDetail() {
         {/* Deal Progress Bar */}
         {(() => {
           const statusSteps = ["draft", "pending_approval", "approved", "generating", "completed"];
-          const statusLabels: Record<string, string> = { draft: "Brouillon", pending_approval: "Validation", approved: "Approuvé", generating: "Génération", completed: "Prête" };
+          const statusLabels: Record<string, string> = { draft: "Brouillon", pending_approval: "Validation", approved: "Approuvé", generating: "Génération", completed: "Vidéo prête" };
           const currentIdx = statusSteps.indexOf(campaign.status);
           const progressPct = currentIdx >= 0 ? ((currentIdx + 1) / statusSteps.length) * 100 : 0;
           return (
