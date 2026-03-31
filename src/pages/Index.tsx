@@ -222,15 +222,17 @@ export default function Index() {
               { num: "2", icon: CheckSquare, title: "L'approbation", text: "L'exec approuve en un clic via email, Slack ou WhatsApp. Sans login.", highlight: false },
               { num: "3", icon: Send, title: "La présence", text: "Chaque deal stratégique bénéficie d'une présence exécutive. L'exec engage le prospect sans réunion.", highlight: false },
               { num: "4", icon: Eye, title: "La lecture politique", text: "Qui soutient, qui hésite, qui bloque. La carte politique de votre deal se révèle en temps réel.", highlight: true },
-            ].map((step) => (
-              <div key={step.num} className={`rounded-xl p-7 text-center ${step.highlight ? "bg-accent/5 border-2 border-accent" : "bg-card border"}`}>
-                <div className={`w-10 h-10 rounded-full font-bold text-base flex items-center justify-center mx-auto mb-5 ${step.highlight ? "bg-accent text-primary" : "bg-primary text-accent"}`}>
-                  {step.num}
+            ].map((step, i) => (
+              <FadeIn key={step.num} delay={i * 0.1}>
+                <div className={`rounded-xl p-7 text-center h-full ${step.highlight ? "bg-accent/5 border-2 border-accent" : "bg-card border"}`}>
+                  <div className={`w-10 h-10 rounded-full font-bold text-base flex items-center justify-center mx-auto mb-5 ${step.highlight ? "bg-accent text-primary" : "bg-primary text-accent"}`}>
+                    {step.num}
+                  </div>
+                  <step.icon className={`h-7 w-7 mx-auto mb-4 ${step.highlight ? "text-accent" : "text-muted-foreground"}`} />
+                  <p className="text-base font-semibold mb-3">{step.title}</p>
+                  <p className="text-sm text-muted-foreground">{step.text}</p>
                 </div>
-                <step.icon className={`h-7 w-7 mx-auto mb-4 ${step.highlight ? "text-accent" : "text-muted-foreground"}`} />
-                <p className="text-base font-semibold mb-3">{step.title}</p>
-                <p className="text-sm text-muted-foreground">{step.text}</p>
-              </div>
+              </FadeIn>
             ))}
           </div>
         </div>
