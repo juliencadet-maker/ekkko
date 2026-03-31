@@ -39,7 +39,8 @@ export default function Campaigns() {
   const [viewers, setViewers] = useState<Record<string, ViewerSummary[]>>({});
 
   const navigate = useNavigate();
-  const { membership } = useAuthContext();
+  const { user, membership } = useAuthContext();
+  const userRole = membership?.role || "org_user";
 
   useEffect(() => {
     const fetchCampaigns = async () => {
