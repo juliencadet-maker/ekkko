@@ -13,6 +13,7 @@ import { Plus, Search, LayoutList } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Campaign } from "@/types/database";
+import { DealRiskBadge } from "@/components/ui/DealRiskBadge";
 
 interface DealScoreRow {
   campaign_id: string;
@@ -22,6 +23,8 @@ interface DealScoreRow {
   sponsor_count: number | null;
   blocker_count: number | null;
   alerts: any;
+  risk_level: string | null;
+  priority_score: number | null;
 }
 
 interface ViewerSummary {
@@ -69,7 +72,7 @@ export default function Campaigns() {
           // Fetch scores
           const { data: scores } = await supabase
             .from("deal_scores")
-            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count, alerts")
+            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count, alerts, risk_level, priority_score")
             .in("campaign_id", campaignIds)
             .order("scored_at", { ascending: false });
 
@@ -109,16 +112,11 @@ export default function Campaigns() {
       c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Sort by urgency: critical alerts first, then by DES ascending
+    // Sort by priority_score descending
     filtered.sort((a, b) => {
-      const scoreA = dealScores[a.id];
-      const scoreB = dealScores[b.id];
-      const desA = scoreA?.des ?? 100;
-      const desB = scoreB?.des ?? 100;
-      const alertA = desA < 40 ? 0 : desA < 70 ? 1 : 2;
-      const alertB = desB < 40 ? 0 : desB < 70 ? 1 : 2;
-      if (alertA !== alertB) return alertA - alertB;
-      return desA - desB;
+      const prioA = dealScores[a.id]?.priority_score ?? 0;
+      const prioB = dealScores[b.id]?.priority_score ?? 0;
+      return prioB - prioA;
     });
 
     return filtered;
@@ -212,9 +210,14 @@ export default function Campaigns() {
             return (
               <div
                 key={campaign.id}
-                className={`flex items-center gap-4 p-4 bg-card rounded-card shadow-card border-l-4 ${getBorderColor(score)} cursor-pointer hover:shadow-lg transition-all`}
+                className={`group flex items-center gap-4 p-4 bg-card rounded-card shadow-card border-l-4 ${getBorderColor(score)} cursor-pointer hover:shadow-lg transition-all`}
                 onClick={() => navigate(`/app/campaigns/${campaign.id}`)}
               >
+                <DealRiskBadge
+                  level={(score?.risk_level as 'healthy' | 'watch' | 'critical') || null}
+                  reason={score?.risk_level === 'critical' ? 'DES critique ou silence prolongé' :
+                          score?.risk_level === 'watch' ? 'Signaux à surveiller' : undefined}
+                />
                 {/* Deal info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -264,6 +267,14 @@ export default function Campaigns() {
                     {score?.des != null ? score.des : "—"}
                   </span>
                 </div>
+
+                <button
+                  className='opacity-0 group-hover:opacity-100 transition-opacity text-xs
+                    text-muted-foreground hover:text-foreground border rounded-md px-2 py-1'
+                  onClick={(e) => { e.stopPropagation(); navigate('/app/agent?deal=' + campaign.id); }}
+                >
+                  Analyser ↗
+                </button>
               </div>
             );
           })}
