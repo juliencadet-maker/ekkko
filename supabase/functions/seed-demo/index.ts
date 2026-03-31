@@ -43,6 +43,8 @@ async function deleteUserAndData(admin: any, email: string) {
       await admin.from("viewers").delete().in("campaign_id", campaignIds);
       await admin.from("deal_scores").delete().in("campaign_id", campaignIds);
       await admin.from("deal_outcomes").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_contradictions").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_signals").delete().in("campaign_id", campaignIds);
       await admin.from("recommendation_outcomes").delete().in("campaign_id", campaignIds);
       await admin.from("agent_conversations").delete().in("campaign_id", campaignIds);
       await admin.from("script_versions").delete().in("campaign_id", campaignIds);
