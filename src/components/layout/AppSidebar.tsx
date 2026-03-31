@@ -30,7 +30,7 @@ const navigationItems = [
   },
   {
     label: "Agent Ekko",
-    href: "/app/dashboard",
+    href: "/app/agent",
     icon: MessageSquare,
   },
   {

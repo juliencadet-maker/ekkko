@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Pause, ExternalLink, Send, Share2, MessageSquare, ThumbsUp, Heart, Flame, Star, Sparkles, Lock, Mail, UserPlus } from "lucide-react";
+import { Play, Pause, ExternalLink, Send, Share2, MessageSquare, ThumbsUp, Heart, Flame, Star, Sparkles, Lock, Mail, UserPlus, Video } from "lucide-react";
 import { useVideoEventTracker } from "@/hooks/useVideoEventTracker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const MOCK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+
 
 interface LandingPageConfig {
   logoUrl: string | null;
@@ -67,6 +67,7 @@ export default function VideoLandingPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   // Access gate
   const [isGated, setIsGated] = useState(false);
@@ -137,6 +138,7 @@ export default function VideoLandingPage() {
         if (videoData?.campaign_name) setCampaignName(videoData.campaign_name);
         if (videoData?.landing_page_config) setConfig(videoData.landing_page_config as LandingPageConfig);
         if (videoData?.video_id) setVideoId(videoData.video_id);
+        if (videoData?.video_url) setVideoUrl(videoData.video_url);
 
         // Check if there's an access list
         const accessRes = await fetch(`${supabaseUrl}/functions/v1/check-video-access`, {
@@ -571,112 +573,124 @@ export default function VideoLandingPage() {
 
           {/* Video Player */}
           <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl mb-6 md:mb-8">
-            <video
-              ref={videoRef}
-              src={MOCK_VIDEO_URL}
-              className="w-full h-full object-cover"
-              poster="/placeholder.svg"
-              onPlay={() => { setIsPlaying(true); setVideoEnded(false); }}
-              onPause={() => setIsPlaying(false)}
-              onEnded={() => { setIsPlaying(false); setVideoEnded(true); }}
-              playsInline
-            />
+            {videoUrl ? (
+              <>
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  className="w-full h-full object-cover"
+                  poster="/placeholder.svg"
+                  onPlay={() => { setIsPlaying(true); setVideoEnded(false); }}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => { setIsPlaying(false); setVideoEnded(true); }}
+                  playsInline
+                />
 
-            {/* Play/Pause overlay */}
-            {!videoEnded && (
-              <div
-                className={`absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity cursor-pointer ${
-                  isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100"
-                }`}
-                onClick={handleVideoToggle}
-              >
-                <div
-                  className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                  style={{ backgroundColor: config.brandColor }}
-                >
-                  {isPlaying ? (
-                    <Pause className="h-8 w-8 md:h-10 md:w-10 text-white" />
-                  ) : (
-                    <Play className="h-8 w-8 md:h-10 md:w-10 text-white ml-1" />
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* End overlay with reactions */}
-            {videoEnded && (
-              <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
-                <p className="text-white text-lg md:text-xl font-semibold mb-4 md:mb-6">
-                  Qu'avez-vous pensé de cette vidéo ?
-                </p>
-
-                {/* Emoji reactions */}
-                <div className="flex flex-wrap gap-2 md:gap-3 justify-center mb-4 md:mb-6">
-                  {EMOJI_REACTIONS.map(({ emoji, label }) => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleEmojiReaction(emoji)}
-                      className={`flex flex-col items-center gap-1 p-2 md:p-3 rounded-xl transition-all hover:scale-110 ${
-                        selectedEmoji === emoji
-                          ? "bg-white/30 scale-110"
-                          : "bg-white/10 hover:bg-white/20"
-                      }`}
-                    >
-                      <span className="text-2xl md:text-3xl">{emoji}</span>
-                      <span className="text-[10px] md:text-xs text-white/70">{label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Comment */}
-                {!commentSent ? (
-                  <div className="w-full max-w-sm flex gap-2">
-                    <Input
-                      placeholder="Laisser un petit mot..."
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleCommentSubmit()}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
-                    />
-                    <Button
-                      size="icon"
-                      onClick={handleCommentSubmit}
-                      disabled={!comment.trim()}
+                {/* Play/Pause overlay */}
+                {!videoEnded && (
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity cursor-pointer ${
+                      isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100"
+                    }`}
+                    onClick={handleVideoToggle}
+                  >
+                    <div
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-transform hover:scale-110"
                       style={{ backgroundColor: config.brandColor }}
                     >
-                      <Send className="h-4 w-4" />
-                    </Button>
+                      {isPlaying ? (
+                        <Pause className="h-8 w-8 md:h-10 md:w-10 text-white" />
+                      ) : (
+                        <Play className="h-8 w-8 md:h-10 md:w-10 text-white ml-1" />
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-white/60 text-sm">✓ Commentaire envoyé</p>
                 )}
 
-                {/* Replay + invite */}
-                <div className="flex gap-3 mt-4 md:mt-6">
-                  <Button
-                    variant="outline"
-                    className="text-white border-white/30 hover:bg-white/10 gap-2"
-                    onClick={() => {
-                      const video = videoRef.current;
-                      if (video) {
-                        video.currentTime = 0;
-                        video.play();
-                        setVideoEnded(false);
-                      }
-                    }}
-                  >
-                    <Play className="h-4 w-4" />
-                    Revoir
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-white border-white/30 hover:bg-white/10 gap-2"
-                    onClick={() => setShowInviteDialog(true)}
-                  >
-                    <Share2 className="h-4 w-4" />
-                    Partager
-                  </Button>
-                </div>
+                {/* End overlay with reactions */}
+                {videoEnded && (
+                  <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+                    <p className="text-white text-lg md:text-xl font-semibold mb-4 md:mb-6">
+                      Qu'avez-vous pensé de cette vidéo ?
+                    </p>
+
+                    {/* Emoji reactions */}
+                    <div className="flex flex-wrap gap-2 md:gap-3 justify-center mb-4 md:mb-6">
+                      {EMOJI_REACTIONS.map(({ emoji, label }) => (
+                        <button
+                          key={emoji}
+                          onClick={() => handleEmojiReaction(emoji)}
+                          className={`flex flex-col items-center gap-1 p-2 md:p-3 rounded-xl transition-all hover:scale-110 ${
+                            selectedEmoji === emoji
+                              ? "bg-white/30 scale-110"
+                              : "bg-white/10 hover:bg-white/20"
+                          }`}
+                        >
+                          <span className="text-2xl md:text-3xl">{emoji}</span>
+                          <span className="text-[10px] md:text-xs text-white/70">{label}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Comment */}
+                    {!commentSent ? (
+                      <div className="w-full max-w-sm flex gap-2">
+                        <Input
+                          placeholder="Laisser un petit mot..."
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleCommentSubmit()}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                        />
+                        <Button
+                          size="icon"
+                          onClick={handleCommentSubmit}
+                          disabled={!comment.trim()}
+                          style={{ backgroundColor: config.brandColor }}
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-white/60 text-sm">✓ Commentaire envoyé</p>
+                    )}
+
+                    {/* Replay + invite */}
+                    <div className="flex gap-3 mt-4 md:mt-6">
+                      <Button
+                        variant="outline"
+                        className="text-white border-white/30 hover:bg-white/10 gap-2"
+                        onClick={() => {
+                          const video = videoRef.current;
+                          if (video) {
+                            video.currentTime = 0;
+                            video.play();
+                            setVideoEnded(false);
+                          }
+                        }}
+                      >
+                        <Play className="h-4 w-4" />
+                        Revoir
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="text-white border-white/30 hover:bg-white/10 gap-2"
+                        onClick={() => setShowInviteDialog(true)}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Partager
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 gap-4 h-full">
+                <Video className="h-12 w-12 text-muted-foreground/50" />
+                <p className="font-semibold text-foreground">Vidéo en cours de préparation</p>
+                <p className="text-sm text-muted-foreground">
+                  Vous serez notifié par email dès qu'elle est disponible.
+                </p>
               </div>
             )}
           </div>

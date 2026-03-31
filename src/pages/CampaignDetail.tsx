@@ -60,16 +60,14 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Campaign, Video as VideoType, Recipient } from "@/types/database";
 
-const FALLBACK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-
-function getVideoUrl(video?: VideoType | null): string {
-  if (!video) return FALLBACK_VIDEO_URL;
+function getVideoUrl(video?: VideoType | null): string | null {
+  if (!video) return null;
   const metadata = video.metadata as Record<string, unknown> | null;
   if (metadata?.hosted_url) return metadata.hosted_url as string;
   if (metadata?.stream_url) return metadata.stream_url as string;
   if (metadata?.download_url) return metadata.download_url as string;
   if (video.storage_path?.startsWith("http")) return video.storage_path;
-  return FALLBACK_VIDEO_URL;
+  return null;
 }
 
 interface ViewEvent {
@@ -804,20 +802,32 @@ export default function CampaignDetail() {
               </CardHeader>
               <CardContent>
                 <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
-                  <video
-                    id="campaign-video"
-                    src={getVideoUrl(videos.find((v) => v.campaign_id === id))}
-                    className="w-full h-full object-cover"
-                    poster="/placeholder.svg"
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    onEnded={() => setIsPlaying(false)}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
-                    <Button size="lg" variant="secondary" className="rounded-full h-16 w-16" onClick={handleVideoToggle}>
-                      {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
-                    </Button>
-                  </div>
+                {(() => {
+                  const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                  return url ? (
+                    <>
+                      <video
+                        id="campaign-video"
+                        src={url}
+                        className="w-full h-full object-cover"
+                        poster="/placeholder.svg"
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onEnded={() => setIsPlaying(false)}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
+                        <Button size="lg" variant="secondary" className="rounded-full h-16 w-16" onClick={handleVideoToggle}>
+                          {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full gap-3">
+                      <Video className="h-10 w-10 text-muted-foreground/50" />
+                      <p className="text-sm font-medium text-muted-foreground">Vidéo en cours de préparation</p>
+                    </div>
+                  );
+                })()}
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <div className="flex-1">
@@ -1134,12 +1144,22 @@ export default function CampaignDetail() {
             <CardContent>
               <div className="max-w-3xl mx-auto">
                 <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
-                  <video
-                    src={getVideoUrl(videos.find((v) => v.campaign_id === id))}
-                    className="w-full h-full"
-                    controls
-                    poster="/placeholder.svg"
-                  />
+                  {(() => {
+                    const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                    return url ? (
+                      <video
+                        src={url}
+                        className="w-full h-full"
+                        controls
+                        poster="/placeholder.svg"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full gap-3">
+                        <Video className="h-10 w-10 text-muted-foreground/50" />
+                        <p className="text-sm font-medium text-muted-foreground">Vidéo en cours de préparation</p>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
                   <div className="flex-1 max-w-md">
@@ -1195,7 +1215,7 @@ export default function CampaignDetail() {
         onOpenChange={setShowLandingPageEditor}
         campaignId={campaign.id}
         campaignName={campaign.name}
-        videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id))}
+        videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id)) || ""}
         orgId={membership?.org_id || ""}
         initialConfig={landingPageConfig as unknown as LandingPageConfig | undefined}
         onSave={(config) => handleSaveLandingPageConfig(config as unknown as Record<string, unknown>)}
