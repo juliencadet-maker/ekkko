@@ -74,47 +74,14 @@ export default function Index() {
                 </p>
               </div>
 
-              {/* Product visual — mock dashboard/powermap */}
+              {/* Product visual — real screenshot */}
               <div className="relative">
-                <div className="bg-primary rounded-2xl p-6 shadow-2xl">
-                  {/* Fake dashboard header */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <EkkoLogo size={20} showText={false} onDark={true} />
-                    <span className="ekko-logo-text text-primary-foreground text-sm">Deal Intelligence</span>
-                  </div>
-                  {/* Fake metrics row */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="bg-sidebar-accent rounded-lg p-3">
-                      <p className="text-2xl font-bold text-accent">78</p>
-                      <p className="text-[10px] text-primary-foreground/60">DES Score</p>
-                    </div>
-                    <div className="bg-sidebar-accent rounded-lg p-3">
-                      <p className="text-2xl font-bold text-primary-foreground">5</p>
-                      <p className="text-[10px] text-primary-foreground/60">Contacts actifs</p>
-                    </div>
-                    <div className="bg-sidebar-accent rounded-lg p-3">
-                      <p className="text-2xl font-bold text-warning">2</p>
-                      <p className="text-[10px] text-primary-foreground/60">Alertes</p>
-                    </div>
-                  </div>
-                  {/* Fake buying committee */}
-                  <div className="bg-sidebar-accent rounded-lg p-3">
-                    <p className="text-[10px] text-primary-foreground/60 mb-2">Buying Committee</p>
-                    <div className="flex items-center gap-2">
-                      {["CEO", "CFO", "CTO", "VP"].map((role, i) => (
-                        <div key={role} className="flex items-center gap-1.5">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold ${
-                            i === 0 ? "bg-accent text-accent-foreground" : 
-                            i === 1 ? "bg-accent/60 text-accent-foreground" : 
-                            i === 2 ? "bg-warning/60 text-warning-foreground" :
-                            "bg-muted text-muted-foreground"
-                          }`}>{role[0]}</div>
-                          <span className="text-[9px] text-primary-foreground/70">{role}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <img 
+                  src="/screenshots/dashboard.png" 
+                  alt="Ekko Dashboard — Vue d'ensemble des deals et signaux en temps réel" 
+                  className="rounded-2xl shadow-2xl w-full"
+                  loading="eager"
+                />
                 {/* Floating badge */}
                 <div className="absolute -bottom-3 -right-3 bg-accent text-accent-foreground px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
                   Signal en temps réel
@@ -218,7 +185,7 @@ export default function Index() {
       {/* Solution Section — repositioned as deal copilot */}
       <section className="py-24">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
               Le copilote qui observe le buying committee<br />
               <span className="text-muted-foreground">depuis l'intérieur de chaque deal.</span>
@@ -227,6 +194,15 @@ export default function Index() {
               Ekko n'est pas un outil vidéo. C'est le seul moyen d'observer qui regarde, 
               qui partage, qui hésite — et d'intervenir au bon moment pour closer.
             </p>
+          </div>
+          {/* Full-width product screenshot */}
+          <div className="max-w-5xl mx-auto">
+            <img 
+              src="/screenshots/dashboard-raw.png" 
+              alt="Ekko — Deals, signaux d'engagement et buying committee en temps réel"
+              className="rounded-2xl shadow-xl border border-border w-full"
+              loading="lazy"
+            />
           </div>
         </div>
       </section>
