@@ -25,6 +25,7 @@ export default function Settings() {
   const [isSavingSlack, setIsSavingSlack] = useState(false);
 
   const isOwnerOrAdmin = membership?.role === "org_owner" || membership?.role === "org_admin";
+  const userRole = membership?.role || "org_user";
 
   useEffect(() => {
     if (org?.settings) {
