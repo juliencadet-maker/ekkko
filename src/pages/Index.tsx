@@ -189,6 +189,173 @@ export default function Index() {
         </div>
       </motion.section>
 
+      {/* ── SECTION — LE PRODUIT EN ACTION ── */}
+      <FadeIn>
+        <section className="py-20 bg-muted/20 border-y border-border/50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center mb-12">
+                Le produit en action
+              </p>
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* INTERFACE 1 — Liste des deals */}
+                <div>
+                  <div className="bg-primary rounded-2xl p-5 border border-sidebar-border">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-[10px] text-primary-foreground/30 uppercase tracking-widest font-semibold">Deals — triés par urgence</p>
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-destructive"></div>
+                        <div className="w-2 h-2 rounded-full bg-warning"></div>
+                        <div className="w-2 h-2 rounded-full bg-accent"></div>
+                      </div>
+                    </div>
+                    {/* Deal 1 — critique */}
+                    <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-destructive flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-destructive flex-shrink-0"></div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-primary-foreground truncate">TotalEnergies — RFP Q2</p>
+                          <p className="text-[11px] text-primary-foreground/40 truncate">CFO silencieux 12j · 1 bloqueur</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">En danger</span>
+                        <span className="text-xs font-bold text-destructive">54</span>
+                      </div>
+                    </div>
+                    {/* Deal 2 — watch */}
+                    <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-warning flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-warning flex-shrink-0"></div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-primary-foreground truncate">Schneider Electric — ERP</p>
+                          <p className="text-[11px] text-primary-foreground/40 truncate">3 nouveaux contacts détectés</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-[10px] font-bold bg-warning/20 text-warning px-2 py-0.5 rounded">À surveiller</span>
+                        <span className="text-xs font-bold text-warning">71</span>
+                      </div>
+                    </div>
+                    {/* Deal 3 — sain */}
+                    <div className="bg-sidebar-accent rounded-lg p-3 mb-4 border-l-4 border-accent flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0"></div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-primary-foreground truncate">Airbus — Transformation SI</p>
+                          <p className="text-[11px] text-primary-foreground/40 truncate">2 sponsors actifs · Momentum en hausse</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-[10px] font-bold bg-accent/20 text-accent px-2 py-0.5 rounded">Sain</span>
+                        <span className="text-xs font-bold text-accent">87</span>
+                      </div>
+                    </div>
+                    {/* NBA card */}
+                    <div className="border border-accent/40 rounded-xl p-3 bg-sidebar">
+                      <p className="text-[9px] font-bold text-accent uppercase tracking-wider mb-1.5">Action prioritaire · Urgence haute</p>
+                      <p className="text-xs font-medium text-primary-foreground mb-1">Relancer le CFO TotalEnergies dans les 24h</p>
+                      <p className="text-[10px] text-primary-foreground/40">Impact élevé · Confiance 82%</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center mt-4">Liste des deals triée par urgence réelle</p>
+                </div>
+
+                {/* INTERFACE 2 — Buying committee detail */}
+                <div>
+                  <div className="bg-primary rounded-2xl p-5 border border-sidebar-border">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-[10px] text-primary-foreground/30 uppercase tracking-widest font-semibold mb-0.5">TotalEnergies — RFP Q2</p>
+                        <p className="text-sm font-semibold text-primary-foreground">Buying committee</p>
+                      </div>
+                      <span className="text-[10px] bg-destructive/20 text-destructive font-bold px-2 py-1 rounded-lg">En danger</span>
+                    </div>
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 mb-4 flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-destructive mt-1.5 flex-shrink-0"></div>
+                      <p className="text-[11px] text-destructive font-medium">CFO silencieux depuis 12 jours — action requise</p>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      {/* Sophie — sponsor */}
+                      <div className="bg-accent/10 border border-accent/30 rounded-lg p-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">SR</div>
+                          <div>
+                            <p className="text-[11px] font-semibold text-primary-foreground">Sophie Renard</p>
+                            <p className="text-[10px] text-primary-foreground/40">DRH · TotalEnergies</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-accent rounded-full" style={{width:'92%'}}></div></div>
+                          <span className="text-[9px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-full">Sponsor</span>
+                        </div>
+                      </div>
+                      {/* Marc — sponsor */}
+                      <div className="bg-accent/10 border border-accent/30 rounded-lg p-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">MD</div>
+                          <div>
+                            <p className="text-[11px] font-semibold text-primary-foreground">Marc Duval</p>
+                            <p className="text-[10px] text-primary-foreground/40">COO · TotalEnergies</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-accent rounded-full" style={{width:'78%'}}></div></div>
+                          <span className="text-[9px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-full">Sponsor</span>
+                        </div>
+                      </div>
+                      {/* Pierre — à réactiver */}
+                      <div className="bg-warning/10 border border-warning/30 rounded-lg p-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-warning/20 flex items-center justify-center text-[10px] font-bold text-warning flex-shrink-0">PB</div>
+                          <div>
+                            <p className="text-[11px] font-semibold text-primary-foreground">Pierre Blanc</p>
+                            <p className="text-[10px] text-primary-foreground/40">CFO · TotalEnergies</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-warning rounded-full" style={{width:'38%'}}></div></div>
+                          <span className="text-[9px] font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded-full">À réactiver</span>
+                        </div>
+                      </div>
+                      {/* Thomas — bloqueur */}
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-destructive/20 flex items-center justify-center text-[10px] font-bold text-destructive flex-shrink-0">TG</div>
+                          <div>
+                            <p className="text-[11px] font-semibold text-primary-foreground">Thomas Girard</p>
+                            <p className="text-[10px] text-primary-foreground/40">DSI · TotalEnergies</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-destructive rounded-full" style={{width:'18%'}}></div></div>
+                          <span className="text-[9px] font-bold text-destructive bg-destructive/10 px-1.5 py-0.5 rounded-full">Bloqueur</span>
+                        </div>
+                      </div>
+                      {/* Inconnu */}
+                      <div className="bg-sidebar-accent border border-dashed border-sidebar-border rounded-lg p-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full border border-dashed border-primary-foreground/20 flex items-center justify-center text-[10px] font-bold text-primary-foreground/30 flex-shrink-0">?</div>
+                          <div>
+                            <p className="text-[11px] font-semibold text-primary-foreground/40">Non identifié</p>
+                            <p className="text-[10px] text-primary-foreground/20">totalenergies.com</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-primary-foreground/20 rounded-full" style={{width:'52%'}}></div></div>
+                          <span className="text-[9px] font-bold text-primary-foreground/30 bg-sidebar-border px-1.5 py-0.5 rounded-full">À identifier</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center mt-4">Carte politique du deal en temps réel</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </FadeIn>
+
       {/* ── SECTION 4 — COMMENT ÇA MARCHE ── */}
       <motion.section id="how-it-works" className="py-24 bg-muted/30 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-5xl mx-auto">
