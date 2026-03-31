@@ -43,7 +43,7 @@ export default function Index() {
         <div className="max-w-[1140px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
             <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-5">Deal Intelligence · Buying Committee</p>
-            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] mb-6">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] mb-6">
               Votre pipeline vous rassure.
               <br />
               Vos deals racontent <span className="text-muted-foreground">autre chose.</span>
