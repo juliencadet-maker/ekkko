@@ -276,7 +276,7 @@ export default function NewCampaign() {
           {currentStep === "identity-context" && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
-                <CardTitle>Identité + Contexte du deal</CardTitle>
+                <CardTitle>Qui parle, sur quel deal ?</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Identity selector — visual cards */}
