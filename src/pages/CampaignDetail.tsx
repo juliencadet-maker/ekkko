@@ -473,10 +473,6 @@ export default function CampaignDetail() {
   }
 
   const shareLink = generateShareLink();
-  const backPath = campaign.parent_campaign_id
-    ? `/app/campaigns/${campaign.parent_campaign_id}`
-    : "/app/campaigns";
-  const backLabel = campaign.parent_campaign_id ? "Retour au compte" : "Retour aux comptes";
 
   // ─── PARENT CAMPAIGN (ACCOUNT) VIEW ────────────────────────────────
   if (isParent) {
