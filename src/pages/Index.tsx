@@ -169,7 +169,20 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ── SECTION 4 — COMMENT ÇA FONCTIONNE ── */}
+      {/* ── SECTION SCREENSHOTS ── */}
+      <section className="py-16 bg-muted/20 px-6">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+          <div>
+            <img src="/screenshots/buying-committee-demo.png" alt="Carte politique du deal" className="rounded-xl w-full" />
+            <p className="text-sm text-muted-foreground text-center mt-3">Carte politique du deal en temps réel</p>
+          </div>
+          <div>
+            <img src="/screenshots/deal-mission-control.png" alt="Mission control — NBA et alertes" className="rounded-xl w-full" />
+            <p className="text-sm text-muted-foreground text-center mt-3">Mission control — NBA et alertes actives</p>
+          </div>
+        </div>
+      </section>
+
       <section id="how-it-works" className="py-24 bg-muted/30 px-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Comment ça fonctionne</p>
