@@ -336,7 +336,7 @@ export default function NewCampaign() {
                   <Input
                     value={campaignName}
                     onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="Ex: TotalEnergies — RFP Q2"
+                    placeholder="Ex : TotalEnergies — RFP Q2"
                   />
                 </div>
 
