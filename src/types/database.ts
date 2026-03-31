@@ -52,6 +52,7 @@ export interface Profile {
   onboarding_completed: boolean;
   onboarding_step: number;
   default_identity_id: string | null;
+  is_approved: boolean;
   created_at: string;
   updated_at: string;
 }
