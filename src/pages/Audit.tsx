@@ -17,6 +17,7 @@ export default function Audit() {
   const [isLoading, setIsLoading] = useState(true);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const { membership } = useAuthContext();
+  const userRole = membership?.role || "org_user";
 
   useEffect(() => {
     const fetchLogs = async () => {
