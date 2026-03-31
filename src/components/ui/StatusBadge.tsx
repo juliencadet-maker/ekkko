@@ -45,7 +45,7 @@ const statusConfig: Record<StatusType, {
     icon: Clock,
   },
   pending_approval: {
-    label: "En attente de validation",
+    label: "Validation requise",
     className: "status-badge-pending",
     icon: Clock,
   },
