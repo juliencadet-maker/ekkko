@@ -206,7 +206,7 @@ export default function Index() {
             <p className="text-sm text-muted-foreground text-center mt-3">Mission control — NBA et alertes actives</p>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <section id="how-it-works" className="py-24 bg-muted/30 px-6">
         <div className="max-w-5xl mx-auto">
