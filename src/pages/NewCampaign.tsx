@@ -244,7 +244,7 @@ export default function NewCampaign() {
     <AppLayout>
       <PageHeader 
         title="Nouveau deal"
-        description="Créez un deal avec présence exécutive vidéo"
+        description="Choisissez une identité, rédigez le script, ajoutez les destinataires."
         actions={
           <Button variant="outline" onClick={() => navigate("/app/campaigns")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
