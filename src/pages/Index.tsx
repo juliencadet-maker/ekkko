@@ -208,7 +208,7 @@ export default function Index() {
         </div>
       </motion.section>
 
-      <section id="how-it-works" className="py-24 bg-muted/30 px-6">
+      <motion.section id="how-it-works" className="py-24 bg-muted/30 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-5xl mx-auto">
           <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Comment ça fonctionne</p>
           <h2 className="text-4xl font-bold text-center tracking-tight mb-4">De zéro à signal en 4 étapes</h2>
