@@ -369,7 +369,7 @@ export default function NewCampaign() {
           {currentStep === "script-recipients" && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
-                <CardTitle>Script + Destinataires</CardTitle>
+                <CardTitle>Ce que vous allez dire, à qui</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Script */}
