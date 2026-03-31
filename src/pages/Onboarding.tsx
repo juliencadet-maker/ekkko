@@ -41,17 +41,14 @@ function generateCombinedScript(firstName: string, lastName: string, company: st
 
 ${companyLine}
 
-Je fais cet enregistrement car bientôt je serai en mesure de créer plus de confiance sur le cycle de vente, tout en gagnant du temps.
+Je fais cet enregistrement pour être présent sur nos deals stratégiques sans mobiliser mon agenda.
+Chacune de mes apparitions vidéo est approuvée par moi avant envoi.
 
-Je pourrai également être présent sur tous les deals sans avoir à bloquer mon agenda.
+Je confirme que j'autorise la création d'un clone numérique de mon apparence et de ma voix,
+exclusivement pour des communications professionnelles via la plateforme Ekko.
+Mon code de vérification est ${code}.
 
-Cela me permettra d'impliquer des personnes plus facilement, afin de créer plus de confiance et d'engagement avec mes clients et partenaires.
-
-Avec Ekko, je vais pouvoir personnaliser mes messages vidéo pour chaque prospect, et ainsi augmenter significativement mes taux de conversion.
-
-Pour finaliser, je confirme que j'autorise la création d'un clone numérique de mon apparence et de ma voix. Ce clone sera utilisé exclusivement dans le cadre de communications professionnelles via la plateforme Ekko. Mon code unique est ${code}.
-
-Merci !`,
+Merci.`,
   };
 }
 
@@ -452,7 +449,7 @@ export default function Onboarding() {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
                   <Sparkles className="h-8 w-8" />
                 </div>
-                <CardTitle className="text-2xl">Bonjour 👋 Bienvenue sur Ekko</CardTitle>
+                <CardTitle className="text-2xl">Bienvenue. Votre clone vidéo est à quelques minutes.</CardTitle>
                 <CardDescription className="text-base mt-2">
                   Configurons votre compte en quelques étapes simples pour commencer à créer des vidéos personnalisées.
                 </CardDescription>
@@ -663,10 +660,9 @@ export default function Onboarding() {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
-                <CardTitle className="text-2xl">Vous êtes prêt ! 🎉</CardTitle>
+                <CardTitle className="text-2xl">Votre clone est en cours de création.</CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Votre clone vidéo et vocal est en cours de création. Vous serez notifié dès qu'il sera prêt.
-                  En attendant, vous pouvez explorer la plateforme.
+                  La génération prend généralement 10 à 30 minutes. Vous recevrez une notification dès que votre identité est prête.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6 space-y-3">
@@ -675,7 +671,7 @@ export default function Onboarding() {
                   <AlertDescription>Clone en cours de création… Cela prend généralement quelques minutes.</AlertDescription>
                 </Alert>
                 <Button onClick={goToDashboard} className="w-full" size="lg">
-                  Créer un nouveau deal
+                  Accéder à mon espace
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardContent>

@@ -228,6 +228,12 @@ export default function Auth() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-lg">
+              {activeTab === "login" ? "Bon retour sur Ekko" : "Créer votre espace Ekko"}
+            </CardTitle>
+            <CardDescription>
+              {activeTab === "login" ? "Ravi de vous revoir." : "Votre espace est isolé — vos données ne sont jamais partagées avec d'autres organisations."}
+            </CardDescription>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "signup")}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Connexion</TabsTrigger>
@@ -290,13 +296,13 @@ export default function Auth() {
             ) : (
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-org">Nom de l'organisation</Label>
+                  <Label htmlFor="signup-org">Nom de votre équipe ou entreprise</Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signup-org"
                       type="text"
-                      placeholder="Votre entreprise"
+                      placeholder="Ex : Équipe Sales ACME"
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
                       className="pl-10"
@@ -364,6 +370,11 @@ export default function Auth() {
                     <p className="text-sm text-destructive">{errors.confirmPassword}</p>
                   )}
                 </div>
+
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Votre espace est isolé — vos données ne sont jamais partagées
+                  avec d'autres organisations.
+                </p>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
