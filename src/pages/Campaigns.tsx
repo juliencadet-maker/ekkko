@@ -47,12 +47,18 @@ export default function Campaigns() {
       if (!membership?.org_id) return;
 
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from("campaigns")
           .select("*, identities(display_name)")
           .eq("org_id", membership.org_id)
           .is("parent_campaign_id", null)
           .order("created_at", { ascending: false });
+
+        if (!canSeeAllDeals(userRole)) {
+          query = query.eq("created_by_user_id", user.id);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         const campaignList = (data as Campaign[]) || [];
