@@ -125,12 +125,42 @@ export default function Dashboard() {
           .limit(5);
         setPendingApprovals(approvals as ApprovalRequest[] || []);
 
+        // Team activity (admin only)
+        if (canManageOrg(userRole) && membership.org_id) {
+          const { data: members } = await supabase
+            .from("org_memberships")
+            .select("user_id, profiles(first_name, last_name)")
+            .eq("org_id", membership.org_id)
+            .eq("is_active", true);
+
+          if (members) {
+            const memberList: TeamMember[] = [];
+            for (const m of members as any[]) {
+              const { count: activeCampaignCount } = await supabase
+                .from("campaigns")
+                .select("*", { count: "exact", head: true })
+                .eq("org_id", membership.org_id)
+                .eq("created_by_user_id", m.user_id)
+                .not("status", "in", '("completed","cancelled")');
+
+              memberList.push({
+                userId: m.user_id,
+                firstName: m.profiles?.first_name || null,
+                lastName: m.profiles?.last_name || null,
+                activeCampaigns: activeCampaignCount || 0,
+                avgDes: null,
+              });
+            }
+            setTeamMembers(memberList);
+          }
+        }
+
       } catch { console.error("Dashboard fetch failed"); }
       finally { setIsLoading(false); }
     };
 
     fetchDashboardData();
-  }, [membership?.org_id]);
+  }, [membership?.org_id, userRole]);
 
   if (isLoading) {
     return (
