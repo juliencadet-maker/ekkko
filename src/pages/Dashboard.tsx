@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { canSeeAllDeals, canManageOrg } from "@/lib/roles";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,9 +16,18 @@ import {
   Zap,
   CheckSquare,
   LayoutList,
+  Users,
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { Campaign, ApprovalRequest } from "@/types/database";
+
+interface TeamMember {
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
+  activeCampaigns: number;
+  avgDes: number | null;
+}
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
