@@ -641,7 +641,7 @@ export default function CampaignDetail() {
            <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowAgent(!showAgent)}>
               <MessageSquare className="mr-2 h-4 w-4" />
-              Agent IA
+              Agent Ekko
             </Button>
             <Button variant="outline" onClick={() => setShowDealClose(true)}>
               <CheckCircle2 className="mr-2 h-4 w-4" />
