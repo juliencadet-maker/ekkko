@@ -417,10 +417,10 @@ export default function Index() {
             Rejoignez les équipes qui savent ce qui se passe avant leur prochain call.
           </p>
           <div className="flex gap-4 justify-center">
-            <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => navigate("/auth")}>
+            <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => { setWaitlistSource("cta"); setWaitlistOpen(true); }}>
               Demander une démo <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
-            <Button size="lg" className="rounded-full bg-transparent border border-primary/20 text-primary px-8" onClick={() => navigate("/auth")}>
+            <Button size="lg" className="rounded-full bg-transparent border border-primary/20 text-primary px-8" onClick={() => { setWaitlistSource("inscription"); setWaitlistOpen(true); }}>
               Inscription
             </Button>
           </div>
