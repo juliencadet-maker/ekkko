@@ -18,11 +18,25 @@ export function useAuth(): UserContext & {
   const fetchUserData = useCallback(async (userId: string) => {
     try {
       // Fetch profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
         .maybeSingle();
+
+      // If profile not found (e.g. user was deleted and recreated), sign out stale session
+      if (!profileData && !profileError) {
+        console.warn("No profile found for authenticated user — signing out stale session");
+        await supabase.auth.signOut();
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setMembership(null);
+        setOrg(null);
+        setPolicy(null);
+        setIsLoading(false);
+        return;
+      }
 
       setProfile(profileData as Profile | null);
 
