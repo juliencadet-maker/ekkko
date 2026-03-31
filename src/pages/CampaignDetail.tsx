@@ -620,10 +620,12 @@ export default function CampaignDetail() {
     <AppLayout>
       {/* Header */}
       <div className="mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(backPath)} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {backLabel}
-        </Button>
+        <button
+          onClick={() => navigate('/app/campaigns')}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Deals
+        </button>
 
         <div className="flex items-start justify-between">
           <div>
