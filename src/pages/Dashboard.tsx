@@ -39,9 +39,11 @@ export default function Dashboard() {
   });
   const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const navigate = useNavigate();
-  const { profile, membership } = useAuthContext();
+  const { profile, membership, user } = useAuthContext();
+  const userRole = membership?.role || "org_user";
 
   useEffect(() => {
     const fetchDashboardData = async () => {
