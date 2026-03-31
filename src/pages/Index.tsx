@@ -1,641 +1,342 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { 
-  ArrowRight, 
-  Shield, 
-  Users, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
-  FileText, 
-  CheckSquare, 
-  Send, 
+import { Button } from "@/components/ui/button";
+import {
+  AlertTriangle,
+  Share2,
+  ShieldAlert,
+  Users,
+  Zap,
+  ArrowRight,
   Eye,
+  CheckCircle2,
+  FileText,
+  CheckSquare,
+  Send,
   Building2,
   Briefcase,
-  Scale,
   TrendingUp,
-  Target,
-  Handshake,
-  LineChart,
-  BarChart3,
-  Zap,
-  Share2,
-  AlertTriangle,
 } from "lucide-react";
 
 export default function Index() {
   const navigate = useNavigate();
 
+  const scrollToHow = () => {
+    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sticky Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* ── NAV ── */}
+      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b h-16 flex items-center px-6">
+        <div className="max-w-[1140px] mx-auto w-full flex items-center justify-between">
+          <EkkoLogo size={32} textSize={22} onDark={false} />
           <div className="flex items-center gap-2">
-            <EkkoLogo size={32} textSize={22} onDark={false} />
-          </div>
-          <div className="flex items-center gap-3">
             <Button variant="ghost" onClick={() => navigate("/auth")}>Connexion</Button>
-            <Button variant="outline" onClick={() => navigate("/auth")}>Inscription</Button>
-            <Button onClick={() => navigate("/auth")}>
-              Demander une démo
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Button className="rounded-full bg-primary text-accent font-semibold px-5" onClick={() => navigate("/auth")}>Demander une démo</Button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section — with product visual */}
-      <section className="py-24 lg:py-32">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+      {/* ── SECTION 1 — HERO ── */}
+      <section className="py-24 lg:py-32 px-6">
+        <div className="max-w-[1140px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-5">Deal Intelligence · Buying Committee</p>
+            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] mb-6">
+              Votre pipeline vous rassure.
+              <br />
+              Vos deals racontent <span className="text-muted-foreground">autre chose.</span>
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-lg mb-8 leading-relaxed">
+              Ekko révèle <span className="font-semibold text-foreground">qui soutient, qui hésite et qui bloque</span> pour agir au bon moment sur chaque deal.
+            </p>
+            <div className="flex gap-3">
+              <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => navigate("/auth")}>
+                Demander une démo <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+              <Button size="lg" variant="outline" className="rounded-full px-8" onClick={scrollToHow}>
+                Voir comment ça fonctionne
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-primary rounded-2xl p-5 border border-sidebar-border">
+            <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest mb-3">Deals — triés par urgence</p>
+
+            <div className="border-l-4 border-destructive bg-sidebar-accent rounded-lg p-3 flex justify-between items-start mb-2">
               <div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
-                  Votre présence sur chaque deal.<br />
-                  <span className="text-muted-foreground">Votre revenue sécurisé.</span>
-                </h1>
-                <p className="text-lg md:text-xl text-muted-foreground max-w-xl mb-10 leading-relaxed">
-                  Vos AEs envoient une vidéo exec personnalisée. Ekko vous montre qui l'a regardée, qui l'a partagée en interne, et qui va prendre la décision — en temps réel.
-                </p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Pour les AE enterprise en cycle long, les VP Sales qui veulent un pipeline prévisible, et les executives qui veulent être présents sans mobiliser leur agenda.
-                </p>
-                <blockquote className='border-l-2 border-accent pl-4 py-2 my-6 rounded-r-md bg-primary/5 text-sm italic text-muted-foreground'>
-                  "Gong écoute ce que le prospect vous dit. Ekko observe ce qu'il fait quand vous n'êtes pas dans la pièce."
-                </blockquote>
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                  <Button size="lg" className="text-base px-8" onClick={() => navigate("/auth")}>
-                    Demander une démo
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                  <Button size="lg" variant="outline" className="text-base px-8" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>
-                    Voir comment ça fonctionne
-                  </Button>
-                </div>
+                <p className="font-medium text-sm text-primary-foreground">TotalEnergies — RFP Q2</p>
+                <p className="text-xs text-muted-foreground/60">CFO silencieux depuis 5j · 1 bloqueur</p>
               </div>
-
-              {/* Product visual — real screenshot */}
-              <div className="relative">
-                <img 
-                  src="/screenshots/dashboard.png" 
-                  alt="Ekko Dashboard — Vue d'ensemble des deals et signaux en temps réel" 
-                  className="rounded-2xl shadow-2xl w-full"
-                  loading="eager"
-                />
-                {/* Floating badge */}
-                <div className="absolute -bottom-3 -right-3 bg-accent text-accent-foreground px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                  Signal en temps réel
-                </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-destructive" />
+                <span className="text-xs font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded">54</span>
               </div>
             </div>
+
+            <div className="border-l-4 border-warning bg-sidebar-accent rounded-lg p-3 flex justify-between items-start mb-2">
+              <div>
+                <p className="font-medium text-sm text-primary-foreground">Schneider Electric — ERP</p>
+                <p className="text-xs text-muted-foreground/60">3 nouveaux contacts détectés</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-warning" />
+                <span className="text-xs font-bold text-warning bg-warning/10 px-2 py-0.5 rounded">71</span>
+              </div>
+            </div>
+
+            <div className="border-l-4 border-accent bg-sidebar-accent rounded-lg p-3 flex justify-between items-start">
+              <div>
+                <p className="font-medium text-sm text-primary-foreground">Airbus — Transformation SI</p>
+                <p className="text-xs text-muted-foreground/60">2 sponsors actifs · Momentum en hausse</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent" />
+                <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">87</span>
+              </div>
+            </div>
+
+            <div className="border border-accent/50 rounded-xl p-3 mt-3 bg-sidebar">
+              <p className="text-[9px] text-accent font-bold uppercase tracking-wider mb-1">Action prioritaire</p>
+              <p className="text-xs text-primary-foreground font-medium">Relancer le CFO TotalEnergies dans les 24h</p>
+              <p className="text-[10px] text-muted-foreground/50 mt-1">Impact élevé · Coût moyen · Confiance 82%</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Scènes concrètes */}
-      <section className='py-14 bg-muted/20 border-y border-border/50'>
-        <div className='container mx-auto px-4'>
-          <div className='grid md:grid-cols-3 gap-5 max-w-5xl mx-auto'>
-            <div className='flex items-start gap-4 p-5 bg-card rounded-lg border border-border/50'>
-              <div className='w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center shrink-0'>
-                <Eye className='h-5 w-5 text-info' /></div>
-              <div><p className='font-semibold text-sm mb-1'>Votre CFO a regardé la vidéo à 22h.</p>
-                <p className='text-xs text-muted-foreground leading-relaxed'>Sans Ekko, vous ne le sauriez pas avant votre prochain appel. Ekko vous alerte et suggère de le rappeler demain matin.</p></div>
+      {/* ── SECTION 2 — 3 SCÈNES POLITIQUES ── */}
+      <section className="py-16 bg-muted/20 border-y border-border/50 px-6">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4">
+          {[
+            {
+              icon: AlertTriangle,
+              iconBg: "bg-info/10",
+              iconColor: "text-info",
+              title: "Votre champion vous dit que ça avance. Il n'a rien ouvert depuis 12 jours.",
+              text: "Ekko détecte la contradiction et vous alerte.",
+              badge: "Contradiction détectée",
+              badgeColor: "text-destructive",
+            },
+            {
+              icon: Users,
+              iconBg: "bg-accent/10",
+              iconColor: "text-accent",
+              title: "Trois personnes que vous ne connaissez pas viennent de voir votre message en interne.",
+              text: "Ekko les identifie et vous dit qui approcher en premier.",
+              badge: "3 contacts identifiés",
+              badgeColor: "text-accent",
+            },
+            {
+              icon: ShieldAlert,
+              iconBg: "bg-destructive/10",
+              iconColor: "text-destructive",
+              title: "Tout le monde a regardé. Sauf une personne. Le DSI.",
+              text: "Ekko repère le risque et vous dit quoi faire avant le veto.",
+              badge: "Bloqueur potentiel",
+              badgeColor: "text-warning",
+            },
+          ].map((s, i) => (
+            <div key={i} className="bg-card border border-border/60 rounded-xl p-6">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${s.iconBg}`}>
+                <s.icon className={`h-5 w-5 ${s.iconColor}`} />
+              </div>
+              <p className="font-bold text-sm mb-2">{s.title}</p>
+              <p className="text-sm text-muted-foreground">{s.text}</p>
+              <p className={`text-xs font-semibold ${s.badgeColor} mt-3`}>{s.badge}</p>
             </div>
-            <div className='flex items-start gap-4 p-5 bg-card rounded-lg border border-border/50'>
-              <div className='w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0'>
-                <Share2 className='h-5 w-5 text-accent' /></div>
-              <div><p className='font-semibold text-sm mb-1'>La vidéo circule en interne chez votre prospect.</p>
-                <p className='text-xs text-muted-foreground leading-relaxed'>3 nouveaux contacts l'ont visionnée. Ekko les identifie et vous dit qui pourrait bloquer la décision.</p></div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── SECTION 3 — BUYING COMMITTEE ── */}
+      <section className="py-24 bg-background border-y border-border px-6">
+        <div className="max-w-[1100px] mx-auto">
+          <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Buying Committee</p>
+          <h2 className="text-4xl font-bold text-center tracking-tight mb-4">Savoir qui décide vraiment.</h2>
+          <p className="text-lg text-muted-foreground text-center max-w-xl mx-auto mb-16">
+            Chaque deal a une carte politique. La plupart des AEs n'en voient que la surface. Ekko la révèle en temps réel.
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="bg-accent/5 border-2 border-accent rounded-xl p-4">
+              <div className="bg-accent/20 text-accent rounded-full w-9 h-9 text-xs font-bold flex items-center justify-center mb-3">SR</div>
+              <p className="text-sm font-semibold">Sophie Renard</p>
+              <p className="text-xs text-muted-foreground mb-3">DRH · TotalEnergies</p>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-accent rounded-full" style={{ width: "92%" }} /></div>
+              <span className="inline-block text-[10px] font-semibold bg-accent/10 text-accent px-2 py-0.5 rounded-full mt-2">Sponsor actif</span>
             </div>
-            <div className='flex items-start gap-4 p-5 bg-card rounded-lg border border-border/50'>
-              <div className='w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0'>
-                <AlertTriangle className='h-5 w-5 text-destructive' /></div>
-              <div><p className='font-semibold text-sm mb-1'>Votre deal stagne depuis 10 jours.</p>
-                <p className='text-xs text-muted-foreground leading-relaxed'>Personne n'a ouvert la dernière vidéo. Ekko détecte le refroidissement et propose une action de relance.</p></div>
+
+            <div className="bg-accent/5 border-2 border-accent rounded-xl p-4">
+              <div className="bg-accent/20 text-accent rounded-full w-9 h-9 text-xs font-bold flex items-center justify-center mb-3">MD</div>
+              <p className="text-sm font-semibold">Marc Duval</p>
+              <p className="text-xs text-muted-foreground mb-3">COO · TotalEnergies</p>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-accent rounded-full" style={{ width: "78%" }} /></div>
+              <span className="inline-block text-[10px] font-semibold bg-accent/10 text-accent px-2 py-0.5 rounded-full mt-2">Sponsor actif</span>
             </div>
+
+            <div className="bg-warning/5 border border-warning/40 rounded-xl p-4">
+              <div className="bg-warning/20 text-warning rounded-full w-9 h-9 text-xs font-bold flex items-center justify-center mb-3">PB</div>
+              <p className="text-sm font-semibold">Pierre Blanc</p>
+              <p className="text-xs text-muted-foreground mb-3">CFO · TotalEnergies</p>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-warning rounded-full" style={{ width: "38%" }} /></div>
+              <span className="inline-block text-[10px] font-semibold bg-warning/10 text-warning px-2 py-0.5 rounded-full mt-2">À réactiver</span>
+            </div>
+
+            <div className="bg-destructive/5 border border-destructive/30 rounded-xl p-4">
+              <div className="bg-destructive/20 text-destructive rounded-full w-9 h-9 text-xs font-bold flex items-center justify-center mb-3">TG</div>
+              <p className="text-sm font-semibold">Thomas Girard</p>
+              <p className="text-xs text-muted-foreground mb-3">DSI · TotalEnergies</p>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-destructive rounded-full" style={{ width: "18%" }} /></div>
+              <span className="inline-block text-[10px] font-semibold bg-destructive/10 text-destructive px-2 py-0.5 rounded-full mt-2">Bloqueur potentiel</span>
+            </div>
+
+            <div className="bg-muted/50 border border-dashed border-border rounded-xl p-4">
+              <div className="border-dashed border-2 border-muted-foreground/30 text-muted-foreground rounded-full w-9 h-9 text-xs font-bold flex items-center justify-center mb-3">?</div>
+              <p className="text-sm font-semibold text-muted-foreground">Non identifié</p>
+              <p className="text-xs text-muted-foreground mb-3">totalenergies.com</p>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-muted-foreground/40 rounded-full" style={{ width: "52%" }} /></div>
+              <span className="inline-block text-[10px] font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full mt-2">À identifier</span>
+            </div>
+          </div>
+
+          <div className="flex gap-6 justify-center mt-8 flex-wrap">
+            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-accent" /><span className="text-xs text-muted-foreground">Sponsor actif</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-warning" /><span className="text-xs text-muted-foreground">À réactiver</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-destructive" /><span className="text-xs text-muted-foreground">Bloqueur potentiel</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full border border-dashed border-muted-foreground" /><span className="text-xs text-muted-foreground">À identifier</span></div>
           </div>
         </div>
       </section>
 
-      {/* Clarification Strip — with quantified benefits */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Sans Ekko */}
-            <Card className="border-destructive/20 bg-destructive/5">
-              <CardContent className="p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <XCircle className="h-6 w-6 text-destructive" />
-                  <h3 className="text-lg font-semibold">Sans Ekko</h3>
+      {/* ── SECTION 4 — COMMENT ÇA FONCTIONNE ── */}
+      <section id="how-it-works" className="py-24 bg-muted/30 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Comment ça fonctionne</p>
+          <h2 className="text-4xl font-bold text-center tracking-tight mb-4">De zéro à signal en 4 étapes</h2>
+          <p className="text-lg text-muted-foreground text-center max-w-2xl mx-auto mb-16">
+            Chaque deal stratégique bénéficie d'une présence exécutive. Chaque interaction devient un signal sur votre buying committee.
+          </p>
+
+          <div className="grid md:grid-cols-4 gap-4">
+            {[
+              { num: "1", icon: FileText, title: "Le deal", text: "L'AE crée le deal. Ekko génère un script personnalisé pour le bon décideur en 30 secondes.", highlight: false },
+              { num: "2", icon: CheckSquare, title: "L'approbation", text: "L'exec approuve en un clic via email, Slack ou WhatsApp. Sans login.", highlight: false },
+              { num: "3", icon: Send, title: "La présence", text: "Chaque deal stratégique bénéficie d'une présence exécutive. L'exec engage le prospect sans réunion.", highlight: false },
+              { num: "4", icon: Eye, title: "La lecture politique", text: "Qui soutient, qui hésite, qui bloque. La carte politique de votre deal se révèle en temps réel.", highlight: true },
+            ].map((step) => (
+              <div key={step.num} className={`rounded-xl p-7 text-center ${step.highlight ? "bg-accent/5 border-2 border-accent" : "bg-card border"}`}>
+                <div className={`w-10 h-10 rounded-full font-bold text-base flex items-center justify-center mx-auto mb-5 ${step.highlight ? "bg-accent text-primary" : "bg-primary text-accent"}`}>
+                  {step.num}
                 </div>
-                <ul className="space-y-4">
-                  <li className="flex items-start gap-3 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-2 shrink-0" />
-                    L'exec ne peut pas être sur tous les deals — les AE perdent en crédibilité
-                  </li>
-                  <li className="flex items-start gap-3 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-2 shrink-0" />
-                    Les réponses RFP sont génériques, sans différenciation humaine
-                  </li>
-                  <li className="flex items-start gap-3 text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-2 shrink-0" />
-                    Aucune visibilité sur l'engagement réel des décideurs
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Avec Ekko — marine bg + signal accents, quantified */}
-            <Card className="border-accent/30 bg-primary text-primary-foreground">
-              <CardContent className="p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <CheckCircle2 className="h-6 w-6 text-accent" />
-                  <h3 className="text-lg font-semibold text-primary-foreground">Avec Ekko</h3>
-                </div>
-                <ul className="space-y-4">
-                  <li className="flex items-start gap-3 text-primary-foreground/80">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
-                    Présence exec sur <span className="font-bold text-accent">100%</span> des deals stratégiques, 0 réunion en plus
-                  </li>
-                  <li className="flex items-start gap-3 text-primary-foreground/80">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
-                    Signal d'engagement en <span className="font-bold text-accent">&lt;2 minutes</span> après chaque vue
-                  </li>
-                  <li className="flex items-start gap-3 text-primary-foreground/80">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
-                    Observation du buying committee depuis l'intérieur du deal
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+                <step.icon className={`h-7 w-7 mx-auto mb-4 ${step.highlight ? "text-accent" : "text-muted-foreground"}`} />
+                <p className="text-base font-semibold mb-3">{step.title}</p>
+                <p className="text-sm text-muted-foreground">{step.text}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Problem Section */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-8 leading-tight">
-              Votre pipeline grossit.<br />
-              <span className="text-muted-foreground">Votre présence ne scale pas.</span>
-            </h2>
-            <ul className="space-y-4 mb-8 text-lg text-muted-foreground">
-              <li className="flex items-start gap-3">
-                <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                Vos AE manquent de crédibilité face aux C-levels sans sponsor exécutif
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                Les réponses RFP restent des documents froids sans différenciation
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                Les deals stagnent faute d'intimité et de confiance au bon moment
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                Vous ne savez pas quels deals ont vraiment reçu l'attention qu'ils méritent
-              </li>
-            </ul>
-            <p className="text-xl font-semibold text-foreground">
-              Résultat : un win ratio qui stagne et un revenue imprévisible.
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* ── SECTION 5 — POUR QUI ── */}
+      <section className="py-24 bg-primary text-primary-foreground px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs uppercase text-primary-foreground/30 tracking-widest text-center mb-4">Pour qui</p>
+          <h2 className="text-4xl font-bold text-center tracking-tight mb-16">Fait pour les équipes enterprise en cycle long</h2>
 
-      <Separator />
-
-      {/* Solution Section — repositioned as deal copilot */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <p className='text-base text-muted-foreground mb-2'>Gong analyse vos calls. Clari forecast sur votre CRM. Loom envoie des vidéos.</p>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
-              Ekko observe ce que fait votre prospect <span className='text-accent'>quand vous n'êtes pas là.</span>
-            </h2>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              La vidéo n'est pas le produit — c'est le capteur. Ce qui compte : qui regarde, qui partage en interne, qui hésite. Agir avant que le deal refroidisse.
-            </p>
-          </div>
-          {/* Product screenshots — buying committee */}
-          <div className="max-w-5xl mx-auto">
-            <img 
-              src="/screenshots/buying-committee.png" 
-              alt="Ekko — Buying Committee : couverture 100%, rôles Champion, Decision Maker, Influenceur"
-              className="w-full"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Deal Intelligence Visual Section */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Deal Intelligence en action
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Identifiez les champions, les bloqueurs et les signaux d'engagement 
-                — en temps réel, sur chaque deal.
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="border-2 border-accent bg-sidebar-accent rounded-xl p-8">
+              <p className="text-[10px] font-bold text-accent uppercase tracking-wider mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent" />Utilisateur quotidien
               </p>
+              <h3 className="text-xl font-semibold text-primary-foreground mb-6">Account Executives — cycles longs</h3>
+              <ul className="space-y-3">
+                {["Lire la carte politique de chaque deal sans attendre le prochain appel", "Se différencier avec une présence exécutive sur chaque RFP et chaque deal critique", "Ne plus jamais perdre un deal sans comprendre ce qui s'est vraiment passé"].map((t, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-primary-foreground/80">
+                    <CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" />{t}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <img 
-                  src="/screenshots/power-map-cards.png" 
-                  alt="Power Map — Alertes commerciales et grille des membres du buying committee"
-                  className="w-full"
-                  loading="lazy"
-                />
-                <p className="text-sm text-muted-foreground mt-3 text-center">
-                  Alertes commerciales & scoring d'engagement
-                </p>
-              </div>
-              <div>
-                <img 
-                  src="/screenshots/buying-committee-org.png" 
-                  alt="Buying Committee — Organigramme avec rôles, scores et barres d'engagement"
-                  className="w-full"
-                  loading="lazy"
-                />
-                <p className="text-sm text-muted-foreground mt-3 text-center">
-                  Organigramme du comité d'achat par entreprise
-                </p>
-              </div>
+
+            <div className="border border-sidebar-border bg-sidebar rounded-xl p-8">
+              <p className="text-[10px] font-bold text-primary-foreground/40 uppercase tracking-wider mb-4">Acheteur</p>
+              <h3 className="text-xl font-semibold text-primary-foreground mb-6">VP Sales & CRO</h3>
+              <ul className="space-y-3">
+                {["Un pipeline prévisible basé sur les signaux réels et non sur les déclarations", "Présence exécutive sur 100% des deals stratégiques sans multiplier les réunions", "Identifier les deals à risque avant qu'ils disparaissent du pipeline"].map((t, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-primary-foreground/70">
+                    <CheckCircle2 className="h-4 w-4 text-primary-foreground/50 shrink-0 mt-0.5" />{t}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Three Pillars Section — Revenue-first */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                  <Target className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Présence exécutive à l'échelle</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Votre voix et votre image sur chaque deal critique. 
-                  Les AE obtiennent un sponsor exécutif en vidéo personnalisée, 
-                  sans mobiliser l'agenda du leadership.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                  <Handshake className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Différenciation commerciale</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Réponses RFP, follow-ups stratégiques, executive sponsorship : 
-                  chaque interaction devient personnalisée et mémorable. 
-                  Vos commerciaux se démarquent à chaque étape.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
-                  <LineChart className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Revenue prévisible</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Mesurez l'engagement des décideurs, identifiez les deals à risque 
-                  et corrélez la présence exécutive avec le win ratio. 
-                  Votre pipeline devient prévisible.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">
-              Comment ça fonctionne
-            </h2>
-            <div className="grid md:grid-cols-4 gap-8">
-              {[
-                {
-                  step: 1,
-                  icon: FileText,
-                  title: "Le deal",
-                  description: "Votre AE identifie un deal stratégique. Ekko génère un script personnalisé pour le décideur en 30 secondes."
-                },
-                {
-                  step: 2,
-                  icon: CheckSquare,
-                  title: "La validation",
-                  description: "L'exécutif approuve le message en un clic — via email, Slack ou WhatsApp. Aucun login requis."
-                },
-                {
-                  step: 3,
-                  icon: Send,
-                  title: "La présence",
-                  description: "Ekko génère et diffuse la vidéo personnalisée. L'exécutif est présent sur le deal sans être en réunion."
-                },
-                {
-                  step: 4,
-                  icon: Eye,
-                  title: "L'impact",
-                  description: "Qui a regardé ? Combien de temps ? Qui a partagé ? Ekko corrèle chaque vue avec l'avancement du deal. Signal en <2 minutes.",
-                  highlight: true,
-                }
-              ].map((item) => (
-                <div key={item.step} className={`text-center ${(item as any).highlight ? "relative" : ""}`}>
-                  {(item as any).highlight && (
-                    <div className="absolute -inset-3 bg-accent/5 rounded-2xl border border-accent/20" />
-                  )}
-                  <div className="relative">
-                    <div className="relative mb-6">
-                      <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto text-2xl font-bold">
-                        {item.step}
-                      </div>
-                    </div>
-                    <item.icon className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-3">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="border border-sidebar-border bg-sidebar rounded-xl p-8">
+              <p className="text-[10px] font-bold text-primary-foreground/40 uppercase tracking-wider mb-4">Exec clone</p>
+              <h3 className="text-xl font-semibold text-primary-foreground mb-6">Dirigeants & Executives</h3>
+              <ul className="space-y-3">
+                {["Chaque deal stratégique bénéficie de votre présence sans mobiliser votre agenda", "Contrôle total sur votre image — vous approuvez chaque script avant envoi", "Voir comment votre message a été reçu dans le comité de décision"].map((t, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-primary-foreground/70">
+                    <CheckCircle2 className="h-4 w-4 text-primary-foreground/50 shrink-0 mt-0.5" />{t}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      <Separator />
-
-      {/* For Who Section — AE first per audit */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">
-            Pour qui ?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* AE first — they are the daily user */}
-            <Card className="border shadow-sm">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
-                  <Briefcase className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Account Executives — cycles longs</h3>
-                <ul className="space-y-3 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Savoir qui vous soutient, qui hésite, qui bloque — sans attendre le prochain appel
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Recevoir une next best action claire basée sur des comportements réels, pas des intuitions
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Ne plus jamais perdre sans savoir ce qui s'est passé côté prospect
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* VP Sales / CRO second */}
-            <Card className="border shadow-sm">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
-                  <TrendingUp className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">VP Sales & CRO</h3>
-                <ul className="space-y-3 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Un pipeline prévisible : les signaux révèlent quels deals vont vraiment closer avant votre forecast
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Présence exec sur 100% des deals stratégiques sans multiplier les réunions du leadership
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Corrélez engagement buying committee et win rate — ajustez les tactiques en temps réel
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border shadow-sm">
-              <CardContent className="p-8">
-                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6">
-                  <Building2 className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Dirigeants & Executives</h3>
-                <ul className="space-y-3 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Présent sur chaque deal critique via une vidéo personnalisée — sans bloquer votre agenda
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Contrôle total : vous approuvez chaque script avant génération. Aucune vidéo sans votre accord.
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    Voir comment vos messages sont reçus par les décideurs côté prospect
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+      {/* ── SECTION 6 — CTA FINAL ── */}
+      <section className="py-24 bg-accent text-accent-foreground px-6">
+        <div className="max-w-[600px] mx-auto text-center">
+          <h2 className="text-4xl font-bold tracking-tight text-primary mb-4">Vos deals méritent une lecture politique.</h2>
+          <p className="text-lg text-primary/70 mb-10">Arrêtez de deviner ce qui se passe côté prospect. Ekko vous le montre.</p>
+          <div className="flex gap-4 justify-center">
+            <Button size="lg" className="bg-primary text-accent rounded-full px-8 font-semibold" onClick={() => navigate("/auth")}>
+              Demander une démo <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+            <Button size="lg" className="bg-transparent border border-primary/20 text-primary rounded-full px-8" onClick={() => navigate("/auth")}>
+              Inscription
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Differentiation Section — stronger visual */}
-      <section className="py-24 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                  Pourquoi Ekko est différent
-                </h2>
-                <p className="text-lg text-primary-foreground/70 mb-4">
-                  Gong analyse vos calls. Clari forecast sur votre CRM. Loom et Vidyard envoient des vidéos.
-                </p>
-                <p className="text-xl font-semibold text-accent mb-8">
-                  Ekko observe ce que fait votre prospect quand vous n'êtes pas là — et vous dit quoi faire ensuite.
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {[
-                    { icon: Users, label: "Présence exécutive scalable" },
-                    { icon: FileText, label: "Différenciation RFP" },
-                    { icon: BarChart3, label: "Engagement décideurs mesuré" },
-                    { icon: Shield, label: "Gouvernance intégrée" },
-                    { icon: Zap, label: "Cycles complexes" },
-                  ].map((item) => (
-                    <div key={item.label} className="flex flex-col items-center gap-3 p-4 bg-sidebar-accent rounded-xl">
-                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                        <item.icon className="h-5 w-5 text-accent" />
-                      </div>
-                      <span className="text-sm font-medium text-primary-foreground text-center">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <img 
-                  src="/screenshots/power-map-overview.png" 
-                  alt="Ekko — Power Map overview avec métriques d'intérêt et nouveaux interlocuteurs"
-                  className="w-full"
-                  loading="lazy"
-                />
-              </div>
-            </div>
+      {/* ── FOOTER ── */}
+      <footer className="py-12 border-t bg-primary text-primary-foreground px-6">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8">
+          <div>
+            <EkkoLogo size={24} textSize={18} onDark={true} />
+            <p className="text-sm text-primary-foreground/30 mt-2">Deal Intelligence · Buying Committee Signal · Exec Presence</p>
           </div>
-        </div>
-      </section>
 
-      {/* Use Cases Section — with results */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">
-              Cas d'usage
-            </h2>
-            <div className="grid md:grid-cols-2 gap-8">
-              <Card className="border shadow-sm">
-                <CardContent className="p-8">
-                  <h3 className="text-lg font-semibold mb-3">Executive Sponsorship</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    Le VP Sales envoie un message vidéo personnalisé au CEO du prospect 
-                    pour renforcer la relation au moment critique du deal.
-                  </p>
-                  <p className="text-sm font-semibold text-accent">→ +23% win rate sur les deals avec exec video</p>
-                </CardContent>
-              </Card>
-              <Card className="border shadow-sm">
-                <CardContent className="p-8">
-                  <h3 className="text-lg font-semibold mb-3">Réponse RFP personnalisée</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    L'AE inclut une vidéo du CEO dans la réponse RFP. 
-                    Le prospect voit une entreprise qui s'engage personnellement.
-                  </p>
-                  <p className="text-sm font-semibold text-accent">→ 3× plus de shortlists vs RFP sans vidéo</p>
-                </CardContent>
-              </Card>
-              <Card className="border shadow-sm">
-                <CardContent className="p-8">
-                  <h3 className="text-lg font-semibold mb-3">Deal acceleration</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    Un deal stagne ? L'exec intervient en 3 minutes avec un message vidéo 
-                    ciblé pour débloquer la situation — sans réunion.
-                  </p>
-                  <p className="text-sm font-semibold text-accent">→ -12 jours de cycle en moyenne</p>
-                </CardContent>
-              </Card>
-              <Card className="border shadow-sm">
-                <CardContent className="p-8">
-                  <h3 className="text-lg font-semibold mb-3">Multi-threading exécutif</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    Engagez plusieurs parties prenantes du buying committee 
-                    avec des messages personnalisés de votre leadership.
-                  </p>
-                  <p className="text-sm font-semibold text-accent">→ 2,4 contacts engagés en moyenne par deal</p>
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-3 gap-12 text-sm">
+            <div className="space-y-2">
+              <p className="font-semibold text-primary-foreground/60 mb-3">Produit</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">Fonctionnalités</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">Tarifs</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">Sécurité</p>
+            </div>
+            <div className="space-y-2">
+              <p className="font-semibold text-primary-foreground/60 mb-3">Ressources</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">Documentation</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">Blog</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">Changelog</p>
+            </div>
+            <div className="space-y-2">
+              <p className="font-semibold text-primary-foreground/60 mb-3">Légal</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">Mentions légales</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">Confidentialité</p>
+              <p className="text-primary-foreground/40 hover:text-primary-foreground cursor-pointer">CGU</p>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Final CTA Section */}
-      <section className="py-24 bg-accent text-accent-foreground">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Sécurisez votre revenue.
-            </h2>
-            <p className="text-lg mb-8 opacity-80">
-              Rejoignez les équipes qui savent ce qui se passe dans leurs deals — avant même leur prochain appel.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
-                className="text-base px-8 bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={() => navigate("/auth")}
-              >
-                Demander une démo
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="text-base px-8 bg-transparent border-accent-foreground/30 text-accent-foreground hover:bg-accent-foreground/10"
-                onClick={() => navigate("/auth")}
-              >
-                Inscription
-              </Button>
-            </div>
-          </div>
+          <p className="text-sm text-primary-foreground/30">© 2026 Ekko.</p>
         </div>
-      </section>
 
-      {/* Footer — proper enterprise links */}
-      <footer className="py-12 border-t">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-start justify-between gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <EkkoLogo size={24} textSize={18} onDark={false} />
-              </div>
-              <p className="text-sm text-muted-foreground">Deal Intelligence · Buying Committee Signal · Exec Presence</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-sm">
-              <div>
-                <p className="font-semibold mb-3">Produit</p>
-                <ul className="space-y-2 text-muted-foreground">
-                  <li><a href="#" className="hover:text-foreground transition-colors">Fonctionnalités</a></li>
-                  <li><a href="#" className="hover:text-foreground transition-colors">Tarifs</a></li>
-                  <li><a href="#" className="hover:text-foreground transition-colors">Sécurité</a></li>
-                </ul>
-              </div>
-              <div>
-                <p className="font-semibold mb-3">Ressources</p>
-                <ul className="space-y-2 text-muted-foreground">
-                  <li><a href="#" className="hover:text-foreground transition-colors">Documentation</a></li>
-                  <li><a href="#" className="hover:text-foreground transition-colors">Blog</a></li>
-                  <li><a href="#" className="hover:text-foreground transition-colors">Changelog</a></li>
-                </ul>
-              </div>
-              <div>
-                <p className="font-semibold mb-3">Légal</p>
-                <ul className="space-y-2 text-muted-foreground">
-                  <li><a href="#" className="hover:text-foreground transition-colors">Mentions légales</a></li>
-                  <li><a href="#" className="hover:text-foreground transition-colors">Confidentialité</a></li>
-                  <li><a href="#" className="hover:text-foreground transition-colors">CGU</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-            <p>© 2026 Ekko. Tous droits réservés.</p>
-          </div>
+        <div className="max-w-5xl mx-auto border-t border-primary-foreground/10 mt-8 pt-8 text-center text-xs text-primary-foreground/20">
+          © 2026 Ekko. Tous droits réservés.
         </div>
       </footer>
     </div>
