@@ -966,11 +966,11 @@ export default function CampaignDetail() {
         <TabsContent value="intelligence" className="space-y-6">
           {/* DES + Momentum + Cold Start */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <MetricCard icon={Zap} value={dealScore?.des ?? "—"} label="DES Score" />
-            <MetricCard icon={Users} value={viewers.length.toString()} label="Contacts identifiés" />
-            <MetricCard icon={TrendingUp} value={dealScore?.sponsor_count ?? 0} label="Sponsors" />
-            <MetricCard icon={AlertTriangle} value={dealScore?.blocker_count ?? 0} label="Bloqueurs" />
-            <MetricCard icon={Eye} value={`${Math.round((dealScore?.avg_watch_depth ?? 0) * 100) / 100}%`} label="Watch depth moy." />
+             <MetricCard icon={Zap} value={dealScore?.des ?? "—"} label="Deal Engagement Score" />
+             <MetricCard icon={Users} value={viewers.length.toString()} label="Contacts identifiés" />
+             <MetricCard icon={TrendingUp} value={dealScore?.sponsor_count ?? 0} label="Contacts sponsors" />
+             <MetricCard icon={AlertTriangle} value={dealScore?.blocker_count ?? 0} label="Bloqueurs potentiels" />
+             <MetricCard icon={Eye} value={`${Math.round((dealScore?.avg_watch_depth ?? 0) * 100) / 100}%`} label="Profondeur d'engagement" />
           </div>
 
           {/* Momentum + Cold Start */}
