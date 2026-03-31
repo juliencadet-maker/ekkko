@@ -5,9 +5,10 @@ import { MetricCard } from "@/components/ui/MetricCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Shield, Video, Eye, CheckSquare, Loader2 } from "lucide-react";
+import { Shield, Video, Eye, CheckSquare, Loader2, ShieldOff } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { canManageOrg } from "@/lib/roles";
 
 interface PolicyData {
   approval_required: boolean;
