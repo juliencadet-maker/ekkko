@@ -72,7 +72,7 @@ export default function Campaigns() {
           // Fetch scores
           const { data: scores } = await supabase
             .from("deal_scores")
-            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count, alerts")
+            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count, alerts, risk_level, priority_score")
             .in("campaign_id", campaignIds)
             .order("scored_at", { ascending: false });
 
