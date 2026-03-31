@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,26 @@ import {
   Briefcase,
   TrendingUp,
 } from "lucide-react";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
+
+function FadeIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  return (
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.5, ease: "easeOut", delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function Index() {
   const navigate = useNavigate();
@@ -39,7 +60,7 @@ export default function Index() {
       </nav>
 
       {/* ── SECTION 1 — HERO ── */}
-      <section className="py-24 lg:py-32 px-6">
+      <motion.section className="py-24 lg:py-32 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-[1140px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
             <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-5">Deal Intelligence · Buying Committee</p>
@@ -61,12 +82,14 @@ export default function Index() {
             </div>
           </div>
 
-          <img src="/screenshots/deals-list.png" alt="Ekko — Liste des deals triés par urgence" className="rounded-2xl shadow-2xl w-full" />
+          <FadeIn delay={0.2}>
+            <img src="/screenshots/deals-list.png" alt="Ekko — Liste des deals triés par urgence" className="rounded-2xl shadow-2xl w-full" />
+          </FadeIn>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION 2 — 3 SCÈNES POLITIQUES ── */}
-      <section className="py-16 bg-muted/20 border-y border-border/50 px-6">
+      <motion.section className="py-16 bg-muted/20 border-y border-border/50 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4">
           {[
             {
@@ -97,20 +120,22 @@ export default function Index() {
               badgeColor: "text-warning",
             },
           ].map((s, i) => (
-            <div key={i} className="bg-card border border-border/60 rounded-xl p-6">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${s.iconBg}`}>
-                <s.icon className={`h-5 w-5 ${s.iconColor}`} />
+            <FadeIn key={i} delay={i * 0.1}>
+              <div className="bg-card border border-border/60 rounded-xl p-6 h-full">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${s.iconBg}`}>
+                  <s.icon className={`h-5 w-5 ${s.iconColor}`} />
+                </div>
+                <p className="font-bold text-sm mb-2">{s.title}</p>
+                <p className="text-sm text-muted-foreground">{s.text}</p>
+                <p className={`text-xs font-semibold ${s.badgeColor} mt-3`}>{s.badge}</p>
               </div>
-              <p className="font-bold text-sm mb-2">{s.title}</p>
-              <p className="text-sm text-muted-foreground">{s.text}</p>
-              <p className={`text-xs font-semibold ${s.badgeColor} mt-3`}>{s.badge}</p>
-            </div>
+            </FadeIn>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION 3 — BUYING COMMITTEE ── */}
-      <section className="py-24 bg-background border-y border-border px-6">
+      <motion.section className="py-24 bg-background border-y border-border px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-[1100px] mx-auto">
           <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Buying Committee</p>
           <h2 className="text-4xl font-bold text-center tracking-tight mb-4">Savoir qui décide vraiment.</h2>
@@ -167,10 +192,10 @@ export default function Index() {
             <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full border border-dashed border-muted-foreground" /><span className="text-xs text-muted-foreground">À identifier</span></div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION SCREENSHOTS ── */}
-      <section className="py-16 bg-muted/20 px-6">
+      <motion.section className="py-16 bg-muted/20 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
           <div>
             <img src="/screenshots/buying-committee-demo.png" alt="Carte politique du deal" className="rounded-xl w-full" />
@@ -181,9 +206,9 @@ export default function Index() {
             <p className="text-sm text-muted-foreground text-center mt-3">Mission control — NBA et alertes actives</p>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      <section id="how-it-works" className="py-24 bg-muted/30 px-6">
+      <motion.section id="how-it-works" className="py-24 bg-muted/30 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-5xl mx-auto">
           <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Comment ça fonctionne</p>
           <h2 className="text-4xl font-bold text-center tracking-tight mb-4">De zéro à signal en 4 étapes</h2>
@@ -197,22 +222,24 @@ export default function Index() {
               { num: "2", icon: CheckSquare, title: "L'approbation", text: "L'exec approuve en un clic via email, Slack ou WhatsApp. Sans login.", highlight: false },
               { num: "3", icon: Send, title: "La présence", text: "Chaque deal stratégique bénéficie d'une présence exécutive. L'exec engage le prospect sans réunion.", highlight: false },
               { num: "4", icon: Eye, title: "La lecture politique", text: "Qui soutient, qui hésite, qui bloque. La carte politique de votre deal se révèle en temps réel.", highlight: true },
-            ].map((step) => (
-              <div key={step.num} className={`rounded-xl p-7 text-center ${step.highlight ? "bg-accent/5 border-2 border-accent" : "bg-card border"}`}>
-                <div className={`w-10 h-10 rounded-full font-bold text-base flex items-center justify-center mx-auto mb-5 ${step.highlight ? "bg-accent text-primary" : "bg-primary text-accent"}`}>
-                  {step.num}
+            ].map((step, i) => (
+              <FadeIn key={step.num} delay={i * 0.1}>
+                <div className={`rounded-xl p-7 text-center h-full ${step.highlight ? "bg-accent/5 border-2 border-accent" : "bg-card border"}`}>
+                  <div className={`w-10 h-10 rounded-full font-bold text-base flex items-center justify-center mx-auto mb-5 ${step.highlight ? "bg-accent text-primary" : "bg-primary text-accent"}`}>
+                    {step.num}
+                  </div>
+                  <step.icon className={`h-7 w-7 mx-auto mb-4 ${step.highlight ? "text-accent" : "text-muted-foreground"}`} />
+                  <p className="text-base font-semibold mb-3">{step.title}</p>
+                  <p className="text-sm text-muted-foreground">{step.text}</p>
                 </div>
-                <step.icon className={`h-7 w-7 mx-auto mb-4 ${step.highlight ? "text-accent" : "text-muted-foreground"}`} />
-                <p className="text-base font-semibold mb-3">{step.title}</p>
-                <p className="text-sm text-muted-foreground">{step.text}</p>
-              </div>
+              </FadeIn>
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION 5 — POUR QUI ── */}
-      <section className="py-24 bg-primary text-primary-foreground px-6">
+      <motion.section className="py-24 bg-primary text-primary-foreground px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-5xl mx-auto">
           <p className="text-xs uppercase text-primary-foreground/30 tracking-widest text-center mb-4">Pour qui</p>
           <h2 className="text-4xl font-bold text-center tracking-tight mb-16">Fait pour les équipes enterprise en cycle long</h2>
@@ -257,10 +284,10 @@ export default function Index() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION 6 — CTA FINAL ── */}
-      <section className="py-24 bg-accent text-accent-foreground px-6">
+      <motion.section className="py-24 bg-accent text-accent-foreground px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-[600px] mx-auto text-center">
           <h2 className="text-4xl font-bold tracking-tight text-primary mb-4">Vos deals méritent une lecture politique.</h2>
           <p className="text-lg text-primary/70 mb-10">Arrêtez de deviner ce qui se passe côté prospect. Ekko vous le montre.</p>
@@ -273,7 +300,7 @@ export default function Index() {
             </Button>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── FOOTER ── */}
       <footer className="py-12 border-t bg-primary text-primary-foreground px-6">
