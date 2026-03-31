@@ -195,14 +195,55 @@ export default function Index() {
               qui partage, qui hésite — et d'intervenir au bon moment pour closer.
             </p>
           </div>
-          {/* Full-width product screenshot */}
+          {/* Product screenshots — buying committee */}
           <div className="max-w-5xl mx-auto">
             <img 
-              src="/screenshots/dashboard-raw.png" 
-              alt="Ekko — Deals, signaux d'engagement et buying committee en temps réel"
-              className="rounded-2xl shadow-xl border border-border w-full"
+              src="/screenshots/buying-committee.png" 
+              alt="Ekko — Buying Committee : couverture 100%, rôles Champion, Decision Maker, Influenceur"
+              className="w-full"
               loading="lazy"
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Deal Intelligence Visual Section */}
+      <section className="py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Deal Intelligence en action
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Identifiez les champions, les bloqueurs et les signaux d'engagement 
+                — en temps réel, sur chaque deal.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <img 
+                  src="/screenshots/power-map-cards.png" 
+                  alt="Power Map — Alertes commerciales et grille des membres du buying committee"
+                  className="w-full"
+                  loading="lazy"
+                />
+                <p className="text-sm text-muted-foreground mt-3 text-center">
+                  Alertes commerciales & scoring d'engagement
+                </p>
+              </div>
+              <div>
+                <img 
+                  src="/screenshots/buying-committee-org.png" 
+                  alt="Buying Committee — Organigramme avec rôles, scores et barres d'engagement"
+                  className="w-full"
+                  loading="lazy"
+                />
+                <p className="text-sm text-muted-foreground mt-3 text-center">
+                  Organigramme du comité d'achat par entreprise
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -398,29 +439,41 @@ export default function Index() {
       {/* Differentiation Section — stronger visual */}
       <section className="py-24 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Pourquoi Ekko est différent
-            </h2>
-            <p className="text-lg text-primary-foreground/70 mb-12">
-              Les autres outils font de la vidéo IA.<br />
-              <span className="font-semibold text-accent">Ekko est le seul outil qui observe le comportement du buying committee depuis l'intérieur.</span>
-            </p>
-            <div className="grid md:grid-cols-5 gap-4">
-              {[
-                { icon: Users, label: "Présence exécutive scalable" },
-                { icon: FileText, label: "Différenciation RFP" },
-                { icon: BarChart3, label: "Engagement décideurs mesuré" },
-                { icon: Shield, label: "Gouvernance intégrée" },
-                { icon: Zap, label: "Cycles complexes" },
-              ].map((item) => (
-                <div key={item.label} className="flex flex-col items-center gap-3 p-4 bg-sidebar-accent rounded-xl">
-                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                    <item.icon className="h-5 w-5 text-accent" />
-                  </div>
-                  <span className="text-sm font-medium text-primary-foreground text-center">{item.label}</span>
+          <div className="max-w-5xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                  Pourquoi Ekko est différent
+                </h2>
+                <p className="text-lg text-primary-foreground/70 mb-8">
+                  Les autres outils font de la vidéo IA.<br />
+                  <span className="font-semibold text-accent">Ekko est le seul outil qui observe le comportement du buying committee depuis l'intérieur.</span>
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { icon: Users, label: "Présence exécutive scalable" },
+                    { icon: FileText, label: "Différenciation RFP" },
+                    { icon: BarChart3, label: "Engagement décideurs mesuré" },
+                    { icon: Shield, label: "Gouvernance intégrée" },
+                    { icon: Zap, label: "Cycles complexes" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex flex-col items-center gap-3 p-4 bg-sidebar-accent rounded-xl">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                        <item.icon className="h-5 w-5 text-accent" />
+                      </div>
+                      <span className="text-sm font-medium text-primary-foreground text-center">{item.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              <div>
+                <img 
+                  src="/screenshots/power-map-overview.png" 
+                  alt="Ekko — Power Map overview avec métriques d'intérêt et nouveaux interlocuteurs"
+                  className="w-full"
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
         </div>
