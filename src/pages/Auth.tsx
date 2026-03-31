@@ -296,13 +296,13 @@ export default function Auth() {
             ) : (
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-org">Nom de l'organisation</Label>
+                  <Label htmlFor="signup-org">Nom de votre équipe ou entreprise</Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signup-org"
                       type="text"
-                      placeholder="Votre entreprise"
+                      placeholder="Ex : Équipe Sales ACME"
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
                       className="pl-10"
