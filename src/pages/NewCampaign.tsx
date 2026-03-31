@@ -342,7 +342,7 @@ export default function NewCampaign() {
 
                 {/* Stage */}
                 <div className="space-y-2">
-                  <Label>Stage</Label>
+                  <Label>Où en êtes-vous dans le cycle ?</Label>
                   <Select value={dealStage} onValueChange={setDealStage}>
                     <SelectTrigger><SelectValue placeholder="Sélectionnez le stage" /></SelectTrigger>
                     <SelectContent>
