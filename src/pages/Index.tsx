@@ -60,9 +60,9 @@ export default function Index() {
       </nav>
 
       {/* ── SECTION 1 — HERO ── */}
-      <section className="py-24 lg:py-32 px-6">
+      <motion.section className="py-24 lg:py-32 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-[1140px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
-          <FadeIn>
+          <div>
             <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-5">Deal Intelligence · Buying Committee</p>
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] mb-6">
               Votre pipeline vous rassure.
@@ -82,9 +82,11 @@ export default function Index() {
             </div>
           </div>
 
-          <img src="/screenshots/deals-list.png" alt="Ekko — Liste des deals triés par urgence" className="rounded-2xl shadow-2xl w-full" />
+          <FadeIn delay={0.2}>
+            <img src="/screenshots/deals-list.png" alt="Ekko — Liste des deals triés par urgence" className="rounded-2xl shadow-2xl w-full" />
+          </FadeIn>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION 2 — 3 SCÈNES POLITIQUES ── */}
       <section className="py-16 bg-muted/20 border-y border-border/50 px-6">
