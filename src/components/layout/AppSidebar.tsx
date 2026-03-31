@@ -40,6 +40,7 @@ const navigationItems = [
 ];
 
 const adminItems = [
+  { label: "Comptes", href: "/app/user-approvals", icon: UserCheck },
   { label: "Gouvernance", href: "/app/governance", icon: Shield },
   { label: "Intégrations", href: "/app/settings", icon: Zap },
   { label: "Audit", href: "/app/audit", icon: FileText },
