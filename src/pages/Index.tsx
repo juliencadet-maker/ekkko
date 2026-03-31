@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { WaitlistDialog } from "@/components/WaitlistDialog";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
 import { Button } from "@/components/ui/button";
 import {
