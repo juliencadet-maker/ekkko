@@ -60,7 +60,7 @@ const statusConfig: Record<StatusType, {
     icon: XCircle,
   },
   generating: {
-    label: "Génération en cours",
+    label: "Génération...",
     className: "status-badge-generating",
     icon: Loader2,
   },
