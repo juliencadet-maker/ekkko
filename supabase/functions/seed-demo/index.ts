@@ -415,6 +415,118 @@ serve(async (req) => {
       status: "pending",
     }).select().single();
 
+    // ── VIEWERS for TechVision (buying committee) ──────────────────
+    const tvViewerProfiles = [
+      { name: "Sophie Martin", email: "sophie.martin@techvision.fr", title: "CTO", company: "TechVision", status: "champion", contact_score: 92, sponsor_score: 85, influence_score: 78, blocker_score: 5, share_count: 3, viewers_generated: 2, total_watch_depth: 88, replay_count: 2, cta_clicked: true },
+      { name: "Marie Bernard", email: "marie.bernard@techvision.fr", title: "CEO", company: "TechVision", status: "engaged", contact_score: 78, sponsor_score: 90, influence_score: 95, blocker_score: 0, share_count: 1, viewers_generated: 1, total_watch_depth: 72, replay_count: 1, cta_clicked: false },
+      { name: "Pierre Lefebvre", email: "pierre.lefebvre@techvision.fr", title: "VP Engineering", company: "TechVision", status: "engaged", contact_score: 65, sponsor_score: 40, influence_score: 60, blocker_score: 10, share_count: 0, viewers_generated: 0, total_watch_depth: 55, replay_count: 0, cta_clicked: false },
+      { name: "Thomas Dubois", email: "thomas.dubois@techvision.fr", title: "Head of Sales", company: "TechVision", status: "cold", contact_score: 30, sponsor_score: 15, influence_score: 45, blocker_score: 60, share_count: 0, viewers_generated: 0, total_watch_depth: 20, replay_count: 0, cta_clicked: false },
+      { name: "Camille Moreau", email: "camille.moreau@techvision.fr", title: "COO", company: "TechVision", status: "new", contact_score: 45, sponsor_score: 30, influence_score: 50, blocker_score: 20, share_count: 0, viewers_generated: 0, total_watch_depth: 35, replay_count: 0, cta_clicked: false },
+      { name: "Lucas Petit", email: "lucas.petit@techvision.fr", title: "CFO", company: "TechVision", status: "engaged", contact_score: 70, sponsor_score: 55, influence_score: 80, blocker_score: 35, share_count: 1, viewers_generated: 0, total_watch_depth: 60, replay_count: 1, cta_clicked: true },
+    ];
+
+    const createdViewerIds: string[] = [];
+    for (const vp of tvViewerProfiles) {
+      const { data: viewer } = await admin.from("viewers").insert({
+        campaign_id: tvParentId,
+        viewer_hash: `vh_${vp.email.split("@")[0]}`,
+        name: vp.name,
+        email: vp.email,
+        title: vp.title,
+        company: vp.company,
+        domain: "techvision.fr",
+        is_known: true,
+        status: vp.status,
+        contact_score: vp.contact_score,
+        sponsor_score: vp.sponsor_score,
+        influence_score: vp.influence_score,
+        blocker_score: vp.blocker_score,
+        share_count: vp.share_count,
+        viewers_generated: vp.viewers_generated,
+        total_watch_depth: vp.total_watch_depth,
+        replay_count: vp.replay_count,
+        cta_clicked: vp.cta_clicked,
+        first_seen_at: new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString(),
+        last_event_at: new Date(Date.now() - Math.floor(Math.random() * 3) * 24 * 3600 * 1000).toISOString(),
+      }).select().single();
+      if (viewer) createdViewerIds.push(viewer.id);
+    }
+
+    // Viewer relationships (Sophie forwarded to Pierre, Marie forwarded to Camille)
+    if (createdViewerIds.length >= 5) {
+      await admin.from("viewer_relationships").insert([
+        { campaign_id: tvParentId, source_viewer_id: createdViewerIds[0], target_viewer_id: createdViewerIds[2], relationship_type: "forwarded", forward_probability: 0.92, evidence: { type: "referral_link" } },
+        { campaign_id: tvParentId, source_viewer_id: createdViewerIds[1], target_viewer_id: createdViewerIds[4], relationship_type: "forwarded", forward_probability: 0.78, evidence: { type: "same_domain_timing" } },
+      ]);
+    }
+
+    // ── DEAL SCORES for TechVision ──────────────────────────────────
+    await admin.from("deal_scores").insert({
+      campaign_id: tvParentId,
+      des: 72,
+      viewer_count: 6,
+      sponsor_count: 2,
+      blocker_count: 1,
+      avg_watch_depth: 0.58,
+      breadth: 0.65,
+      event_velocity: 3.2,
+      engagement_half_life: 4.5,
+      multi_threading_score: 4,
+      momentum: "rising",
+      cold_start_regime: "warm",
+      stage_signal_gap: 0.15,
+      graph_centralization: 0.42,
+      alerts: [
+        { type: "blocker_detected", message: "Thomas Dubois — faible engagement, rôle décisionnel", severity: "warning" },
+        { type: "champion_active", message: "Sophie Martin — 3 partages, replay vidéo CEO", severity: "positive" },
+      ],
+      recommended_action: { action: "schedule_exec_call", label: "Planifier un call exec avec Thomas Dubois", confidence: 0.73, reason: "Blocker détecté avec faible watch depth" },
+    });
+
+    // ── DEAL SCORE for DataFlow (cold) ──────────────────────────────
+    await admin.from("deal_scores").insert({
+      campaign_id: dfParent!.id,
+      des: 28,
+      viewer_count: 0,
+      sponsor_count: 0,
+      blocker_count: 0,
+      avg_watch_depth: 0,
+      breadth: 0,
+      event_velocity: 0,
+      momentum: "stable",
+      cold_start_regime: "cold_global",
+      alerts: [
+        { type: "no_engagement", message: "Aucun engagement — deal froid", severity: "critical" },
+      ],
+      recommended_action: { action: "send_intro_video", label: "Envoyer vidéo d'introduction", confidence: 0.85, reason: "Premier contact, aucune donnée d'engagement" },
+    });
+
+    // ── VIDEO EVENTS (recent signals for dashboard) ──────────────────
+    // Find a TechVision video to attach events to
+    const { data: tvVideos } = await admin.from("videos").select("id, campaign_id").in("campaign_id", createdSubIds).limit(3);
+    if (tvVideos && tvVideos.length > 0) {
+      const recentEvents = [];
+      const eventTypes = ["play", "watch_25", "watch_50", "watch_75", "watch_100", "cta_click", "share", "replay"];
+      for (const vid of tvVideos) {
+        for (let i = 0; i < 4; i++) {
+          recentEvents.push({
+            video_id: vid.id,
+            campaign_id: vid.campaign_id,
+            viewer_hash: `vh_sophie.martin`,
+            event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+            viewer_email: "sophie.martin@techvision.fr",
+            viewer_name: "Sophie Martin",
+            viewer_domain: "techvision.fr",
+            device_type: "desktop",
+            ip_country: "FR",
+            session_id: `sess_${Date.now()}_${i}`,
+            created_at: new Date(Date.now() - Math.floor(Math.random() * 3 * 24 * 3600 * 1000)).toISOString(),
+          });
+        }
+      }
+      await admin.from("video_events").insert(recentEvents);
+    }
+
     // Configure Slack channel for the org (tous-getekko)
     const currentOrgSettings = (await admin.from("orgs").select("settings").eq("id", orgId).single()).data?.settings || {};
     await admin.from("orgs").update({
