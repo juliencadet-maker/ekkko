@@ -660,10 +660,9 @@ export default function Onboarding() {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
-                <CardTitle className="text-2xl">Vous êtes prêt ! 🎉</CardTitle>
+                <CardTitle className="text-2xl">Votre clone est en cours de création.</CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Votre clone vidéo et vocal est en cours de création. Vous serez notifié dès qu'il sera prêt.
-                  En attendant, vous pouvez explorer la plateforme.
+                  La génération prend généralement 10 à 30 minutes. Vous recevrez une notification dès que votre identité est prête.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6 space-y-3">
@@ -672,7 +671,7 @@ export default function Onboarding() {
                   <AlertDescription>Clone en cours de création… Cela prend généralement quelques minutes.</AlertDescription>
                 </Alert>
                 <Button onClick={goToDashboard} className="w-full" size="lg">
-                  Créer un nouveau deal
+                  Accéder à mon espace
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardContent>

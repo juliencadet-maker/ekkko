@@ -371,6 +371,11 @@ export default function Auth() {
                   )}
                 </div>
 
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Votre espace est isolé — vos données ne sont jamais partagées
+                  avec d'autres organisations.
+                </p>
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
