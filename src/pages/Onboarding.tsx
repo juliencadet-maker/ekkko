@@ -449,7 +449,7 @@ export default function Onboarding() {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
                   <Sparkles className="h-8 w-8" />
                 </div>
-                <CardTitle className="text-2xl">Bonjour 👋 Bienvenue sur Ekko</CardTitle>
+                <CardTitle className="text-2xl">Bienvenue. Votre clone vidéo est à quelques minutes.</CardTitle>
                 <CardDescription className="text-base mt-2">
                   Configurons votre compte en quelques étapes simples pour commencer à créer des vidéos personnalisées.
                 </CardDescription>
