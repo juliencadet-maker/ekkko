@@ -192,7 +192,7 @@ export default function Index() {
             <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full border border-dashed border-muted-foreground" /><span className="text-xs text-muted-foreground">À identifier</span></div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION SCREENSHOTS ── */}
       <section className="py-16 bg-muted/20 px-6">
