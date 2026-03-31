@@ -112,16 +112,11 @@ export default function Campaigns() {
       c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Sort by urgency: critical alerts first, then by DES ascending
+    // Sort by priority_score descending
     filtered.sort((a, b) => {
-      const scoreA = dealScores[a.id];
-      const scoreB = dealScores[b.id];
-      const desA = scoreA?.des ?? 100;
-      const desB = scoreB?.des ?? 100;
-      const alertA = desA < 40 ? 0 : desA < 70 ? 1 : 2;
-      const alertB = desB < 40 ? 0 : desB < 70 ? 1 : 2;
-      if (alertA !== alertB) return alertA - alertB;
-      return desA - desB;
+      const prioA = dealScores[a.id]?.priority_score ?? 0;
+      const prioB = dealScores[b.id]?.priority_score ?? 0;
+      return prioB - prioA;
     });
 
     return filtered;
