@@ -285,7 +285,7 @@ export default function Index() {
       </motion.section>
 
       {/* ── SECTION 6 — CTA FINAL ── */}
-      <section className="py-24 bg-accent text-accent-foreground px-6">
+      <motion.section className="py-24 bg-accent text-accent-foreground px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-[600px] mx-auto text-center">
           <h2 className="text-4xl font-bold tracking-tight text-primary mb-4">Vos deals méritent une lecture politique.</h2>
           <p className="text-lg text-primary/70 mb-10">Arrêtez de deviner ce qui se passe côté prospect. Ekko vous le montre.</p>
