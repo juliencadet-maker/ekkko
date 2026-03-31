@@ -1052,41 +1052,6 @@ export default function CampaignDetail() {
             </Card>
           )}
 
-          {/* Next Best Action Sticky */}
-          {dealScore?.recommended_action && (
-            <div className="sticky bottom-0 z-10 -mx-6 px-6 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent">
-              <div className={`flex items-center gap-4 p-4 rounded-xl border shadow-lg ${
-                (dealScore.recommended_action as any).priority === "high"
-                  ? "bg-primary/5 border-primary/30"
-                  : "bg-amber-500/5 border-amber-500/30"
-              }`}>
-                <div className={`p-2.5 rounded-lg ${
-                  (dealScore.recommended_action as any).priority === "high"
-                    ? "bg-primary/10"
-                    : "bg-amber-500/10"
-                }`}>
-                  <Zap className={`h-5 w-5 ${
-                    (dealScore.recommended_action as any).priority === "high"
-                      ? "text-primary"
-                      : "text-amber-600"
-                  }`} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Next Best Action</p>
-                  <p className="text-sm font-medium text-foreground">{(dealScore.recommended_action as any).label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Coût d'exécution : {(dealScore.recommended_action as any).cost}</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant={(dealScore.recommended_action as any).priority === "high" ? "default" : "outline"}
-                  onClick={() => { setShowAgent(true); }}
-                >
-                  <MessageSquare className="mr-2 h-3.5 w-3.5" />
-                  Demander à l'agent
-                </Button>
-              </div>
-            </div>
-          )}
         </TabsContent>
 
         {/* Video Tab */}
