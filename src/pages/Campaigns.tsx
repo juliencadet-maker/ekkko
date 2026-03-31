@@ -169,7 +169,7 @@ export default function Campaigns() {
     <AppLayout>
       <PageHeader
         title="Deals"
-        description="Gérez vos deals et leur présence exécutive vidéo"
+        description={canSeeAllDeals(userRole) ? "Tous les deals de l'équipe, triés par urgence." : "Vos deals, triés par urgence. Les signaux rouges en premier."}
         actions={
           <Button onClick={() => navigate("/app/campaigns/new")} className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="mr-2 h-4 w-4" />
