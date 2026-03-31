@@ -234,7 +234,7 @@ export default function Index() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION 5 — POUR QUI ── */}
       <section className="py-24 bg-primary text-primary-foreground px-6">
