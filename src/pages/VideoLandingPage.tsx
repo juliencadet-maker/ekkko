@@ -138,6 +138,7 @@ export default function VideoLandingPage() {
         if (videoData?.campaign_name) setCampaignName(videoData.campaign_name);
         if (videoData?.landing_page_config) setConfig(videoData.landing_page_config as LandingPageConfig);
         if (videoData?.video_id) setVideoId(videoData.video_id);
+        if (videoData?.video_url) setVideoUrl(videoData.video_url);
 
         // Check if there's an access list
         const accessRes = await fetch(`${supabaseUrl}/functions/v1/check-video-access`, {
