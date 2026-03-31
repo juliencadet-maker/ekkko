@@ -282,7 +282,7 @@ export default function Index() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION 6 — CTA FINAL ── */}
       <section className="py-24 bg-accent text-accent-foreground px-6">
