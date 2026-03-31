@@ -272,4 +272,5 @@ export interface UserContext {
   isLoading: boolean;
   isAuthenticated: boolean;
   needsOnboarding: boolean;
+  isPendingApproval: boolean;
 }

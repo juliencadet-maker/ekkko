@@ -142,6 +142,7 @@ export function useAuth(): UserContext & {
   // If authenticated but profile not yet loaded, we're still loading
   const profileLoading = isAuthenticated && !profile;
   const needsOnboarding = isAuthenticated && profile ? !profile.onboarding_completed : false;
+  const isPendingApproval = isAuthenticated && profile ? !profile.is_approved : false;
 
   return {
     user: user ? { id: user.id, email: user.email || "" } : { id: "", email: "" },
@@ -152,6 +153,7 @@ export function useAuth(): UserContext & {
     isLoading: isLoading || profileLoading,
     isAuthenticated,
     needsOnboarding: needsOnboarding || false,
+    isPendingApproval,
     signOut,
     refreshUser,
   };
