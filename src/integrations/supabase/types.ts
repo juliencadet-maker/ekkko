@@ -269,6 +269,63 @@ export type Database = {
           },
         ]
       }
+      deal_contradictions: {
+        Row: {
+          campaign_id: string | null
+          contradiction_id: string
+          detected_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          org_id: string | null
+          resolved_at: string | null
+          severity: string
+          signal_a: string | null
+          signal_b: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          contradiction_id: string
+          detected_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          org_id?: string | null
+          resolved_at?: string | null
+          severity: string
+          signal_a?: string | null
+          signal_b?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          contradiction_id?: string
+          detected_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          org_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          signal_a?: string | null
+          signal_b?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_contradictions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_contradictions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_outcomes: {
         Row: {
           calibration_weight: number | null
@@ -321,7 +378,9 @@ export type Database = {
           breadth: number | null
           campaign_id: string
           cold_start_regime: string | null
+          confidence_level: string | null
           created_at: string
+          days_since_last_signal: number | null
           des: number | null
           engagement_half_life: number | null
           event_velocity: number | null
@@ -330,7 +389,10 @@ export type Database = {
           metadata: Json | null
           momentum: string | null
           multi_threading_score: number | null
+          priority_score: number | null
           recommended_action: Json | null
+          recommended_action_v2: Json | null
+          risk_level: string | null
           scored_at: string
           sponsor_count: number | null
           stage_signal_gap: number | null
@@ -343,7 +405,9 @@ export type Database = {
           breadth?: number | null
           campaign_id: string
           cold_start_regime?: string | null
+          confidence_level?: string | null
           created_at?: string
+          days_since_last_signal?: number | null
           des?: number | null
           engagement_half_life?: number | null
           event_velocity?: number | null
@@ -352,7 +416,10 @@ export type Database = {
           metadata?: Json | null
           momentum?: string | null
           multi_threading_score?: number | null
+          priority_score?: number | null
           recommended_action?: Json | null
+          recommended_action_v2?: Json | null
+          risk_level?: string | null
           scored_at?: string
           sponsor_count?: number | null
           stage_signal_gap?: number | null
@@ -365,7 +432,9 @@ export type Database = {
           breadth?: number | null
           campaign_id?: string
           cold_start_regime?: string | null
+          confidence_level?: string | null
           created_at?: string
+          days_since_last_signal?: number | null
           des?: number | null
           engagement_half_life?: number | null
           event_velocity?: number | null
@@ -374,7 +443,10 @@ export type Database = {
           metadata?: Json | null
           momentum?: string | null
           multi_threading_score?: number | null
+          priority_score?: number | null
           recommended_action?: Json | null
+          recommended_action_v2?: Json | null
+          risk_level?: string | null
           scored_at?: string
           sponsor_count?: number | null
           stage_signal_gap?: number | null
@@ -386,6 +458,57 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_signals: {
+        Row: {
+          campaign_id: string | null
+          confidence: number | null
+          created_at: string | null
+          id: string
+          interpretation: string | null
+          org_id: string | null
+          raw_data: Json | null
+          signal_layer: string
+          signal_type: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          interpretation?: string | null
+          org_id?: string | null
+          raw_data?: Json | null
+          signal_layer: string
+          signal_type: string
+        }
+        Update: {
+          campaign_id?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          interpretation?: string | null
+          org_id?: string | null
+          raw_data?: Json | null
+          signal_layer?: string
+          signal_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_signals_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_signals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
             referencedColumns: ["id"]
           },
         ]
@@ -1406,12 +1529,16 @@ export type Database = {
           fingerprint: string | null
           first_seen_at: string | null
           id: string
+          inferred_role: string | null
           influence_score: number | null
           is_known: boolean | null
           last_event_at: string | null
+          last_signal_at: string | null
+          last_signal_type: string | null
           metadata: Json | null
           name: string | null
           replay_count: number | null
+          role_confidence: number | null
           share_count: number | null
           sponsor_score: number | null
           status: string | null
@@ -1434,12 +1561,16 @@ export type Database = {
           fingerprint?: string | null
           first_seen_at?: string | null
           id?: string
+          inferred_role?: string | null
           influence_score?: number | null
           is_known?: boolean | null
           last_event_at?: string | null
+          last_signal_at?: string | null
+          last_signal_type?: string | null
           metadata?: Json | null
           name?: string | null
           replay_count?: number | null
+          role_confidence?: number | null
           share_count?: number | null
           sponsor_score?: number | null
           status?: string | null
@@ -1462,12 +1593,16 @@ export type Database = {
           fingerprint?: string | null
           first_seen_at?: string | null
           id?: string
+          inferred_role?: string | null
           influence_score?: number | null
           is_known?: boolean | null
           last_event_at?: string | null
+          last_signal_at?: string | null
+          last_signal_type?: string | null
           metadata?: Json | null
           name?: string | null
           replay_count?: number | null
+          role_confidence?: number | null
           share_count?: number | null
           sponsor_score?: number | null
           status?: string | null
