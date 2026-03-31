@@ -55,6 +55,96 @@ Deno.serve(async (req) => {
   }
 });
 
+// FONCTION 1 : Calcul du risk_level
+function computeRiskLevel(score: any): 'healthy' | 'watch' | 'critical' {
+  const des = score.des ?? 50;
+  const momentum = score.momentum;
+  const sponsorCount = score.sponsor_count ?? 0;
+  const blockerCount = score.blocker_count ?? 0;
+  const daysSinceSignal = score.days_since_last_signal ?? 0;
+
+  if (des < 35) return 'critical';
+  if (blockerCount > 0 && sponsorCount === 0) return 'critical';
+  if (momentum === 'declining' && des < 50) return 'critical';
+  if (daysSinceSignal > 10) return 'critical';
+  if (des < 55) return 'watch';
+  if (momentum === 'declining') return 'watch';
+  if (sponsorCount === 0) return 'watch';
+  if (blockerCount > 0) return 'watch';
+  if (daysSinceSignal > 5) return 'watch';
+  return 'healthy';
+}
+
+// FONCTION 2 : Calcul du priority_score (0-100)
+function computePriorityScore(score: any): number {
+  const urgency = score.risk_level === 'critical' ? 40 :
+    score.risk_level === 'watch' ? 20 : 5;
+  const recency = (score.days_since_last_signal ?? 99) < 1 ? 30 :
+    (score.days_since_last_signal ?? 99) < 3 ? 20 :
+    (score.days_since_last_signal ?? 99) < 7 ? 10 : 0;
+  const momentumScore = score.momentum === 'declining' ? 20 :
+    score.momentum === 'rising' ? 5 : 10;
+  const nbaScore = score.recommended_action_v2 ? 10 : 0;
+  return Math.min(100, urgency + recency + momentumScore + nbaScore);
+}
+
+// FONCTION 3 : Calcul et upsert des contradictions
+async function upsertContradictions(supabase: any, campaignId: string, orgId: string, score: any, viewers: any[]) {
+  const active: any[] = [];
+
+  // C1 : Champion silencieux
+  if ((score.sponsor_count ?? 0) > 0 && (score.days_since_last_signal ?? 0) > 7) {
+    active.push({ contradiction_id: 'C1', severity: 'high',
+      message: `Votre sponsor n'a plus eu d'activité depuis 7 jours`,
+      signal_a: `sponsors actifs: ${score.sponsor_count}`,
+      signal_b: `silence: ${score.days_since_last_signal} jours` });
+  }
+
+  // C2 : Vues sans sponsor identifié
+  if ((score.viewer_count ?? 0) > 3 && (score.sponsor_count ?? 0) === 0) {
+    active.push({ contradiction_id: 'C2', severity: 'medium',
+      message: `${score.viewer_count} contacts ont visionné mais aucun sponsor n'est identifié`,
+      signal_a: `viewer_count: ${score.viewer_count}`,
+      signal_b: 'sponsor_count: 0' });
+  }
+
+  // C3 : DES qui chute malgré activité récente
+  if ((score.event_velocity ?? 0) > 0 && score.momentum === 'declining' && (score.des ?? 100) < 50) {
+    active.push({ contradiction_id: 'C3', severity: 'high',
+      message: `L'engagement baisse malgré une activité récente — signal contradictoire`,
+      signal_a: `event_velocity: ${score.event_velocity}`,
+      signal_b: `momentum: declining, DES: ${score.des}` });
+  }
+
+  // C5 : Contact très engagé mais n'a pas partagé
+  const heavyViewerNoShare = viewers.find((v: any) =>
+    (v.replay_count || 0) > 3 && (v.total_watch_depth || 0) > 80 && !v.via_viewer_id);
+  if (heavyViewerNoShare) {
+    active.push({ contradiction_id: 'C5', severity: 'low',
+      message: `${heavyViewerNoShare.name || 'Un contact'} est très engagé mais n'a pas partagé la vidéo`,
+      signal_a: `replays: ${heavyViewerNoShare.replay_count}, complétion: ${heavyViewerNoShare.total_watch_depth}%`,
+      signal_b: 'aucun partage détecté' });
+  }
+
+  // Désactiver les contradictions résolues
+  const activeIds = active.map(c => c.contradiction_id);
+  if (activeIds.length < 5) {
+    await supabase.from('deal_contradictions')
+      .update({ is_active: false, resolved_at: new Date().toISOString() })
+      .eq('campaign_id', campaignId)
+      .eq('is_active', true)
+      .not('contradiction_id', 'in', `(${activeIds.map((id: string) => `'${id}'`).join(',')})`);
+  }
+
+  // Upsert les contradictions actives
+  if (active.length > 0) {
+    await supabase.from('deal_contradictions').upsert(
+      active.map(c => ({ ...c, campaign_id: campaignId, org_id: orgId, is_active: true })),
+      { onConflict: 'campaign_id,contradiction_id' }
+    );
+  }
+}
+
 async function computeForCampaign(supabase: any, campaign_id: string) {
   // 1. Fetch all viewers for this campaign
   const { data: viewers } = await supabase
@@ -257,6 +347,25 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
   if (viewerCount >= 5 && sponsorCount >= 2) coldStartRegime = "warm_account";
   else if (viewerCount >= 2) coldStartRegime = "cold_account";
 
+  // Calculer days_since_last_signal
+  const { data: lastEvent } = await supabase
+    .from('video_events').select('created_at')
+    .eq('campaign_id', campaign_id)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
+  const daysSinceSignal = lastEvent
+    ? Math.floor((Date.now() - new Date(lastEvent.created_at).getTime()) / 86400000)
+    : 999;
+
+  // Calculer risk_level et priority_score
+  const scoreData: any = {
+    des, momentum, sponsor_count: sponsorCount, blocker_count: blockerCount,
+    viewer_count: viewerCount, event_velocity: eventVelocity,
+    days_since_last_signal: daysSinceSignal, recommended_action_v2: recommendedAction,
+  };
+  const riskLevel = computeRiskLevel(scoreData);
+  scoreData.risk_level = riskLevel;
+  const priorityScore = computePriorityScore(scoreData);
+
   await supabase.from("deal_scores").insert({
     campaign_id,
     des,
@@ -271,7 +380,18 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
     cold_start_regime: coldStartRegime,
     alerts,
     recommended_action: recommendedAction,
+    days_since_last_signal: daysSinceSignal,
+    risk_level: riskLevel,
+    priority_score: priorityScore,
   });
 
-  return { campaign_id, des, momentum, regime: coldStartRegime };
+  // Get org_id for contradictions
+  const { data: campaign } = await supabase
+    .from('campaigns').select('org_id').eq('id', campaign_id).single();
+  const orgId = campaign?.org_id;
+  if (orgId) {
+    await upsertContradictions(supabase, campaign_id, orgId, scoreData, viewers);
+  }
+
+  return { campaign_id, des, momentum, regime: coldStartRegime, risk_level: riskLevel, priority_score: priorityScore };
 }
