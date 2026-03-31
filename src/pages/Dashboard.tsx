@@ -325,6 +325,40 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Team Activity (admin only) */}
+      {canManageOrg(userRole) && teamMembers.length > 0 && (
+        <Card className="rounded-card mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Activité de l'équipe
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {teamMembers.map((member) => {
+                const initials = `${(member.firstName || "?")[0]}${(member.lastName || "?")[0]}`.toUpperCase();
+                return (
+                  <div key={member.userId} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {member.firstName} {member.lastName}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {member.activeCampaigns} deal{member.activeCampaigns !== 1 ? "s" : ""} actif{member.activeCampaigns !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </AppLayout>
   );
 }
