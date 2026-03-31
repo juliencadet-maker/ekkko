@@ -439,29 +439,41 @@ export default function Index() {
       {/* Differentiation Section — stronger visual */}
       <section className="py-24 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Pourquoi Ekko est différent
-            </h2>
-            <p className="text-lg text-primary-foreground/70 mb-12">
-              Les autres outils font de la vidéo IA.<br />
-              <span className="font-semibold text-accent">Ekko est le seul outil qui observe le comportement du buying committee depuis l'intérieur.</span>
-            </p>
-            <div className="grid md:grid-cols-5 gap-4">
-              {[
-                { icon: Users, label: "Présence exécutive scalable" },
-                { icon: FileText, label: "Différenciation RFP" },
-                { icon: BarChart3, label: "Engagement décideurs mesuré" },
-                { icon: Shield, label: "Gouvernance intégrée" },
-                { icon: Zap, label: "Cycles complexes" },
-              ].map((item) => (
-                <div key={item.label} className="flex flex-col items-center gap-3 p-4 bg-sidebar-accent rounded-xl">
-                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                    <item.icon className="h-5 w-5 text-accent" />
-                  </div>
-                  <span className="text-sm font-medium text-primary-foreground text-center">{item.label}</span>
+          <div className="max-w-5xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                  Pourquoi Ekko est différent
+                </h2>
+                <p className="text-lg text-primary-foreground/70 mb-8">
+                  Les autres outils font de la vidéo IA.<br />
+                  <span className="font-semibold text-accent">Ekko est le seul outil qui observe le comportement du buying committee depuis l'intérieur.</span>
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { icon: Users, label: "Présence exécutive scalable" },
+                    { icon: FileText, label: "Différenciation RFP" },
+                    { icon: BarChart3, label: "Engagement décideurs mesuré" },
+                    { icon: Shield, label: "Gouvernance intégrée" },
+                    { icon: Zap, label: "Cycles complexes" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex flex-col items-center gap-3 p-4 bg-sidebar-accent rounded-xl">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                        <item.icon className="h-5 w-5 text-accent" />
+                      </div>
+                      <span className="text-sm font-medium text-primary-foreground text-center">{item.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              <div>
+                <img 
+                  src="/screenshots/power-map-overview.png" 
+                  alt="Ekko — Power Map overview avec métriques d'intérêt et nouveaux interlocuteurs"
+                  className="w-full"
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
         </div>
