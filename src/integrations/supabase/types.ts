@@ -1630,6 +1630,45 @@ export type Database = {
           },
         ]
       }
+      waitlist: {
+        Row: {
+          company: string
+          created_at: string | null
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          message: string | null
+          phone: string | null
+          source: string | null
+          status: string | null
+        }
+        Insert: {
+          company: string
+          created_at?: string | null
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          message?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+        }
+        Update: {
+          company?: string
+          created_at?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          message?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       watch_progress: {
         Row: {
           created_at: string
