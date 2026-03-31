@@ -41,17 +41,14 @@ function generateCombinedScript(firstName: string, lastName: string, company: st
 
 ${companyLine}
 
-Je fais cet enregistrement car bientôt je serai en mesure de créer plus de confiance sur le cycle de vente, tout en gagnant du temps.
+Je fais cet enregistrement pour être présent sur nos deals stratégiques sans mobiliser mon agenda.
+Chacune de mes apparitions vidéo est approuvée par moi avant envoi.
 
-Je pourrai également être présent sur tous les deals sans avoir à bloquer mon agenda.
+Je confirme que j'autorise la création d'un clone numérique de mon apparence et de ma voix,
+exclusivement pour des communications professionnelles via la plateforme Ekko.
+Mon code de vérification est ${code}.
 
-Cela me permettra d'impliquer des personnes plus facilement, afin de créer plus de confiance et d'engagement avec mes clients et partenaires.
-
-Avec Ekko, je vais pouvoir personnaliser mes messages vidéo pour chaque prospect, et ainsi augmenter significativement mes taux de conversion.
-
-Pour finaliser, je confirme que j'autorise la création d'un clone numérique de mon apparence et de ma voix. Ce clone sera utilisé exclusivement dans le cadre de communications professionnelles via la plateforme Ekko. Mon code unique est ${code}.
-
-Merci !`,
+Merci.`,
   };
 }
 
