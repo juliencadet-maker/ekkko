@@ -210,9 +210,14 @@ export default function Campaigns() {
             return (
               <div
                 key={campaign.id}
-                className={`flex items-center gap-4 p-4 bg-card rounded-card shadow-card border-l-4 ${getBorderColor(score)} cursor-pointer hover:shadow-lg transition-all`}
+                className={`group flex items-center gap-4 p-4 bg-card rounded-card shadow-card border-l-4 ${getBorderColor(score)} cursor-pointer hover:shadow-lg transition-all`}
                 onClick={() => navigate(`/app/campaigns/${campaign.id}`)}
               >
+                <DealRiskBadge
+                  level={(score?.risk_level as 'healthy' | 'watch' | 'critical') || null}
+                  reason={score?.risk_level === 'critical' ? 'DES critique ou silence prolongé' :
+                          score?.risk_level === 'watch' ? 'Signaux à surveiller' : undefined}
+                />
                 {/* Deal info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
