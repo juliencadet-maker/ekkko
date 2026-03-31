@@ -473,10 +473,6 @@ export default function CampaignDetail() {
   }
 
   const shareLink = generateShareLink();
-  const backPath = campaign.parent_campaign_id
-    ? `/app/campaigns/${campaign.parent_campaign_id}`
-    : "/app/campaigns";
-  const backLabel = campaign.parent_campaign_id ? "Retour au compte" : "Retour aux comptes";
 
   // ─── PARENT CAMPAIGN (ACCOUNT) VIEW ────────────────────────────────
   if (isParent) {
@@ -484,10 +480,12 @@ export default function CampaignDetail() {
       <AppLayout>
         {/* Header */}
         <div className="mb-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/app/campaigns")} className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour aux comptes
-          </Button>
+          <button
+            onClick={() => navigate('/app/campaigns')}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Deals
+          </button>
 
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -618,10 +616,12 @@ export default function CampaignDetail() {
     <AppLayout>
       {/* Header */}
       <div className="mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(backPath)} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {backLabel}
-        </Button>
+        <button
+          onClick={() => navigate('/app/campaigns')}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Deals
+        </button>
 
         <div className="flex items-start justify-between">
           <div>
@@ -637,7 +637,7 @@ export default function CampaignDetail() {
            <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowAgent(!showAgent)}>
               <MessageSquare className="mr-2 h-4 w-4" />
-              Agent IA
+              Agent Ekko
             </Button>
             <Button variant="outline" onClick={() => setShowDealClose(true)}>
               <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -657,7 +657,7 @@ export default function CampaignDetail() {
         {/* Deal Progress Bar */}
         {(() => {
           const statusSteps = ["draft", "pending_approval", "approved", "generating", "completed"];
-          const statusLabels: Record<string, string> = { draft: "Brouillon", pending_approval: "Validation", approved: "Approuvé", generating: "Génération", completed: "Prête" };
+          const statusLabels: Record<string, string> = { draft: "Brouillon", pending_approval: "Validation", approved: "Approuvé", generating: "Génération", completed: "Vidéo prête" };
           const currentIdx = statusSteps.indexOf(campaign.status);
           const progressPct = currentIdx >= 0 ? ((currentIdx + 1) / statusSteps.length) * 100 : 0;
           return (
@@ -675,7 +675,28 @@ export default function CampaignDetail() {
         })()}
       </div>
 
-      {/* Video Generation Progress Banner */}
+      {/* Next Best Action */}
+      {dealScore?.recommended_action && (
+        <div className="border-l-4 border-signal rounded-lg p-4 bg-signal/5 mb-4 flex items-center gap-4">
+          <div className="p-2.5 rounded-lg bg-signal/10">
+            <Zap className="h-5 w-5 text-signal" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Next Best Action</p>
+            <p className="text-sm font-medium text-foreground">{(dealScore.recommended_action as any).label}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Coût d'exécution : {(dealScore.recommended_action as any).cost}</p>
+          </div>
+          <Button
+            size="sm"
+            variant={(dealScore.recommended_action as any).priority === "high" ? "default" : "outline"}
+            onClick={() => { setShowAgent(true); }}
+          >
+            <MessageSquare className="mr-2 h-3.5 w-3.5" />
+            Demander à l'agent
+          </Button>
+        </div>
+      )}
+
       {(hasActiveJobs || (jobsTotal > 0 && ["generating", "approved"].includes(campaign.status))) && (
         <Alert className="mb-6 border-primary/30 bg-primary/5">
           <div className="flex items-center gap-3">
@@ -718,7 +739,7 @@ export default function CampaignDetail() {
       {rejectionComment && campaign.status === "draft" && (
         <Alert variant="destructive" className="mb-6 border-destructive/30 bg-destructive/5">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle className="font-semibold">Campagne refusée par l'exécutif</AlertTitle>
+          <AlertTitle className="font-semibold">Script refusé — modifier et resoumettre</AlertTitle>
           <AlertDescription className="mt-2">
             <p className="text-sm italic mb-3">« {rejectionComment} »</p>
             {!isEditingScript ? (
@@ -784,10 +805,10 @@ export default function CampaignDetail() {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard icon={Eye} value={kpis.totalViews.toLocaleString()} label="Vues totales" />
-            <MetricCard icon={Users} value={kpis.uniqueViewers.toLocaleString()} label="Visiteurs uniques" />
-            <MetricCard icon={Clock} value={`${kpis.avgWatchTime}s`} label="Temps moyen de visionnage" />
-            <MetricCard icon={TrendingUp} value={`${kpis.completionRate}%`} label="Taux de complétion" />
+             <MetricCard icon={Eye} value={kpis.totalViews.toLocaleString()} label="Ouvertures" />
+             <MetricCard icon={Users} value={kpis.uniqueViewers.toLocaleString()} label="Contacts identifiés" />
+             <MetricCard icon={Clock} value={`${kpis.avgWatchTime}s`} label="Attention moyenne" />
+             <MetricCard icon={TrendingUp} value={`${kpis.completionRate}%`} label="Taux de complétion" />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -962,11 +983,11 @@ export default function CampaignDetail() {
         <TabsContent value="intelligence" className="space-y-6">
           {/* DES + Momentum + Cold Start */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <MetricCard icon={Zap} value={dealScore?.des ?? "—"} label="DES Score" />
-            <MetricCard icon={Users} value={viewers.length.toString()} label="Contacts identifiés" />
-            <MetricCard icon={TrendingUp} value={dealScore?.sponsor_count ?? 0} label="Sponsors" />
-            <MetricCard icon={AlertTriangle} value={dealScore?.blocker_count ?? 0} label="Bloqueurs" />
-            <MetricCard icon={Eye} value={`${Math.round((dealScore?.avg_watch_depth ?? 0) * 100) / 100}%`} label="Watch depth moy." />
+             <MetricCard icon={Zap} value={dealScore?.des ?? "—"} label="Deal Engagement Score" />
+             <MetricCard icon={Users} value={viewers.length.toString()} label="Contacts identifiés" />
+             <MetricCard icon={TrendingUp} value={dealScore?.sponsor_count ?? 0} label="Contacts sponsors" />
+             <MetricCard icon={AlertTriangle} value={dealScore?.blocker_count ?? 0} label="Bloqueurs potentiels" />
+             <MetricCard icon={Eye} value={`${Math.round((dealScore?.avg_watch_depth ?? 0) * 100) / 100}%`} label="Profondeur d'engagement" />
           </div>
 
           {/* Momentum + Cold Start */}
@@ -1048,41 +1069,6 @@ export default function CampaignDetail() {
             </Card>
           )}
 
-          {/* Next Best Action Sticky */}
-          {dealScore?.recommended_action && (
-            <div className="sticky bottom-0 z-10 -mx-6 px-6 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent">
-              <div className={`flex items-center gap-4 p-4 rounded-xl border shadow-lg ${
-                (dealScore.recommended_action as any).priority === "high"
-                  ? "bg-primary/5 border-primary/30"
-                  : "bg-amber-500/5 border-amber-500/30"
-              }`}>
-                <div className={`p-2.5 rounded-lg ${
-                  (dealScore.recommended_action as any).priority === "high"
-                    ? "bg-primary/10"
-                    : "bg-amber-500/10"
-                }`}>
-                  <Zap className={`h-5 w-5 ${
-                    (dealScore.recommended_action as any).priority === "high"
-                      ? "text-primary"
-                      : "text-amber-600"
-                  }`} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Next Best Action</p>
-                  <p className="text-sm font-medium text-foreground">{(dealScore.recommended_action as any).label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Coût d'exécution : {(dealScore.recommended_action as any).cost}</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant={(dealScore.recommended_action as any).priority === "high" ? "default" : "outline"}
-                  onClick={() => { setShowAgent(true); }}
-                >
-                  <MessageSquare className="mr-2 h-3.5 w-3.5" />
-                  Demander à l'agent
-                </Button>
-              </div>
-            </div>
-          )}
         </TabsContent>
 
         {/* Video Tab */}
@@ -1143,36 +1129,50 @@ export default function CampaignDetail() {
             </CardHeader>
             <CardContent>
               <div className="max-w-3xl mx-auto">
-                <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
-                  {(() => {
-                    const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
-                    return url ? (
-                      <video
-                        src={url}
-                        className="w-full h-full"
-                        controls
-                        poster="/placeholder.svg"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full gap-3">
-                        <Video className="h-10 w-10 text-muted-foreground/50" />
-                        <p className="text-sm font-medium text-muted-foreground">Vidéo en cours de préparation</p>
+                {(() => {
+                  const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                  if (!url) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                        <Video className="h-12 w-12 text-muted-foreground/40" />
+                        <p className="font-medium text-foreground">
+                          {campaign.status === 'generating' ? 'Génération en cours...' :
+                           campaign.status === 'pending_approval' ? "En attente d'approbation" :
+                           'Vidéo en cours de préparation'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {campaign.status === 'generating' ?
+                            'La vidéo apparaîtra ici automatiquement dès qu\'elle est prête.' :
+                            'La vidéo sera générée dès que le script sera approuvé.'}
+                        </p>
                       </div>
                     );
-                  })()}
-                </div>
-                <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
-                  <div className="flex-1 max-w-md">
-                    <label className="text-sm font-medium mb-2 block">Lien de partage</label>
-                    <div className="flex gap-2">
-                      <Input value={shareLink} readOnly className="font-mono text-sm" />
-                      <Button variant="outline" onClick={() => copyShareLink(shareLink)}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copier
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  }
+                  return (
+                    <>
+                      <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
+                        <video
+                          src={url}
+                          className="w-full h-full"
+                          controls
+                          poster="/placeholder.svg"
+                        />
+                      </div>
+                      <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
+                        <div className="flex-1 max-w-md">
+                          <label className="text-sm font-medium mb-2 block">Lien de partage</label>
+                          <div className="flex gap-2">
+                            <Input value={shareLink} readOnly className="font-mono text-sm" />
+                            <Button variant="outline" onClick={() => copyShareLink(shareLink)}>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copier
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
