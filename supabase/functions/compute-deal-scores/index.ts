@@ -153,6 +153,12 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
     .eq("campaign_id", campaign_id);
 
   if (!viewers || viewers.length === 0) {
+    const { data: campaignData } = await supabase
+      .from('campaigns').select('created_at, org_id').eq('id', campaign_id).single();
+    const daysSinceSignal = campaignData
+      ? Math.floor((Date.now() - new Date(campaignData.created_at).getTime()) / 86400000)
+      : 999;
+
     await supabase.from("deal_scores").insert({
       campaign_id,
       des: 0,
@@ -165,8 +171,11 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
       momentum: "stable",
       cold_start_regime: "cold_global",
       alerts: [],
+      risk_level: "watch",
+      priority_score: 10,
+      days_since_last_signal: daysSinceSignal,
     });
-    return { campaign_id, des: 0, regime: "cold_global" };
+    return { campaign_id, des: 0, regime: "cold_global", risk_level: "watch", priority_score: 10 };
   }
 
   // 2. Fetch events from last 7 days for velocity
