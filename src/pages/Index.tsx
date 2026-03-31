@@ -74,7 +74,26 @@ export default function Index() {
           </div>
 
           <FadeIn delay={0.2}>
-            <img src="/screenshots/deals-list.png" alt="Ekko — Liste des deals triés par urgence" className="rounded-2xl shadow-2xl w-full" />
+            <div className="bg-primary rounded-2xl p-5 border border-sidebar-border">
+              <p className="text-[10px] text-primary-foreground/30 uppercase tracking-widest font-semibold mb-4">Deals — triés par urgence</p>
+              <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-destructive flex items-center justify-between gap-3">
+                <div><p className="text-sm font-medium text-primary-foreground">TotalEnergies — RFP Q2</p><p className="text-[11px] text-primary-foreground/40">CFO silencieux 12j · 1 bloqueur</p></div>
+                <div className="flex items-center gap-2"><span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">En danger</span><span className="text-xs font-bold text-destructive">54</span></div>
+              </div>
+              <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-warning flex items-center justify-between gap-3">
+                <div><p className="text-sm font-medium text-primary-foreground">Schneider Electric — ERP</p><p className="text-[11px] text-primary-foreground/40">3 nouveaux contacts détectés</p></div>
+                <div className="flex items-center gap-2"><span className="text-[10px] font-bold bg-warning/20 text-warning px-2 py-0.5 rounded">À surveiller</span><span className="text-xs font-bold text-warning">71</span></div>
+              </div>
+              <div className="bg-sidebar-accent rounded-lg p-3 mb-4 border-l-4 border-accent flex items-center justify-between gap-3">
+                <div><p className="text-sm font-medium text-primary-foreground">Airbus — Transformation SI</p><p className="text-[11px] text-primary-foreground/40">2 sponsors actifs · Momentum en hausse</p></div>
+                <div className="flex items-center gap-2"><span className="text-[10px] font-bold bg-accent/20 text-accent px-2 py-0.5 rounded">Sain</span><span className="text-xs font-bold text-accent">87</span></div>
+              </div>
+              <div className="border border-accent/40 rounded-xl p-3 bg-sidebar">
+                <p className="text-[9px] font-bold text-accent uppercase tracking-wider mb-1.5">Action prioritaire · Urgence haute</p>
+                <p className="text-xs font-medium text-primary-foreground mb-1">Relancer le CFO TotalEnergies dans les 24h</p>
+                <p className="text-[10px] text-primary-foreground/40">Impact élevé · Confiance 82%</p>
+              </div>
+            </div>
           </FadeIn>
         </div>
       </motion.section>
