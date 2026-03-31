@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/approve/:token" element={<ApprovalReview />} />
             <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
             <Route path="/app/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+            <Route path="/app/agent" element={<AuthGuard><AgentPage /></AuthGuard>} />
             <Route path="/app/campaigns" element={<AuthGuard><Campaigns /></AuthGuard>} />
             <Route path="/app/campaigns/new" element={<AuthGuard><NewCampaign /></AuthGuard>} />
             <Route path="/app/campaigns/:id" element={<AuthGuard><CampaignDetail /></AuthGuard>} />

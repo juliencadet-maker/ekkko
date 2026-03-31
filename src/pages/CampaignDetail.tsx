@@ -1215,7 +1215,7 @@ export default function CampaignDetail() {
         onOpenChange={setShowLandingPageEditor}
         campaignId={campaign.id}
         campaignName={campaign.name}
-        videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id))}
+        videoUrl={getVideoUrl(videos.find((v) => v.campaign_id === id)) || ""}
         orgId={membership?.org_id || ""}
         initialConfig={landingPageConfig as unknown as LandingPageConfig | undefined}
         onSave={(config) => handleSaveLandingPageConfig(config as unknown as Record<string, unknown>)}
