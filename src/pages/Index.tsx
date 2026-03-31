@@ -89,7 +89,7 @@ export default function Index() {
       </motion.section>
 
       {/* ── SECTION 2 — 3 SCÈNES POLITIQUES ── */}
-      <section className="py-16 bg-muted/20 border-y border-border/50 px-6">
+      <motion.section className="py-16 bg-muted/20 border-y border-border/50 px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4">
           {[
             {
@@ -120,17 +120,19 @@ export default function Index() {
               badgeColor: "text-warning",
             },
           ].map((s, i) => (
-            <div key={i} className="bg-card border border-border/60 rounded-xl p-6">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${s.iconBg}`}>
-                <s.icon className={`h-5 w-5 ${s.iconColor}`} />
+            <FadeIn key={i} delay={i * 0.1}>
+              <div className="bg-card border border-border/60 rounded-xl p-6 h-full">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${s.iconBg}`}>
+                  <s.icon className={`h-5 w-5 ${s.iconColor}`} />
+                </div>
+                <p className="font-bold text-sm mb-2">{s.title}</p>
+                <p className="text-sm text-muted-foreground">{s.text}</p>
+                <p className={`text-xs font-semibold ${s.badgeColor} mt-3`}>{s.badge}</p>
               </div>
-              <p className="font-bold text-sm mb-2">{s.title}</p>
-              <p className="text-sm text-muted-foreground">{s.text}</p>
-              <p className={`text-xs font-semibold ${s.badgeColor} mt-3`}>{s.badge}</p>
-            </div>
+            </FadeIn>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECTION 3 — BUYING COMMITTEE ── */}
       <section className="py-24 bg-background border-y border-border px-6">
