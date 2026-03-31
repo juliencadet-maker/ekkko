@@ -68,7 +68,7 @@ export default function Index() {
               Ekko révèle <strong className="text-foreground font-semibold">qui soutient, qui hésite et qui bloque</strong> pour agir avant que le deal ne vous échappe.
             </p>
             <div className="flex gap-3">
-              <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => navigate("/auth")}>
+              <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => { setWaitlistSource("hero"); setWaitlistOpen(true); }}>
                 Demander une démo <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button size="lg" variant="outline" className="rounded-full px-8" onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}>
