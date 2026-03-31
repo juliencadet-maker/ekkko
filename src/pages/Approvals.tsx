@@ -270,7 +270,7 @@ export default function Approvals() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {dialogMode === "review" ? "Relecture du script" : "Refuser cette demande ?"}
+              {dialogMode === "review" ? `Approuver le script — ${campaign?.name}` : "Refuser cette demande ?"}
             </DialogTitle>
             <DialogDescription>
               {dialogMode === "review"

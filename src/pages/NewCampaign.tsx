@@ -467,7 +467,7 @@ export default function NewCampaign() {
                     ) : requiresApproval() ? (
                       <><Send className="mr-2 h-4 w-4" />Envoyer en validation</>
                     ) : (
-                      <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal</>
+                      <><CheckCircle2 className="mr-2 h-4 w-4" />Générer la vidéo</>
                     )}
                   </Button>
                 </div>

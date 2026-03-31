@@ -53,15 +53,15 @@ export function computeLeadScore(params: {
 
 function getScoreStyle(score: number): { label: string; color: string; bgColor: string; borderColor: string } {
   if (score >= 75) {
-    return { label: "Hot 🔥", color: "text-orange-700", bgColor: "bg-orange-500/15", borderColor: "border-orange-500/30" };
+    return { label: "Engagé 🔥", color: "text-emerald-700", bgColor: "bg-orange-500/15", borderColor: "border-orange-500/30" };
   }
   if (score >= 50) {
-    return { label: "Warm", color: "text-amber-700", bgColor: "bg-amber-500/15", borderColor: "border-amber-500/30" };
+    return { label: "Actif", color: "text-amber-700", bgColor: "bg-amber-500/15", borderColor: "border-amber-500/30" };
   }
   if (score >= 25) {
-    return { label: "Cold", color: "text-blue-700", bgColor: "bg-blue-500/15", borderColor: "border-blue-500/30" };
+    return { label: "Froid", color: "text-blue-700", bgColor: "bg-blue-500/15", borderColor: "border-blue-500/30" };
   }
-  return { label: "Inactive", color: "text-muted-foreground", bgColor: "bg-muted", borderColor: "border-border" };
+  return { label: "Inactif", color: "text-muted-foreground", bgColor: "bg-muted", borderColor: "border-border" };
 }
 
 export function getScoreLevel(score: number): ScoreLevel {

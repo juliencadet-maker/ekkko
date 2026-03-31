@@ -71,7 +71,7 @@ const statusConfig: Record<StatusType, {
   },
   cancelled: {
     label: "Annulé",
-    className: "status-badge-rejected",
+    className: "status-badge-draft",
     icon: XCircle,
   },
   queued: {
