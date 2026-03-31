@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { canManageOrg } from "@/lib/roles";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download, Loader2 } from "lucide-react";
+import { FileText, Download, Loader2, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { AuditLog } from "@/types/database";
