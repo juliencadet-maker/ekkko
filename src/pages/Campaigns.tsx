@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, LayoutList } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Campaign } from "@/types/database";
@@ -189,8 +190,15 @@ export default function Campaigns() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-muted-foreground">Chargement...</div>
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4 bg-card rounded-card shadow-card">
+              <Skeleton className="h-3 w-3 rounded-full" />
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-5 w-24 ml-auto" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+          ))}
         </div>
       ) : sortedCampaigns.length === 0 ? (
         <EmptyState
