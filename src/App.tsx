@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import AuthDemo from "./pages/AuthDemo";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import AgentPage from "./pages/AgentPage";
 import Campaigns from "./pages/Campaigns";
 import CampaignDetail from "./pages/CampaignDetail";
 import NewCampaign from "./pages/NewCampaign";
