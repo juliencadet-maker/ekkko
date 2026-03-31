@@ -154,9 +154,22 @@ export default function Settings() {
     }
   };
 
+  if (!canManageOrg(userRole)) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+          <ShieldOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="text-muted-foreground">
+            Accès réservé aux administrateurs de l'organisation.
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
-      <PageHeader title="Paramètres" description="Configuration de votre organisation" />
+      <PageHeader title="Intégrations" description="Configuration de votre organisation" />
       <div className="space-y-6">
         <Card>
           <CardHeader><CardTitle>Organisation</CardTitle></CardHeader>

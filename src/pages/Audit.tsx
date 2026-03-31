@@ -36,6 +36,19 @@ export default function Audit() {
     const a = document.createElement("a"); a.href = url; a.download = "audit_logs.csv"; a.click();
   };
 
+  if (!canManageOrg(userRole)) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+          <ShieldOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="text-muted-foreground">
+            Accès réservé aux administrateurs de l'organisation.
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <PageHeader title="Journal d'audit" description="Traçabilité complète des actions" actions={<Button variant="outline" onClick={exportCSV}><Download className="mr-2 h-4 w-4" />Exporter CSV</Button>} />

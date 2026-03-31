@@ -85,6 +85,19 @@ export default function Governance() {
       .eq("org_id", membership.org_id);
   };
 
+  if (!canManageOrg(userRole)) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+          <ShieldOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="text-muted-foreground">
+            Accès réservé aux administrateurs de l'organisation.
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   if (isLoading) {
     return (
       <AppLayout>
