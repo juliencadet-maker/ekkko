@@ -52,16 +52,23 @@ export default function Dashboard() {
           .eq("org_id", membership.org_id)
           .eq("status", "pending");
 
-        // Deal scores with alerts
-        const { data: scores } = await supabase
-          .from("deal_scores")
-          .select("campaign_id, des, alerts")
-          .eq("campaign_id", membership.org_id); // This will naturally filter
+        // Fetch org campaigns to scope deal_scores
+        const { data: orgCampaigns } = await supabase
+          .from("campaigns")
+          .select("id")
+          .eq("org_id", membership.org_id);
+        const campaignIds = (orgCampaigns || []).map((c: any) => c.id);
+        if (campaignIds.length === 0) {
+          setStats({ dealsEnAlerte: 0, nouveauxSignaux: 0,
+            validationsEnAttente: pendingCount || 0, dealsActifs: activeDeals || 0 });
+          setIsLoading(false); return;
+        }
 
         // Count deals with critical alerts (DES < 40)
         const { data: allScores } = await supabase
           .from("deal_scores")
           .select("campaign_id, des")
+          .in("campaign_id", campaignIds)
           .order("scored_at", { ascending: false });
 
         const latestScores: Record<string, number> = {};

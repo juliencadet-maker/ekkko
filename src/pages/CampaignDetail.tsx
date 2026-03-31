@@ -60,16 +60,14 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Campaign, Video as VideoType, Recipient } from "@/types/database";
 
-const FALLBACK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-
-function getVideoUrl(video?: VideoType | null): string {
-  if (!video) return FALLBACK_VIDEO_URL;
+function getVideoUrl(video?: VideoType | null): string | null {
+  if (!video) return null;
   const metadata = video.metadata as Record<string, unknown> | null;
   if (metadata?.hosted_url) return metadata.hosted_url as string;
   if (metadata?.stream_url) return metadata.stream_url as string;
   if (metadata?.download_url) return metadata.download_url as string;
   if (video.storage_path?.startsWith("http")) return video.storage_path;
-  return FALLBACK_VIDEO_URL;
+  return null;
 }
 
 interface ViewEvent {
