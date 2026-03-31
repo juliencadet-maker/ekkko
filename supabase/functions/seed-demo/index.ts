@@ -183,8 +183,8 @@ serve(async (req) => {
     const { data: provider } = await admin.from("providers").select("id").eq("org_id", orgId).single();
     const providerId = provider!.id;
 
-    // ── ACCOUNT 1: TechVision ──────────────────────────────────────
-    const techVisionMeta = {
+    // ── ACCOUNT 1: TotalEnergies ──────────────────────────────────────
+    const totalEnergiesMeta = {
       landingPageConfig: {
         logoUrl: null,
         brandColor: "#0f4c81",
@@ -199,57 +199,57 @@ serve(async (req) => {
       org_id: orgId,
       identity_id: salesIdentityId,
       created_by_user_id: salesUserId,
-      name: "TechVision",
-      description: "Compte stratégique — Infrastructure cloud & data analytics. Décision attendue Q2 2026.",
+      name: "TotalEnergies",
+      description: "Compte stratégique — Transformation digitale & efficacité opérationnelle. Décision attendue Q2 2026.",
       script: "",
       status: "completed",
       is_self_campaign: false,
-      metadata: techVisionMeta,
+      metadata: totalEnergiesMeta,
     }).select().single();
     const tvParentId = tvParent!.id;
 
-    // Sub-campaigns for TechVision
+    // Sub-campaigns for TotalEnergies
     const subCampaigns = [
       {
-        name: "Réponse RFP — Infrastructure Cloud",
-        description: "Vidéo personnalisée accompagnant notre réponse à l'appel d'offres infrastructure.",
-        script: "Bonjour Sophie, suite à votre RFP sur l'infrastructure cloud, j'ai souhaité vous adresser ce message personnel. Notre plateforme répond précisément à vos 3 critères clés : scalabilité, sécurité zero-trust, et réduction des coûts de 40%.",
+        name: "Réponse RFP — Plateforme Data",
+        description: "Vidéo personnalisée accompagnant notre réponse à l'appel d'offres data.",
+        script: "Bonjour Sophie, suite à votre RFP sur la plateforme data, j'ai souhaité vous adresser ce message personnel. Notre solution répond précisément à vos 3 critères clés : scalabilité, sécurité zero-trust, et réduction des coûts de 40%.",
         status: "completed" as const,
         identity_id: salesIdentityId,
         recipients: [
-          { first_name: "Sophie", last_name: "Martin", email: "sophie.martin@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CTO" } },
-          { first_name: "Pierre", last_name: "Lefebvre", email: "pierre.lefebvre@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "VP Engineering" } },
+          { first_name: "Sophie", last_name: "Renard", email: "sophie.renard@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "DRH" } },
+          { first_name: "Marc", last_name: "Duval", email: "marc.duval@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "COO" } },
         ],
       },
       {
         name: "Relance décideurs Q1",
         description: "Relance personnalisée pour les décideurs qui n'ont pas encore répondu.",
-        script: "Bonjour Thomas, je me permets de revenir vers vous suite à notre échange du mois dernier. Nous avons depuis lancé une nouvelle fonctionnalité de monitoring IA qui pourrait particulièrement intéresser TechVision.",
+        script: "Bonjour Pierre, je me permets de revenir vers vous suite à notre échange du mois dernier. Nous avons depuis lancé une nouvelle fonctionnalité qui pourrait particulièrement intéresser TotalEnergies.",
         status: "completed" as const,
         identity_id: salesIdentityId,
         recipients: [
-          { first_name: "Thomas", last_name: "Dubois", email: "thomas.dubois@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "Head of Sales" } },
+          { first_name: "Pierre", last_name: "Blanc", email: "pierre.blanc@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "CFO" } },
         ],
       },
       {
         name: "Mot du CEO — Sponsor Deal",
         description: "Message du CEO pour renforcer la relation au niveau C-Level.",
-        script: "Bonjour Marie, je suis Marc Lefevre, CEO d'Acme Corp. Je tenais personnellement à vous remercier pour la confiance que TechVision nous accorde. Notre partenariat est stratégique.",
+        script: "Bonjour Sophie, je suis Marc Lefevre, CEO d'Acme Corp. Je tenais personnellement à vous remercier pour la confiance que TotalEnergies nous accorde.",
         status: "completed" as const,
         identity_id: execIdentityId,
         recipients: [
-          { first_name: "Marie", last_name: "Bernard", email: "marie.bernard@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CEO" } },
+          { first_name: "Sophie", last_name: "Renard", email: "sophie.renard@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "DRH" } },
         ],
       },
       {
-        name: "Invitation Tech Summit 2026",
+        name: "Invitation Executive Briefing",
         description: "Invitation VIP à notre événement annuel pour les clients premium.",
-        script: "Bonjour Sophie, nous organisons le Tech Summit 2026 le 15 mars à Paris. En tant que partenaire privilégié, nous vous offrons une invitation VIP.",
+        script: "Bonjour Marc, nous organisons un Executive Briefing le 15 mars à Paris. En tant que partenaire privilégié, nous vous offrons une invitation VIP.",
         status: "generating" as const,
         identity_id: salesIdentityId,
         recipients: [
-          { first_name: "Sophie", last_name: "Martin", email: "sophie.martin@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CTO" } },
-          { first_name: "Camille", last_name: "Moreau", email: "camille.moreau@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "COO" } },
+          { first_name: "Marc", last_name: "Duval", email: "marc.duval@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "COO" } },
+          { first_name: "Thomas", last_name: "Girard", email: "thomas.girard@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "DSI" } },
         ],
       },
     ];
