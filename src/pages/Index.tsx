@@ -61,48 +61,7 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="bg-primary rounded-2xl p-5 border border-sidebar-border">
-            <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest mb-3">Deals — triés par urgence</p>
-
-            <div className="border-l-4 border-destructive bg-sidebar-accent rounded-lg p-3 flex justify-between items-start mb-2">
-              <div>
-                <p className="font-medium text-sm text-primary-foreground">TotalEnergies — RFP Q2</p>
-                <p className="text-xs text-muted-foreground/60">CFO silencieux depuis 5j · 1 bloqueur</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-destructive" />
-                <span className="text-xs font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded">54</span>
-              </div>
-            </div>
-
-            <div className="border-l-4 border-warning bg-sidebar-accent rounded-lg p-3 flex justify-between items-start mb-2">
-              <div>
-                <p className="font-medium text-sm text-primary-foreground">Schneider Electric — ERP</p>
-                <p className="text-xs text-muted-foreground/60">3 nouveaux contacts détectés</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-warning" />
-                <span className="text-xs font-bold text-warning bg-warning/10 px-2 py-0.5 rounded">71</span>
-              </div>
-            </div>
-
-            <div className="border-l-4 border-accent bg-sidebar-accent rounded-lg p-3 flex justify-between items-start">
-              <div>
-                <p className="font-medium text-sm text-primary-foreground">Airbus — Transformation SI</p>
-                <p className="text-xs text-muted-foreground/60">2 sponsors actifs · Momentum en hausse</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-accent" />
-                <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">87</span>
-              </div>
-            </div>
-
-            <div className="border border-accent/50 rounded-xl p-3 mt-3 bg-sidebar">
-              <p className="text-[9px] text-accent font-bold uppercase tracking-wider mb-1">Action prioritaire</p>
-              <p className="text-xs text-primary-foreground font-medium">Relancer le CFO TotalEnergies dans les 24h</p>
-              <p className="text-[10px] text-muted-foreground/50 mt-1">Impact élevé · Coût moyen · Confiance 82%</p>
-            </div>
-          </div>
+          <img src="/screenshots/deals-list.png" alt="Ekko — Liste des deals triés par urgence" className="rounded-2xl shadow-2xl w-full" />
         </div>
       </section>
 
@@ -210,7 +169,20 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ── SECTION 4 — COMMENT ÇA FONCTIONNE ── */}
+      {/* ── SECTION SCREENSHOTS ── */}
+      <section className="py-16 bg-muted/20 px-6">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+          <div>
+            <img src="/screenshots/buying-committee-demo.png" alt="Carte politique du deal" className="rounded-xl w-full" />
+            <p className="text-sm text-muted-foreground text-center mt-3">Carte politique du deal en temps réel</p>
+          </div>
+          <div>
+            <img src="/screenshots/deal-mission-control.png" alt="Mission control — NBA et alertes" className="rounded-xl w-full" />
+            <p className="text-sm text-muted-foreground text-center mt-3">Mission control — NBA et alertes actives</p>
+          </div>
+        </div>
+      </section>
+
       <section id="how-it-works" className="py-24 bg-muted/30 px-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Comment ça fonctionne</p>
