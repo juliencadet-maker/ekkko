@@ -226,7 +226,9 @@ export default function Identities() {
               <div className="flex items-center justify-between">
                 {getStatusBadge(identity)}
                 <span className="text-xs text-muted-foreground">
-                  {dealCounts[identity.id] || 0} deal{(dealCounts[identity.id] || 0) !== 1 ? "s" : ""} actif{(dealCounts[identity.id] || 0) !== 1 ? "s" : ""}
+                  {(dealCounts[identity.id] || 0) === 0
+                    ? "Pas encore utilisée sur un deal"
+                    : `${dealCounts[identity.id]} deal${dealCounts[identity.id] !== 1 ? "s" : ""} actif${dealCounts[identity.id] !== 1 ? "s" : ""}`}
                 </span>
               </div>
             </div>
