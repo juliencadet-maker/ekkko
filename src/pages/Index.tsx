@@ -135,7 +135,7 @@ export default function Index() {
       </motion.section>
 
       {/* ── SECTION 3 — BUYING COMMITTEE ── */}
-      <section className="py-24 bg-background border-y border-border px-6">
+      <motion.section className="py-24 bg-background border-y border-border px-6" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div className="max-w-[1100px] mx-auto">
           <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Buying Committee</p>
           <h2 className="text-4xl font-bold text-center tracking-tight mb-4">Savoir qui décide vraiment.</h2>
