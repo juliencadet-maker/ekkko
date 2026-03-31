@@ -150,11 +150,10 @@ export default function Approvals() {
             </h2>
             
             {pendingApprovals.length === 0 ? (
-              <Card className="rounded-card">
-                <CardContent className="py-12">
-                  <EmptyState icon={CheckSquare} title="Aucune validation en attente" description="Toutes les demandes ont été traitées" />
-                </CardContent>
-              </Card>
+              <div className="flex items-center gap-3 text-muted-foreground py-6 px-2">
+                <CheckCircle2 className="h-5 w-5 text-signal" />
+                <span className="text-sm">Tout est à jour — aucun script en attente.</span>
+              </div>
             ) : (
               <div className="space-y-3">
                 {pendingApprovals.map((approval) => {
