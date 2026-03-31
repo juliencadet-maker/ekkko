@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { WaitlistDialog } from "@/components/WaitlistDialog";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +38,8 @@ function FadeIn({ children, className = "", delay = 0 }: { children: React.React
 
 export default function Index() {
   const navigate = useNavigate();
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistSource, setWaitlistSource] = useState("landing");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -45,7 +49,7 @@ export default function Index() {
           <EkkoLogo size={32} textSize={22} onDark={false} />
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => navigate("/auth")}>Connexion</Button>
-            <Button className="rounded-full bg-primary text-accent font-semibold px-6" onClick={() => navigate("/auth")}>Demander une démo</Button>
+            <Button className="rounded-full bg-primary text-accent font-semibold px-6" onClick={() => { setWaitlistSource("nav"); setWaitlistOpen(true); }}>Demander une démo</Button>
           </div>
         </div>
       </nav>
@@ -64,7 +68,7 @@ export default function Index() {
               Ekko révèle <strong className="text-foreground font-semibold">qui soutient, qui hésite et qui bloque</strong> pour agir avant que le deal ne vous échappe.
             </p>
             <div className="flex gap-3">
-              <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => navigate("/auth")}>
+              <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => { setWaitlistSource("hero"); setWaitlistOpen(true); }}>
                 Demander une démo <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button size="lg" variant="outline" className="rounded-full px-8" onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}>
@@ -413,10 +417,10 @@ export default function Index() {
             Rejoignez les équipes qui savent ce qui se passe avant leur prochain call.
           </p>
           <div className="flex gap-4 justify-center">
-            <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => navigate("/auth")}>
+            <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => { setWaitlistSource("cta"); setWaitlistOpen(true); }}>
               Demander une démo <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
-            <Button size="lg" className="rounded-full bg-transparent border border-primary/20 text-primary px-8" onClick={() => navigate("/auth")}>
+            <Button size="lg" className="rounded-full bg-transparent border border-primary/20 text-primary px-8" onClick={() => { setWaitlistSource("inscription"); setWaitlistOpen(true); }}>
               Inscription
             </Button>
           </div>
@@ -459,6 +463,8 @@ export default function Index() {
           © 2026 Ekko. Tous droits réservés.
         </div>
       </footer>
+
+      <WaitlistDialog open={waitlistOpen} onOpenChange={setWaitlistOpen} source={waitlistSource} />
     </div>
   );
 }
