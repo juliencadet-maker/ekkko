@@ -281,7 +281,7 @@ export default function NewCampaign() {
               <CardContent className="space-y-6">
                 {/* Identity selector — visual cards */}
                 <div className="space-y-2">
-                  <Label>Identité vidéo *</Label>
+                  <Label>Qui apparaît dans la vidéo ? *</Label>
                   {identities.length === 0 ? (
                     <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
                       Aucune identité disponible. Créez-en une dans la section Identités.
