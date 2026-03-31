@@ -43,6 +43,8 @@ async function deleteUserAndData(admin: any, email: string) {
       await admin.from("viewers").delete().in("campaign_id", campaignIds);
       await admin.from("deal_scores").delete().in("campaign_id", campaignIds);
       await admin.from("deal_outcomes").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_contradictions").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_signals").delete().in("campaign_id", campaignIds);
       await admin.from("recommendation_outcomes").delete().in("campaign_id", campaignIds);
       await admin.from("agent_conversations").delete().in("campaign_id", campaignIds);
       await admin.from("script_versions").delete().in("campaign_id", campaignIds);
@@ -183,8 +185,8 @@ serve(async (req) => {
     const { data: provider } = await admin.from("providers").select("id").eq("org_id", orgId).single();
     const providerId = provider!.id;
 
-    // ── ACCOUNT 1: TechVision ──────────────────────────────────────
-    const techVisionMeta = {
+    // ── ACCOUNT 1: TotalEnergies ──────────────────────────────────────
+    const totalEnergiesMeta = {
       landingPageConfig: {
         logoUrl: null,
         brandColor: "#0f4c81",
@@ -199,57 +201,57 @@ serve(async (req) => {
       org_id: orgId,
       identity_id: salesIdentityId,
       created_by_user_id: salesUserId,
-      name: "TechVision",
-      description: "Compte stratégique — Infrastructure cloud & data analytics. Décision attendue Q2 2026.",
+      name: "TotalEnergies",
+      description: "Compte stratégique — Transformation digitale & efficacité opérationnelle. Décision attendue Q2 2026.",
       script: "",
       status: "completed",
       is_self_campaign: false,
-      metadata: techVisionMeta,
+      metadata: totalEnergiesMeta,
     }).select().single();
     const tvParentId = tvParent!.id;
 
-    // Sub-campaigns for TechVision
+    // Sub-campaigns for TotalEnergies
     const subCampaigns = [
       {
-        name: "Réponse RFP — Infrastructure Cloud",
-        description: "Vidéo personnalisée accompagnant notre réponse à l'appel d'offres infrastructure.",
-        script: "Bonjour Sophie, suite à votre RFP sur l'infrastructure cloud, j'ai souhaité vous adresser ce message personnel. Notre plateforme répond précisément à vos 3 critères clés : scalabilité, sécurité zero-trust, et réduction des coûts de 40%.",
+        name: "Réponse RFP — Plateforme Data",
+        description: "Vidéo personnalisée accompagnant notre réponse à l'appel d'offres data.",
+        script: "Bonjour Sophie, suite à votre RFP sur la plateforme data, j'ai souhaité vous adresser ce message personnel. Notre solution répond précisément à vos 3 critères clés : scalabilité, sécurité zero-trust, et réduction des coûts de 40%.",
         status: "completed" as const,
         identity_id: salesIdentityId,
         recipients: [
-          { first_name: "Sophie", last_name: "Martin", email: "sophie.martin@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CTO" } },
-          { first_name: "Pierre", last_name: "Lefebvre", email: "pierre.lefebvre@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "VP Engineering" } },
+          { first_name: "Sophie", last_name: "Renard", email: "sophie.renard@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "DRH" } },
+          { first_name: "Marc", last_name: "Duval", email: "marc.duval@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "COO" } },
         ],
       },
       {
         name: "Relance décideurs Q1",
         description: "Relance personnalisée pour les décideurs qui n'ont pas encore répondu.",
-        script: "Bonjour Thomas, je me permets de revenir vers vous suite à notre échange du mois dernier. Nous avons depuis lancé une nouvelle fonctionnalité de monitoring IA qui pourrait particulièrement intéresser TechVision.",
+        script: "Bonjour Pierre, je me permets de revenir vers vous suite à notre échange du mois dernier. Nous avons depuis lancé une nouvelle fonctionnalité qui pourrait particulièrement intéresser TotalEnergies.",
         status: "completed" as const,
         identity_id: salesIdentityId,
         recipients: [
-          { first_name: "Thomas", last_name: "Dubois", email: "thomas.dubois@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "Head of Sales" } },
+          { first_name: "Pierre", last_name: "Blanc", email: "pierre.blanc@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "CFO" } },
         ],
       },
       {
         name: "Mot du CEO — Sponsor Deal",
         description: "Message du CEO pour renforcer la relation au niveau C-Level.",
-        script: "Bonjour Marie, je suis Marc Lefevre, CEO d'Acme Corp. Je tenais personnellement à vous remercier pour la confiance que TechVision nous accorde. Notre partenariat est stratégique.",
+        script: "Bonjour Sophie, je suis Marc Lefevre, CEO d'Acme Corp. Je tenais personnellement à vous remercier pour la confiance que TotalEnergies nous accorde.",
         status: "completed" as const,
         identity_id: execIdentityId,
         recipients: [
-          { first_name: "Marie", last_name: "Bernard", email: "marie.bernard@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CEO" } },
+          { first_name: "Sophie", last_name: "Renard", email: "sophie.renard@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "DRH" } },
         ],
       },
       {
-        name: "Invitation Tech Summit 2026",
+        name: "Invitation Executive Briefing",
         description: "Invitation VIP à notre événement annuel pour les clients premium.",
-        script: "Bonjour Sophie, nous organisons le Tech Summit 2026 le 15 mars à Paris. En tant que partenaire privilégié, nous vous offrons une invitation VIP.",
+        script: "Bonjour Marc, nous organisons un Executive Briefing le 15 mars à Paris. En tant que partenaire privilégié, nous vous offrons une invitation VIP.",
         status: "generating" as const,
         identity_id: salesIdentityId,
         recipients: [
-          { first_name: "Sophie", last_name: "Martin", email: "sophie.martin@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "CTO" } },
-          { first_name: "Camille", last_name: "Moreau", email: "camille.moreau@techvision.fr", company: "TechVision", variables: { industry: "SaaS", title: "COO" } },
+          { first_name: "Marc", last_name: "Duval", email: "marc.duval@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "COO" } },
+          { first_name: "Thomas", last_name: "Girard", email: "thomas.girard@totalenergies.fr", company: "TotalEnergies", variables: { industry: "Énergie", title: "DSI" } },
         ],
       },
     ];
@@ -267,7 +269,7 @@ serve(async (req) => {
         script: sub.script,
         status: sub.status,
         is_self_campaign: false,
-        metadata: techVisionMeta,
+        metadata: totalEnergiesMeta,
         completed_at: sub.status === "completed" ? new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString() : null,
       }).select().single();
 
@@ -319,9 +321,9 @@ serve(async (req) => {
             ...(Math.random() > 0.4
               ? [{
                   name: "Collègue de " + recipient.first_name,
-                  email: `collegue.${recipient.first_name?.toLowerCase()}@techvision.fr`,
+                  email: `collegue.${recipient.first_name?.toLowerCase()}@totalenergies.fr`,
                   title: "Product Manager",
-                  company: "TechVision",
+                  company: "TotalEnergies",
                   hash: `s_${recipient.id.slice(0, 8)}`,
                   watchPct: 30 + Math.floor(Math.random() * 40),
                   sessions: 1,
@@ -363,31 +365,31 @@ serve(async (req) => {
       }
     }
 
-    // ── ACCOUNT 2: DataFlow ──────────────────────────────────────
-    const { data: dfParent } = await admin.from("campaigns").insert({
+    // ── ACCOUNT 2: Schneider Electric ──────────────────────────────────────
+    const { data: schneiderParent } = await admin.from("campaigns").insert({
       org_id: orgId,
       identity_id: salesIdentityId,
       created_by_user_id: salesUserId,
-      name: "DataFlow",
-      description: "Prospect mid-market — Data analytics & BI. Premier contact initié via LinkedIn.",
+      name: "Schneider Electric — ERP",
+      description: "Modernisation ERP — migration SAP vers solution cloud. Sponsor identifié côté achats.",
       script: "",
-      status: "draft",
+      status: "completed",
       is_self_campaign: false,
       metadata: {},
     }).select().single();
 
-    await admin.from("campaigns").insert({
+    // ── ACCOUNT 3: Airbus ──────────────────────────────────────
+    const { data: airbusParent } = await admin.from("campaigns").insert({
       org_id: orgId,
       identity_id: salesIdentityId,
       created_by_user_id: salesUserId,
-      parent_campaign_id: dfParent!.id,
-      name: "Introduction produit",
-      description: "Première prise de contact vidéo personnalisée pour DataFlow.",
-      script: "Bonjour Alex, je me permets de vous contacter car j'ai vu que DataFlow cherchait à moderniser sa stack data.",
-      status: "draft",
+      name: "Airbus — Transformation SI",
+      description: "Transformation SI — refonte de l'architecture applicative. Comité d'achat mobilisé.",
+      script: "",
+      status: "completed",
       is_self_campaign: false,
       metadata: {},
-    });
+    }).select().single();
 
     // ── Pending approval request (exec must approve) ──────────────
     const { data: execCampaign } = await admin.from("campaigns").insert({
@@ -396,21 +398,21 @@ serve(async (req) => {
       created_by_user_id: salesUserId,
       parent_campaign_id: tvParentId,
       name: "Engagement CEO — Sponsor Deal",
-      description: "Message personnalisé du CEO pour réaffirmer l'engagement d'Acme Corp sur le deal TechVision.",
-      script: "Bonjour Marie, je suis Marc Lefevre, CEO d'Acme Corp. Je souhaitais personnellement vous assurer de notre engagement total sur ce partenariat stratégique avec TechVision. Nos équipes sont mobilisées pour garantir le succès de cette collaboration.",
+      description: "Message personnalisé du CEO pour réaffirmer l'engagement d'Acme Corp sur le deal TotalEnergies.",
+      script: "Bonjour Sophie, je suis Marc Lefevre, CEO d'Acme Corp. Je souhaitais personnellement vous assurer de notre engagement total sur ce partenariat stratégique avec TotalEnergies. Nos équipes sont mobilisées pour garantir le succès de cette collaboration.",
       status: "pending_approval",
       is_self_campaign: false,
-      metadata: techVisionMeta,
+      metadata: totalEnergiesMeta,
     }).select().single();
 
     await admin.from("recipients").insert({
       org_id: orgId,
       campaign_id: execCampaign!.id,
-      email: "marie.bernard@techvision.fr",
-      first_name: "Marie",
-      last_name: "Bernard",
-      company: "TechVision",
-      variables: { title: "CEO" },
+      email: "sophie.renard@totalenergies.fr",
+      first_name: "Sophie",
+      last_name: "Renard",
+      company: "TotalEnergies",
+      variables: { title: "DRH" },
     });
 
     // Approval assigned to EXEC user (not sales user)
@@ -424,14 +426,12 @@ serve(async (req) => {
       status: "pending",
     }).select().single();
 
-    // ── VIEWERS for TechVision (buying committee) ──────────────────
+    // ── VIEWERS for TotalEnergies (buying committee) ──────────────────
     const tvViewerProfiles = [
-      { name: "Sophie Martin", email: "sophie.martin@techvision.fr", title: "CTO", company: "TechVision", status: "champion", contact_score: 92, sponsor_score: 85, influence_score: 78, blocker_score: 5, share_count: 3, viewers_generated: 2, total_watch_depth: 88, replay_count: 2, cta_clicked: true },
-      { name: "Marie Bernard", email: "marie.bernard@techvision.fr", title: "CEO", company: "TechVision", status: "engaged", contact_score: 78, sponsor_score: 90, influence_score: 95, blocker_score: 0, share_count: 1, viewers_generated: 1, total_watch_depth: 72, replay_count: 1, cta_clicked: false },
-      { name: "Pierre Lefebvre", email: "pierre.lefebvre@techvision.fr", title: "VP Engineering", company: "TechVision", status: "engaged", contact_score: 65, sponsor_score: 40, influence_score: 60, blocker_score: 10, share_count: 0, viewers_generated: 0, total_watch_depth: 55, replay_count: 0, cta_clicked: false },
-      { name: "Thomas Dubois", email: "thomas.dubois@techvision.fr", title: "Head of Sales", company: "TechVision", status: "cold", contact_score: 30, sponsor_score: 15, influence_score: 45, blocker_score: 60, share_count: 0, viewers_generated: 0, total_watch_depth: 20, replay_count: 0, cta_clicked: false },
-      { name: "Camille Moreau", email: "camille.moreau@techvision.fr", title: "COO", company: "TechVision", status: "new", contact_score: 45, sponsor_score: 30, influence_score: 50, blocker_score: 20, share_count: 0, viewers_generated: 0, total_watch_depth: 35, replay_count: 0, cta_clicked: false },
-      { name: "Lucas Petit", email: "lucas.petit@techvision.fr", title: "CFO", company: "TechVision", status: "engaged", contact_score: 70, sponsor_score: 55, influence_score: 80, blocker_score: 35, share_count: 1, viewers_generated: 0, total_watch_depth: 60, replay_count: 1, cta_clicked: true },
+      { name: "Sophie Renard", email: "sophie.renard@totalenergies.fr", title: "DRH", company: "TotalEnergies", status: "sponsor_actif", contact_score: 92, sponsor_score: 85, influence_score: 78, blocker_score: 5, share_count: 3, viewers_generated: 2, total_watch_depth: 88, replay_count: 2, cta_clicked: true, is_known: true, last_event_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() },
+      { name: "Marc Duval", email: "marc.duval@totalenergies.fr", title: "COO", company: "TotalEnergies", status: "sponsor_actif", contact_score: 78, sponsor_score: 70, influence_score: 65, blocker_score: 0, share_count: 1, viewers_generated: 1, total_watch_depth: 72, replay_count: 1, cta_clicked: false, is_known: true, last_event_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString() },
+      { name: "Pierre Blanc", email: "pierre.blanc@totalenergies.fr", title: "CFO", company: "TotalEnergies", status: "neutre", contact_score: 38, sponsor_score: 15, influence_score: 40, blocker_score: 20, share_count: 0, viewers_generated: 0, total_watch_depth: 45, replay_count: 0, cta_clicked: false, is_known: true, last_event_at: new Date(Date.now() - 12 * 24 * 3600 * 1000).toISOString() },
+      { name: "Thomas Girard", email: "thomas.girard@totalenergies.fr", title: "DSI", company: "TotalEnergies", status: "bloqueur_potentiel", contact_score: 18, sponsor_score: 0, influence_score: 30, blocker_score: 80, share_count: 0, viewers_generated: 0, total_watch_depth: 8, replay_count: 0, cta_clicked: false, is_known: true, last_event_at: new Date(Date.now() - 15 * 24 * 3600 * 1000).toISOString() },
     ];
 
     const createdViewerIds: string[] = [];
@@ -443,8 +443,8 @@ serve(async (req) => {
         email: vp.email,
         title: vp.title,
         company: vp.company,
-        domain: "techvision.fr",
-        is_known: true,
+        domain: "totalenergies.fr",
+        is_known: vp.is_known,
         status: vp.status,
         contact_score: vp.contact_score,
         sponsor_score: vp.sponsor_score,
@@ -456,62 +456,111 @@ serve(async (req) => {
         replay_count: vp.replay_count,
         cta_clicked: vp.cta_clicked,
         first_seen_at: new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString(),
-        last_event_at: new Date(Date.now() - Math.floor(Math.random() * 3) * 24 * 3600 * 1000).toISOString(),
+        last_event_at: vp.last_event_at,
       }).select().single();
       if (viewer) createdViewerIds.push(viewer.id);
     }
 
-    // Viewer relationships (Sophie forwarded to Pierre, Marie forwarded to Camille)
-    if (createdViewerIds.length >= 5) {
+    // Unknown contact
+    await admin.from("viewers").insert({
+      campaign_id: tvParentId,
+      viewer_hash: "unknown_1",
+      name: null,
+      email: null,
+      title: null,
+      company: null,
+      domain: null,
+      is_known: false,
+      status: "inconnu",
+      contact_score: 52,
+      sponsor_score: 0,
+      influence_score: 20,
+      blocker_score: 10,
+      share_count: 0,
+      viewers_generated: 0,
+      total_watch_depth: 60,
+      replay_count: 1,
+      cta_clicked: false,
+      first_seen_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
+      last_event_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
+    });
+
+    // Viewer relationships (Sophie forwarded to Marc)
+    if (createdViewerIds.length >= 2) {
       await admin.from("viewer_relationships").insert([
-        { campaign_id: tvParentId, source_viewer_id: createdViewerIds[0], target_viewer_id: createdViewerIds[2], relationship_type: "forwarded", forward_probability: 0.92, evidence: { type: "referral_link" } },
-        { campaign_id: tvParentId, source_viewer_id: createdViewerIds[1], target_viewer_id: createdViewerIds[4], relationship_type: "forwarded", forward_probability: 0.78, evidence: { type: "same_domain_timing" } },
+        { campaign_id: tvParentId, source_viewer_id: createdViewerIds[0], target_viewer_id: createdViewerIds[1], relationship_type: "forwarded", forward_probability: 0.92, evidence: { type: "referral_link" } },
       ]);
     }
 
-    // ── DEAL SCORES for TechVision ──────────────────────────────────
+    // ── DEAL SCORES for TotalEnergies ──────────────────────────────────
     await admin.from("deal_scores").insert({
       campaign_id: tvParentId,
-      des: 72,
-      viewer_count: 6,
+      des: 54,
+      viewer_count: 5,
       sponsor_count: 2,
       blocker_count: 1,
-      avg_watch_depth: 0.58,
-      breadth: 0.65,
-      event_velocity: 3.2,
-      engagement_half_life: 4.5,
-      multi_threading_score: 4,
-      momentum: "rising",
-      cold_start_regime: "warm",
-      stage_signal_gap: 0.15,
-      graph_centralization: 0.42,
+      avg_watch_depth: 55,
+      breadth: 60,
+      event_velocity: 2,
+      multi_threading_score: 3,
+      momentum: "declining",
+      cold_start_regime: "warm_account",
+      risk_level: "critical",
+      priority_score: 78,
+      days_since_last_signal: 12,
       alerts: [
-        { type: "blocker_detected", message: "Thomas Dubois — faible engagement, rôle décisionnel", severity: "warning" },
-        { type: "champion_active", message: "Sophie Martin — 3 partages, replay vidéo CEO", severity: "positive" },
+        { type: "danger", text: "Thomas Girard — bloqueur potentiel (score 80)" },
+        { type: "warning", text: "Pierre Blanc — silence depuis 12 jours" },
+        { type: "info", text: "Sophie Renard — champion actif, 3 partages" },
       ],
-      recommended_action: { action: "schedule_exec_call", label: "Planifier un call exec avec Thomas Dubois", confidence: 0.73, reason: "Blocker détecté avec faible watch depth" },
+      recommended_action: { action: "address_blockers", label: "Traiter les bloqueurs — DSI non engagé", confidence: 0.82 },
     });
 
-    // ── DEAL SCORE for DataFlow (cold) ──────────────────────────────
+    // ── DEAL SCORE for Schneider Electric ──────────────────────────────
     await admin.from("deal_scores").insert({
-      campaign_id: dfParent!.id,
-      des: 28,
-      viewer_count: 0,
-      sponsor_count: 0,
+      campaign_id: schneiderParent!.id,
+      des: 71,
+      viewer_count: 3,
+      sponsor_count: 1,
       blocker_count: 0,
-      avg_watch_depth: 0,
-      breadth: 0,
-      event_velocity: 0,
+      avg_watch_depth: 62,
+      breadth: 45,
+      event_velocity: 4,
+      multi_threading_score: 2,
       momentum: "stable",
-      cold_start_regime: "cold_global",
+      cold_start_regime: "cold_account",
+      risk_level: "watch",
+      priority_score: 45,
+      days_since_last_signal: 3,
       alerts: [
-        { type: "no_engagement", message: "Aucun engagement — deal froid", severity: "critical" },
+        { type: "warning", text: "Sponsor unique — comité encore étroit" },
       ],
-      recommended_action: { action: "send_intro_video", label: "Envoyer vidéo d'introduction", confidence: 0.85, reason: "Premier contact, aucune donnée d'engagement" },
+      recommended_action: { action: "expand_committee", label: "Élargir le buying committee", confidence: 0.7 },
+    });
+
+    // ── DEAL SCORE for Airbus ──────────────────────────────────
+    await admin.from("deal_scores").insert({
+      campaign_id: airbusParent!.id,
+      des: 87,
+      viewer_count: 4,
+      sponsor_count: 2,
+      blocker_count: 0,
+      avg_watch_depth: 78,
+      breadth: 75,
+      event_velocity: 8,
+      multi_threading_score: 4,
+      momentum: "rising",
+      cold_start_regime: "warm_account",
+      risk_level: "healthy",
+      priority_score: 20,
+      days_since_last_signal: 1,
+      alerts: [
+        { type: "info", text: "Signaux favorables — pousser vers la clôture" },
+      ],
+      recommended_action: { action: "push_for_close", label: "Pousser vers la clôture — signaux favorables", confidence: 0.88 },
     });
 
     // ── VIDEO EVENTS (recent signals for dashboard) ──────────────────
-    // Find a TechVision video to attach events to
     const { data: tvVideos } = await admin.from("videos").select("id, campaign_id").in("campaign_id", createdSubIds).limit(3);
     if (tvVideos && tvVideos.length > 0) {
       const recentEvents = [];
@@ -521,11 +570,11 @@ serve(async (req) => {
           recentEvents.push({
             video_id: vid.id,
             campaign_id: vid.campaign_id,
-            viewer_hash: `vh_sophie.martin`,
+            viewer_hash: `vh_sophie.renard`,
             event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
-            viewer_email: "sophie.martin@techvision.fr",
-            viewer_name: "Sophie Martin",
-            viewer_domain: "techvision.fr",
+            viewer_email: "sophie.renard@totalenergies.fr",
+            viewer_name: "Sophie Renard",
+            viewer_domain: "totalenergies.fr",
             device_type: "desktop",
             ip_country: "FR",
             session_id: `sess_${Date.now()}_${i}`,
@@ -535,7 +584,6 @@ serve(async (req) => {
       }
       await admin.from("video_events").insert(recentEvents);
     }
-
     // Configure Slack channel for the org (tous-getekko)
     const currentOrgSettings = (await admin.from("orgs").select("settings").eq("id", orgId).single()).data?.settings || {};
     await admin.from("orgs").update({
