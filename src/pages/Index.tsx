@@ -33,7 +33,7 @@ export default function Index() {
           <EkkoLogo size={32} textSize={22} onDark={false} />
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => navigate("/auth")}>Connexion</Button>
-            <Button className="rounded-full bg-primary text-accent font-semibold px-5" onClick={() => navigate("/auth")}>Demander une démo</Button>
+            <Button className="rounded-full bg-primary text-accent font-semibold px-5 hidden sm:inline-flex" onClick={() => navigate("/auth")}>Demander une démo</Button>
           </div>
         </div>
       </nav>
@@ -43,7 +43,7 @@ export default function Index() {
         <div className="max-w-[1140px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
             <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-5">Deal Intelligence · Buying Committee</p>
-            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] mb-6">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] mb-6">
               Votre pipeline vous rassure.
               <br />
               Vos deals racontent <span className="text-muted-foreground">autre chose.</span>
@@ -51,7 +51,7 @@ export default function Index() {
             <p className="text-lg text-muted-foreground max-w-lg mb-8 leading-relaxed">
               Ekko révèle <span className="font-semibold text-foreground">qui soutient, qui hésite et qui bloque</span> pour agir au bon moment sur chaque deal.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => navigate("/auth")}>
                 Demander une démo <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
