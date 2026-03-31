@@ -252,7 +252,7 @@ export default function Dashboard() {
         {/* Recent Deals */}
         <Card className="lg:col-span-2 rounded-card">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Deals récents</CardTitle>
+            <CardTitle className="text-lg">{canSeeAllDeals(userRole) ? "Deals de l'équipe" : "Mes deals actifs"}</CardTitle>
             <Button variant="ghost" size="sm" onClick={() => navigate("/app/campaigns")}>
               Voir tout <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
