@@ -23,6 +23,8 @@ interface DealScoreRow {
   sponsor_count: number | null;
   blocker_count: number | null;
   alerts: any;
+  risk_level: string | null;
+  priority_score: number | null;
 }
 
 interface ViewerSummary {
