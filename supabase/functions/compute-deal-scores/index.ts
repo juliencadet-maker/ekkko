@@ -347,6 +347,25 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
   if (viewerCount >= 5 && sponsorCount >= 2) coldStartRegime = "warm_account";
   else if (viewerCount >= 2) coldStartRegime = "cold_account";
 
+  // Calculer days_since_last_signal
+  const { data: lastEvent } = await supabase
+    .from('video_events').select('created_at')
+    .eq('campaign_id', campaign_id)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
+  const daysSinceSignal = lastEvent
+    ? Math.floor((Date.now() - new Date(lastEvent.created_at).getTime()) / 86400000)
+    : 999;
+
+  // Calculer risk_level et priority_score
+  const scoreData: any = {
+    des, momentum, sponsor_count: sponsorCount, blocker_count: blockerCount,
+    viewer_count: viewerCount, event_velocity: eventVelocity,
+    days_since_last_signal: daysSinceSignal, recommended_action_v2: recommendedAction,
+  };
+  const riskLevel = computeRiskLevel(scoreData);
+  scoreData.risk_level = riskLevel;
+  const priorityScore = computePriorityScore(scoreData);
+
   await supabase.from("deal_scores").insert({
     campaign_id,
     des,
@@ -361,7 +380,18 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
     cold_start_regime: coldStartRegime,
     alerts,
     recommended_action: recommendedAction,
+    days_since_last_signal: daysSinceSignal,
+    risk_level: riskLevel,
+    priority_score: priorityScore,
   });
 
-  return { campaign_id, des, momentum, regime: coldStartRegime };
+  // Get org_id for contradictions
+  const { data: campaign } = await supabase
+    .from('campaigns').select('org_id').eq('id', campaign_id).single();
+  const orgId = campaign?.org_id;
+  if (orgId) {
+    await upsertContradictions(supabase, campaign_id, orgId, scoreData, viewers);
+  }
+
+  return { campaign_id, des, momentum, regime: coldStartRegime, risk_level: riskLevel, priority_score: priorityScore };
 }
