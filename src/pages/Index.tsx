@@ -74,24 +74,50 @@ export default function Index() {
           </div>
 
           <FadeIn delay={0.2}>
-            <div className="bg-primary rounded-2xl p-5 border border-sidebar-border">
-              <p className="text-[10px] text-primary-foreground/30 uppercase tracking-widest font-semibold mb-4">Deals — triés par urgence</p>
+            <div className="bg-primary rounded-2xl p-5 border border-sidebar-border shadow-2xl">
+              <p className="text-[10px] text-primary-foreground/30 uppercase tracking-widest font-semibold mb-4">
+                Deals — triés par urgence
+              </p>
               <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-destructive flex items-center justify-between gap-3">
-                <div><p className="text-sm font-medium text-primary-foreground">TotalEnergies — RFP Q2</p><p className="text-[11px] text-primary-foreground/40">CFO silencieux 12j · 1 bloqueur</p></div>
-                <div className="flex items-center gap-2"><span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">En danger</span><span className="text-xs font-bold text-destructive">54</span></div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-primary-foreground truncate">TotalEnergies — RFP Q2</p>
+                  <p className="text-[11px] text-primary-foreground/40">CFO silencieux 12j · 1 bloqueur</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">En danger</span>
+                  <span className="text-xs font-bold text-destructive">54</span>
+                </div>
               </div>
               <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-warning flex items-center justify-between gap-3">
-                <div><p className="text-sm font-medium text-primary-foreground">Schneider Electric — ERP</p><p className="text-[11px] text-primary-foreground/40">3 nouveaux contacts détectés</p></div>
-                <div className="flex items-center gap-2"><span className="text-[10px] font-bold bg-warning/20 text-warning px-2 py-0.5 rounded">À surveiller</span><span className="text-xs font-bold text-warning">71</span></div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-primary-foreground truncate">Schneider Electric — ERP</p>
+                  <p className="text-[11px] text-primary-foreground/40">3 nouveaux contacts détectés</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-[10px] font-bold bg-warning/20 text-warning px-2 py-0.5 rounded">À surveiller</span>
+                  <span className="text-xs font-bold text-warning">71</span>
+                </div>
               </div>
               <div className="bg-sidebar-accent rounded-lg p-3 mb-4 border-l-4 border-accent flex items-center justify-between gap-3">
-                <div><p className="text-sm font-medium text-primary-foreground">Airbus — Transformation SI</p><p className="text-[11px] text-primary-foreground/40">2 sponsors actifs · Momentum en hausse</p></div>
-                <div className="flex items-center gap-2"><span className="text-[10px] font-bold bg-accent/20 text-accent px-2 py-0.5 rounded">Sain</span><span className="text-xs font-bold text-accent">87</span></div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-primary-foreground truncate">Airbus — Transformation SI</p>
+                  <p className="text-[11px] text-primary-foreground/40">2 sponsors actifs · Momentum en hausse</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-[10px] font-bold bg-accent/20 text-accent px-2 py-0.5 rounded">Sain</span>
+                  <span className="text-xs font-bold text-accent">87</span>
+                </div>
               </div>
               <div className="border border-accent/40 rounded-xl p-3 bg-sidebar">
-                <p className="text-[9px] font-bold text-accent uppercase tracking-wider mb-1.5">Action prioritaire · Urgence haute</p>
-                <p className="text-xs font-medium text-primary-foreground mb-1">Relancer le CFO TotalEnergies dans les 24h</p>
-                <p className="text-[10px] text-primary-foreground/40">Impact élevé · Confiance 82%</p>
+                <p className="text-[9px] font-bold text-accent uppercase tracking-wider mb-1.5">
+                  Action prioritaire · Urgence haute
+                </p>
+                <p className="text-xs font-medium text-primary-foreground mb-1">
+                  Relancer le CFO TotalEnergies dans les 24h
+                </p>
+                <p className="text-[10px] text-primary-foreground/40">
+                  Impact élevé · Confiance 82%
+                </p>
               </div>
             </div>
           </FadeIn>
@@ -210,164 +236,149 @@ export default function Index() {
 
       {/* ── SECTION — LE PRODUIT EN ACTION ── */}
       <FadeIn>
-        <section className="py-20 bg-muted/20 border-y border-border/50">
+        <section className="py-20 bg-primary">
           <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center mb-12">
-                Le produit en action
-              </p>
-              <div className="grid lg:grid-cols-2 gap-6">
-                {/* INTERFACE 1 — Liste des deals */}
-                <div>
-                  <div className="bg-primary rounded-2xl p-5 border border-sidebar-border">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-[10px] text-primary-foreground/30 uppercase tracking-widest font-semibold">Deals — triés par urgence</p>
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-destructive"></div>
-                        <div className="w-2 h-2 rounded-full bg-warning"></div>
-                        <div className="w-2 h-2 rounded-full bg-accent"></div>
-                      </div>
-                    </div>
-                    {/* Deal 1 — critique */}
-                    <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-destructive flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-destructive flex-shrink-0"></div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-primary-foreground truncate">TotalEnergies — RFP Q2</p>
-                          <p className="text-[11px] text-primary-foreground/40 truncate">CFO silencieux 12j · 1 bloqueur</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">En danger</span>
-                        <span className="text-xs font-bold text-destructive">54</span>
-                      </div>
-                    </div>
-                    {/* Deal 2 — watch */}
-                    <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-warning flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-warning flex-shrink-0"></div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-primary-foreground truncate">Schneider Electric — ERP</p>
-                          <p className="text-[11px] text-primary-foreground/40 truncate">3 nouveaux contacts détectés</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[10px] font-bold bg-warning/20 text-warning px-2 py-0.5 rounded">À surveiller</span>
-                        <span className="text-xs font-bold text-warning">71</span>
-                      </div>
-                    </div>
-                    {/* Deal 3 — sain */}
-                    <div className="bg-sidebar-accent rounded-lg p-3 mb-4 border-l-4 border-accent flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0"></div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-primary-foreground truncate">Airbus — Transformation SI</p>
-                          <p className="text-[11px] text-primary-foreground/40 truncate">2 sponsors actifs · Momentum en hausse</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[10px] font-bold bg-accent/20 text-accent px-2 py-0.5 rounded">Sain</span>
-                        <span className="text-xs font-bold text-accent">87</span>
-                      </div>
-                    </div>
-                    {/* NBA card */}
-                    <div className="border border-accent/40 rounded-xl p-3 bg-sidebar">
-                      <p className="text-[9px] font-bold text-accent uppercase tracking-wider mb-1.5">Action prioritaire · Urgence haute</p>
-                      <p className="text-xs font-medium text-primary-foreground mb-1">Relancer le CFO TotalEnergies dans les 24h</p>
-                      <p className="text-[10px] text-primary-foreground/40">Impact élevé · Confiance 82%</p>
-                    </div>
+            <p className="text-[10px] font-semibold text-primary-foreground/30 uppercase tracking-widest text-center mb-10">
+              Le produit en action
+            </p>
+            {/* Dashboard simulé pleine largeur */}
+            <div className="max-w-6xl mx-auto bg-sidebar rounded-2xl border border-sidebar-border overflow-hidden shadow-2xl">
+              <div className="flex" style={{height: '580px'}}>
+                {/* Sidebar */}
+                <div className="hidden lg:flex flex-col border-r border-sidebar-border" style={{width: '196px', flexShrink: 0, background: '#080F18'}}>
+                  <div className="flex items-center gap-2 p-4 border-b border-sidebar-border">
+                    <EkkoLogo size={22} textSize={14} onDark={true} />
                   </div>
-                  <p className="text-sm text-muted-foreground text-center mt-4">Liste des deals triée par urgence réelle</p>
+                  <div className="flex-1 p-2">
+                    {[
+                      { label: 'Tableau de bord', active: false },
+                      { label: 'Deals', active: true },
+                      { label: 'Agent Ekko', active: false },
+                      { label: 'Deal Intelligence', active: false },
+                      { label: 'Identités', active: false },
+                    ].map((item) => (
+                      <div key={item.label}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-0.5 text-xs font-medium ${
+                          item.active
+                            ? 'bg-sidebar-accent text-accent'
+                            : 'text-muted-foreground/40'
+                        }`}>
+                        {item.label}
+                      </div>
+                    ))}
+                    <div className="h-px bg-sidebar-border my-2 mx-1" />
+                    <p className="text-[9px] text-muted-foreground/20 uppercase tracking-widest px-3 py-1 font-semibold">Administration</p>
+                    {['Gouvernance', 'Intégrations', 'Audit'].map(label => (
+                      <div key={label} className="flex items-center gap-2 px-3 py-2 rounded-lg mb-0.5 text-xs text-muted-foreground/30">
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-3 border-t border-sidebar-border">
+                    <p className="text-xs font-medium text-primary-foreground/60">Jean Dupont</p>
+                    <p className="text-[10px] text-muted-foreground/30 mt-0.5">Propriétaire · Acme Corp</p>
+                  </div>
                 </div>
-
-                {/* INTERFACE 2 — Buying committee detail */}
-                <div>
-                  <div className="bg-primary rounded-2xl p-5 border border-sidebar-border">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-[10px] text-primary-foreground/30 uppercase tracking-widest font-semibold mb-0.5">TotalEnergies — RFP Q2</p>
-                        <p className="text-sm font-semibold text-primary-foreground">Buying committee</p>
-                      </div>
-                      <span className="text-[10px] bg-destructive/20 text-destructive font-bold px-2 py-1 rounded-lg">En danger</span>
+                {/* Main content */}
+                <div className="flex-1 flex flex-col min-w-0">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-sidebar-border">
+                    <div>
+                      <p className="text-sm font-semibold text-primary-foreground">Deals</p>
+                      <p className="text-[10px] text-muted-foreground/40">Pipeline équipe — triés par urgence</p>
                     </div>
-                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 mb-4 flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-destructive mt-1.5 flex-shrink-0"></div>
-                      <p className="text-[11px] text-destructive font-medium">CFO silencieux depuis 12 jours — action requise</p>
+                    <div className="bg-accent text-primary text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer">
+                      + Nouveau deal
                     </div>
-                    <div className="space-y-2 mb-4">
-                      {/* Sophie — sponsor */}
-                      <div className="bg-accent/10 border border-accent/30 rounded-lg p-2.5 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">SR</div>
-                          <div>
-                            <p className="text-[11px] font-semibold text-primary-foreground">Sophie Renard</p>
-                            <p className="text-[10px] text-primary-foreground/40">DRH · TotalEnergies</p>
+                  </div>
+                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-3 p-4 overflow-hidden">
+                    {/* KPIs + deals list — 2 cols */}
+                    <div className="lg:col-span-2 flex flex-col gap-3">
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { n: '2', l: 'Deals en danger', c: 'text-destructive' },
+                          { n: '7', l: "Signaux aujourd'hui", c: 'text-info' },
+                          { n: '2', l: 'Validations', c: 'text-warning' },
+                          { n: '3', l: 'Pipeline actif', c: 'text-accent' },
+                        ].map(k => (
+                          <div key={k.l} className="bg-sidebar-accent rounded-lg p-2.5 border border-sidebar-border">
+                            <p className={`text-xl font-bold ${k.c} mb-0.5`}>{k.n}</p>
+                            <p className="text-[9px] text-muted-foreground/40 leading-tight">{k.l}</p>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-accent rounded-full" style={{width:'92%'}}></div></div>
-                          <span className="text-[9px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-full">Sponsor</span>
-                        </div>
+                        ))}
                       </div>
-                      {/* Marc — sponsor */}
-                      <div className="bg-accent/10 border border-accent/30 rounded-lg p-2.5 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">MD</div>
-                          <div>
-                            <p className="text-[11px] font-semibold text-primary-foreground">Marc Duval</p>
-                            <p className="text-[10px] text-primary-foreground/40">COO · TotalEnergies</p>
+                      <div className="bg-sidebar-accent rounded-xl border border-sidebar-border overflow-hidden flex-1">
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-sidebar-border">
+                          <p className="text-xs font-semibold text-primary-foreground">Mes deals actifs</p>
+                          <p className="text-[10px] text-muted-foreground/30">Signaux rouges en premier</p>
+                        </div>
+                        {[
+                          { name: 'TotalEnergies — RFP Q2', meta: 'CFO silencieux 12j · 1 bloqueur identifié', badge: 'En danger', score: '54', bc: 'border-destructive', tc: 'text-destructive', bgc: 'bg-destructive/10' },
+                          { name: 'Schneider Electric — ERP', meta: '3 nouveaux contacts · Momentum stable', badge: 'À surveiller', score: '71', bc: 'border-warning', tc: 'text-warning', bgc: 'bg-warning/10' },
+                          { name: 'Airbus — Transformation SI', meta: '2 sponsors actifs · Momentum en hausse', badge: 'Sain', score: '87', bc: 'border-accent', tc: 'text-accent', bgc: 'bg-accent/10' },
+                        ].map(d => (
+                          <div key={d.name} className={`flex items-center gap-3 px-4 py-3 border-b border-sidebar-border/50 border-l-4 ${d.bc} last:border-b-0`}>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-primary-foreground truncate">{d.name}</p>
+                              <p className="text-[10px] text-muted-foreground/40 truncate">{d.meta}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className={`text-[9px] font-bold ${d.bgc} ${d.tc} px-2 py-0.5 rounded`}>{d.badge}</span>
+                              <span className={`text-xs font-bold ${d.tc}`}>{d.score}</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-accent rounded-full" style={{width:'78%'}}></div></div>
-                          <span className="text-[9px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-full">Sponsor</span>
-                        </div>
+                        ))}
                       </div>
-                      {/* Pierre — à réactiver */}
-                      <div className="bg-warning/10 border border-warning/30 rounded-lg p-2.5 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-warning/20 flex items-center justify-center text-[10px] font-bold text-warning flex-shrink-0">PB</div>
-                          <div>
-                            <p className="text-[11px] font-semibold text-primary-foreground">Pierre Blanc</p>
-                            <p className="text-[10px] text-primary-foreground/40">CFO · TotalEnergies</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-warning rounded-full" style={{width:'38%'}}></div></div>
-                          <span className="text-[9px] font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded-full">À réactiver</span>
-                        </div>
+                    </div>
+                    {/* Right column */}
+                    <div className="hidden lg:flex flex-col gap-3">
+                      <div className="bg-sidebar border border-accent/50 rounded-xl p-3">
+                        <p className="text-[8px] font-bold text-accent uppercase tracking-wider mb-2">Action prioritaire</p>
+                        <p className="text-xs font-semibold text-primary-foreground leading-tight mb-1">Relancer le CFO TotalEnergies dans les 24h</p>
+                        <p className="text-[9px] text-muted-foreground/40 mb-3">Impact élevé · Confiance 82%</p>
+                        <div className="bg-accent text-primary text-[9px] font-bold text-center py-1.5 rounded-lg">Analyser avec l'agent →</div>
                       </div>
-                      {/* Thomas — bloqueur */}
-                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2.5 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-destructive/20 flex items-center justify-center text-[10px] font-bold text-destructive flex-shrink-0">TG</div>
-                          <div>
-                            <p className="text-[11px] font-semibold text-primary-foreground">Thomas Girard</p>
-                            <p className="text-[10px] text-primary-foreground/40">DSI · TotalEnergies</p>
+                      <div className="bg-sidebar-accent rounded-xl border border-sidebar-border overflow-hidden">
+                        <p className="text-[10px] font-semibold text-primary-foreground px-3 py-2 border-b border-sidebar-border">Alertes actives</p>
+                        {[
+                          { dot: 'bg-destructive', text: 'CFO silencieux depuis 12 jours' },
+                          { dot: 'bg-warning', text: '3 nouveaux contacts Schneider' },
+                          { dot: 'bg-info', text: 'Thomas Girard — bloqueur potentiel' },
+                        ].map(a => (
+                          <div key={a.text} className="flex items-start gap-2 px-3 py-2 border-b border-sidebar-border/30 last:border-0">
+                            <div className={`w-1.5 h-1.5 rounded-full ${a.dot} mt-1.5 flex-shrink-0`}></div>
+                            <p className="text-[10px] text-muted-foreground/50 leading-tight">{a.text}</p>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-destructive rounded-full" style={{width:'18%'}}></div></div>
-                          <span className="text-[9px] font-bold text-destructive bg-destructive/10 px-1.5 py-0.5 rounded-full">Bloqueur</span>
-                        </div>
+                        ))}
                       </div>
-                      {/* Inconnu */}
-                      <div className="bg-sidebar-accent border border-dashed border-sidebar-border rounded-lg p-2.5 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full border border-dashed border-primary-foreground/20 flex items-center justify-center text-[10px] font-bold text-primary-foreground/30 flex-shrink-0">?</div>
-                          <div>
-                            <p className="text-[11px] font-semibold text-primary-foreground/40">Non identifié</p>
-                            <p className="text-[10px] text-primary-foreground/20">totalenergies.com</p>
+                      <div className="bg-sidebar-accent rounded-xl border border-sidebar-border overflow-hidden flex-1">
+                        <div className="px-3 py-2 border-b border-sidebar-border">
+                          <p className="text-[10px] font-semibold text-primary-foreground">Buying committee</p>
+                          <p className="text-[9px] text-muted-foreground/30">TotalEnergies · 5 contacts</p>
+                        </div>
+                        {[
+                          { av: 'SR', name: 'Sophie Renard', role: 'DRH', pct: '92%', badge: 'Sponsor', avc: 'bg-accent/20 text-accent', bc: 'bg-accent', bdg: 'text-accent bg-accent/10' },
+                          { av: 'MD', name: 'Marc Duval', role: 'COO', pct: '78%', badge: 'Sponsor', avc: 'bg-accent/20 text-accent', bc: 'bg-accent', bdg: 'text-accent bg-accent/10' },
+                          { av: 'PB', name: 'Pierre Blanc', role: 'CFO', pct: '38%', badge: 'À réactiver', avc: 'bg-warning/20 text-warning', bc: 'bg-warning', bdg: 'text-warning bg-warning/10' },
+                          { av: 'TG', name: 'Thomas Girard', role: 'DSI', pct: '18%', badge: 'Bloqueur', avc: 'bg-destructive/20 text-destructive', bc: 'bg-destructive', bdg: 'text-destructive bg-destructive/10' },
+                          { av: '?', name: 'Non identifié', role: 'totalenergies.com', pct: '52%', badge: 'À identifier', avc: 'border border-dashed border-muted-foreground/20 text-muted-foreground/30', bc: 'bg-muted-foreground/20', bdg: 'text-muted-foreground/40 bg-sidebar-border' },
+                        ].map(c => (
+                          <div key={c.name} className="flex items-center gap-2 px-3 py-2 border-b border-sidebar-border/20 last:border-0">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${c.avc}`}>{c.av}</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] font-medium text-primary-foreground truncate">{c.name}</p>
+                              <p className="text-[9px] text-muted-foreground/30">{c.role}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <div className="w-8 h-1 bg-sidebar-border rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full ${c.bc}`} style={{width: c.pct}}></div>
+                              </div>
+                              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${c.bdg}`}>{c.badge}</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1 bg-sidebar-border rounded-full overflow-hidden"><div className="h-full bg-primary-foreground/20 rounded-full" style={{width:'52%'}}></div></div>
-                          <span className="text-[9px] font-bold text-primary-foreground/30 bg-sidebar-border px-1.5 py-0.5 rounded-full">À identifier</span>
-                        </div>
+                        ))}
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground text-center mt-4">Carte politique du deal en temps réel</p>
                 </div>
               </div>
             </div>
