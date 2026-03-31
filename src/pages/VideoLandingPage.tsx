@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Pause, ExternalLink, Send, Share2, MessageSquare, ThumbsUp, Heart, Flame, Star, Sparkles, Lock, Mail, UserPlus } from "lucide-react";
+import { Play, Pause, ExternalLink, Send, Share2, MessageSquare, ThumbsUp, Heart, Flame, Star, Sparkles, Lock, Mail, UserPlus, Video } from "lucide-react";
 import { useVideoEventTracker } from "@/hooks/useVideoEventTracker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
