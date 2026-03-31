@@ -102,7 +102,7 @@ export default function Campaigns() {
     };
 
     fetchCampaigns();
-  }, [membership?.org_id]);
+  }, [membership?.org_id, userRole, user.id]);
 
   const sortedCampaigns = useMemo(() => {
     let filtered = campaigns.filter((c) =>
