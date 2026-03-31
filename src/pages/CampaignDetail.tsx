@@ -1144,12 +1144,22 @@ export default function CampaignDetail() {
             <CardContent>
               <div className="max-w-3xl mx-auto">
                 <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
-                  <video
-                    src={getVideoUrl(videos.find((v) => v.campaign_id === id))}
-                    className="w-full h-full"
-                    controls
-                    poster="/placeholder.svg"
-                  />
+                  {(() => {
+                    const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                    return url ? (
+                      <video
+                        src={url}
+                        className="w-full h-full"
+                        controls
+                        poster="/placeholder.svg"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full gap-3">
+                        <Video className="h-10 w-10 text-muted-foreground/50" />
+                        <p className="text-sm font-medium text-muted-foreground">Vidéo en cours de préparation</p>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
                   <div className="flex-1 max-w-md">
