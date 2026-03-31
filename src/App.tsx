@@ -20,6 +20,7 @@ import Approvals from "./pages/Approvals";
 import Audit from "./pages/Audit";
 import Governance from "./pages/Governance";
 import Settings from "./pages/Settings";
+import UserApprovals from "./pages/UserApprovals";
 import VideoLandingPage from "./pages/VideoLandingPage";
 import DealIntelligence from "./pages/DealIntelligence";
 import NotFound from "./pages/NotFound";
