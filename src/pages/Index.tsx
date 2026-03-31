@@ -51,7 +51,7 @@ export default function Index() {
             <p className="text-lg text-muted-foreground max-w-lg mb-8 leading-relaxed">
               Ekko révèle <span className="font-semibold text-foreground">qui soutient, qui hésite et qui bloque</span> pour agir au bon moment sur chaque deal.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => navigate("/auth")}>
                 Demander une démo <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
