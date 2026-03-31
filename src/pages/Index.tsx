@@ -185,7 +185,7 @@ export default function Index() {
       {/* Solution Section — repositioned as deal copilot */}
       <section className="py-24">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
               Le copilote qui observe le buying committee<br />
               <span className="text-muted-foreground">depuis l'intérieur de chaque deal.</span>
@@ -194,6 +194,15 @@ export default function Index() {
               Ekko n'est pas un outil vidéo. C'est le seul moyen d'observer qui regarde, 
               qui partage, qui hésite — et d'intervenir au bon moment pour closer.
             </p>
+          </div>
+          {/* Full-width product screenshot */}
+          <div className="max-w-5xl mx-auto">
+            <img 
+              src="/screenshots/dashboard-raw.png" 
+              alt="Ekko — Deals, signaux d'engagement et buying committee en temps réel"
+              className="rounded-2xl shadow-xl border border-border w-full"
+              loading="lazy"
+            />
           </div>
         </div>
       </section>
