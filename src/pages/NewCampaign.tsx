@@ -220,12 +220,20 @@ export default function NewCampaign() {
   };
 
   const handleSubmit = async () => {
-    if (assetType === "video" && !selectedIdentity) {
+    if (assetType === "video" && videoMode === "identity" && !selectedIdentity) {
       toast({ title: "Identité requise", description: "Veuillez sélectionner une identité pour la vidéo exec.", variant: "destructive" });
       return;
     }
-    if (assetType === "video" && !script.trim()) {
+    if (assetType === "video" && videoMode === "identity" && !script.trim()) {
       toast({ title: "Script requis", description: "Veuillez rédiger ou générer un script.", variant: "destructive" });
+      return;
+    }
+    if (assetType === "video" && videoMode === "facecam" && !facecamBlob) {
+      toast({ title: "Vidéo requise", description: "Veuillez enregistrer une vidéo.", variant: "destructive" });
+      return;
+    }
+    if (assetType === "video" && videoMode === "import" && !importedFile) {
+      toast({ title: "Fichier requis", description: "Veuillez importer une vidéo.", variant: "destructive" });
       return;
     }
     if (!campaignName.trim()) {
