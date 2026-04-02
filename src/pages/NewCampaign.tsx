@@ -334,12 +334,12 @@ export default function NewCampaign() {
           });
 
         if (!uploadError) {
-          const { data: urlData } = supabase.storage.from("deal-videos").getPublicUrl(filePath);
+          // Store the storage path (bucket is private, use signed URLs to display)
           await supabase.from("deal_assets").insert({
             campaign_id: campaign.id,
             asset_type: "video",
             asset_purpose: "intro",
-            file_url: urlData.publicUrl,
+            file_url: filePath,
           });
         }
         toast({ title: "Deal créé", description: "La vidéo a été uploadée avec succès." });
