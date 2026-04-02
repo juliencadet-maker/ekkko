@@ -352,7 +352,7 @@ export default function Approvals() {
                     disabled={isSubmitting || !editedScript.trim()}
                     className="bg-accent text-accent-foreground hover:bg-accent/90"
                   >
-                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Approuver</>}
+                    {isSubmitting ? <><EkkoLoader mode="once" size={16} className="mr-2" />Traitement...</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Approuver</>}
                   </Button>
                 ) : (
                   <Button variant="destructive" onClick={() => handleApprovalAction("reject")} disabled={isSubmitting}>
