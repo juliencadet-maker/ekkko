@@ -36,6 +36,7 @@ import {
   Upload,
   Bot,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import type { Identity, Policy } from "@/types/database";
 
 const DEAL_STAGES = [
