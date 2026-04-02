@@ -258,7 +258,7 @@ export default function NewCampaign() {
     setFacecamPhase("naturalizing");
     try {
       const res = await supabase.functions.invoke("transform-script-to-speech", {
-        body: { campaign_id: "temp-facecam", script: facecamScript },
+        body: { campaign_id: "00000000-0000-0000-0000-000000000000", script: facecamScript },
       });
       if (res.error || !res.data?.script_oral) {
         // Fallback: use original script
