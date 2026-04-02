@@ -780,9 +780,8 @@ export default function NewCampaign() {
                   {/* ──── FACECAM PATH ──── */}
                   {assetType === "video" && videoMode === "facecam" && (
                     <div className="space-y-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => {
                           setVideoMode("");
                           setFacecamBlob(null);
@@ -792,10 +791,10 @@ export default function NewCampaign() {
                           setFacecamWithTeleprompter(false);
                           setShowOriginalScript(false);
                         }}
-                        className="text-muted-foreground -mt-2"
+                        className="link-action text-sm flex items-center gap-1 -mt-2"
                       >
-                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
-                      </Button>
+                        <ArrowLeft className="h-3 w-3" /> Changer de méthode
+                      </button>
 
                       {/* PHASE 1 — Script */}
                       {facecamPhase === "script" && (
