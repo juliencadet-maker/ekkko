@@ -910,14 +910,13 @@ export default function NewCampaign() {
                   {/* ──── IDENTITY PATH ──── */}
                   {assetType === "video" && videoMode === "identity" && (
                     <div className="space-y-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => { setVideoMode(""); setSelectedIdentityId(""); setSelectedIdentity(null); setScript(""); }}
-                        className="text-muted-foreground -mt-2"
+                        className="link-action text-sm flex items-center gap-1 -mt-2"
                       >
-                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
-                      </Button>
+                        <ArrowLeft className="h-3 w-3" /> Changer de méthode
+                      </button>
 
                       <div className="space-y-3">
                         <Label>Qui apparaît dans la vidéo ? *</Label>
