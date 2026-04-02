@@ -109,7 +109,7 @@ serve(async (req) => {
         train_video_url: signedUrlData.signedUrl,
         consent_video_url: signedUrlData.signedUrl,
         replica_name: identity.display_name,
-        model_name: "phoenix-3",
+        model_name: "phoenix-4",
         callback_url: callbackUrl,
       }),
     });
