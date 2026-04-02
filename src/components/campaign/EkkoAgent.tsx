@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
-  MessageSquare, Send, Bot, User, Loader2, Sparkles,
+  MessageSquare, Send, Bot, User, Sparkles,
   TrendingUp, TrendingDown, Users, Zap, Shield, Eye,
   ChevronRight, X,
 } from "lucide-react";
