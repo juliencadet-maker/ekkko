@@ -684,7 +684,11 @@ export default function NewCampaign() {
                   </Button>
                 </div>
 
-                <Button variant="ghost" onClick={() => setCurrentStep(4)} className="w-full text-muted-foreground text-sm">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(4)}
+                  className="w-full min-h-12 border-[#0D1B2A] text-[#0D1B2A] bg-transparent hover:bg-[#0D1B2A]/5"
+                >
                   Passer — j'ajouterai les contacts plus tard
                 </Button>
               </CardContent>
