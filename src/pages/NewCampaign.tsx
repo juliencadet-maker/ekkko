@@ -35,7 +35,6 @@ import {
   Camera,
   Upload,
   Bot,
-  Sparkles,
 } from "lucide-react";
 import type { Identity, Policy } from "@/types/database";
 
