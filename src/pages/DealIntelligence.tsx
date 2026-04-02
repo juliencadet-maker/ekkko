@@ -9,8 +9,9 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp, TrendingDown, Target, Eye, Clock, Users,
-  ArrowUpRight, Zap, Loader2,
+  ArrowUpRight, Zap,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, Area, AreaChart, Legend,
