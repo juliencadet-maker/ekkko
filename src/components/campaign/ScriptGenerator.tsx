@@ -200,7 +200,7 @@ export function ScriptGenerator({
 
           <Button onClick={handleGenerate} disabled={isGenerating} className="w-full gap-2 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
             {isGenerating ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Génération en cours...</>
+              <><EkkoLoader mode="loop" size={16} />Génération en cours...</>
             ) : (
               <><Sparkles className="h-4 w-4" />Générer le script</>
             )}
