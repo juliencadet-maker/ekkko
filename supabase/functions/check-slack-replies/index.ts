@@ -92,22 +92,19 @@ serve(async (req) => {
         const repliesRes = await fetch(repliesUrl, { headers: slackHeaders });
         const repliesData = await repliesRes.json();
         
-        console.log(`[${approval.id}] Slack API response status: ${repliesRes.status}, ok: ${repliesData.ok}, messages count: ${repliesData.messages?.length || 0}`);
-        if (!repliesData.ok) {
-          console.error(`[${approval.id}] Slack API error:`, JSON.stringify(repliesData));
-        }
+        debugLog.push(`${approval.id}: slack_status=${repliesRes.status}, ok=${repliesData.ok}, msgs=${repliesData.messages?.length || 0}, error=${repliesData.error || 'none'}`);
 
         if (!repliesData.ok || !repliesData.messages) continue;
 
         // Skip first message (it's the original post), look at replies
         const replies = repliesData.messages.filter((m: any) => m.ts !== meta.message_ts);
-        console.log(`[${approval.id}] Thread replies (excluding original): ${replies.length}`, replies.map((r: any) => ({ ts: r.ts, text: r.text?.substring(0, 50), user: r.user })));
+        debugLog.push(`${approval.id}: replies=${replies.length}, texts=${JSON.stringify(replies.map((r: any) => r.text?.substring(0, 50)))}`);
         if (replies.length === 0) continue;
 
         // Check already-processed replies
         const lastProcessedTs = meta.last_checked_ts || "0";
         const newReplies = replies.filter((m: any) => m.ts > lastProcessedTs);
-        console.log(`[${approval.id}] New replies since ${lastProcessedTs}: ${newReplies.length}`);
+        debugLog.push(`${approval.id}: new_replies=${newReplies.length} (since ${lastProcessedTs})`);
         if (newReplies.length === 0) continue;
 
         // Check the latest reply for a decision
