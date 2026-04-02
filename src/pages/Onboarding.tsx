@@ -415,7 +415,7 @@ export default function Onboarding() {
             <div className="flex items-center gap-3">
               {canSkip && (
                 <Button variant="ghost" size="sm" onClick={handleSkipOnboarding} disabled={isLoading} className="text-xs text-muted-foreground hover:text-foreground">
-                  {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  {isLoading ? <EkkoLoader mode="once" size={12} className="mr-1" /> : null}
                   Passer cette étape →
                 </Button>
               )}
