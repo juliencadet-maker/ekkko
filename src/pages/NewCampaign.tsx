@@ -833,13 +833,13 @@ export default function NewCampaign() {
                             >
                               Valider ce script <ArrowRight className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
+                            <button
+                              type="button"
                               onClick={() => transitionToRecording(false)}
-                              className="w-full text-muted-foreground text-sm"
+                              className="link-action w-full text-center text-sm py-2"
                             >
                               Enregistrer sans script →
-                            </Button>
+                            </button>
                           </div>
                         </div>
                       )}
