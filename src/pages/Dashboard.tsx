@@ -166,7 +166,7 @@ export default function Dashboard() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-muted-foreground">Chargement...</div>
+          <EkkoLoader mode="once" size={40} />
         </div>
       </AppLayout>
     );

@@ -1099,7 +1099,7 @@ export default function CampaignDetail() {
                   {videoJobs.map((job) => {
                     const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
                       queued: { label: "En file d'attente", color: "text-muted-foreground", icon: <Clock className="h-4 w-4" /> },
-                      processing: { label: "En cours", color: "text-primary", icon: <Loader2 className="h-4 w-4 animate-spin" /> },
+                      processing: { label: "En cours", color: "text-primary", icon: <EkkoLoader mode="loop" size={16} /> },
                       completed: { label: "Terminée", color: "text-primary", icon: <CheckCircle2 className="h-4 w-4" /> },
                       failed: { label: "Échouée", color: "text-destructive", icon: <AlertTriangle className="h-4 w-4" /> },
                     };
