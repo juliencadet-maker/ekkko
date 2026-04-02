@@ -81,6 +81,9 @@ export default function NewCampaign() {
   const [assetType, setAssetType] = useState<"video" | "document" | "">("");
   const [selectedIdentityId, setSelectedIdentityId] = useState("");
   const [selectedIdentity, setSelectedIdentity] = useState<Identity | null>(null);
+  const [videoMode, setVideoMode] = useState<"" | "facecam" | "identity" | "import">("");
+  const [facecamBlob, setFacecamBlob] = useState<Blob | null>(null);
+  const [importedFile, setImportedFile] = useState<File | null>(null);
 
   // Step 3 — Competitor
   const [hasIncumbent, setHasIncumbent] = useState<"yes" | "no" | "unknown" | "">("");
