@@ -76,7 +76,7 @@ serve(async (req) => {
     }
 
     const processed: string[] = [];
-
+    const debugLog: string[] = [];
     for (const approval of (pendingApprovals || [])) {
       const meta = approval.slack_metadata as any;
       if (!meta?.channel_id || !meta?.message_ts) {
