@@ -432,7 +432,7 @@ export default function Index() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8">
           <div>
             <EkkoLogo size={24} textSize={18} onDark={true} />
-            <p className="text-sm text-primary-foreground/30 mt-2">Deal Intelligence · Buying Committee Signal · Exec Presence</p>
+            <p className="text-sm text-primary-foreground/30 mt-2">Deal Intelligence · Buying Committee Signal</p>
           </div>
 
           <div className="grid grid-cols-3 gap-8 text-sm">
