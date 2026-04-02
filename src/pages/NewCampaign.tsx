@@ -805,43 +805,27 @@ export default function NewCampaign() {
                             facecamTransitioning ? "opacity-0 max-h-0 overflow-hidden" : "opacity-100 max-h-[800px]"
                           }`}
                         >
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">Préparez votre script</p>
-                            <ScriptGenerator
-                              onScriptGenerated={(generatedScript) => setFacecamScript(generatedScript)}
-                              senderName={`${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Votre nom"}
-                              senderTitle={profile?.title || "Votre titre"}
-                              defaultCompany={prospectCompany}
-                              defaultContact={contacts[0]?.firstName || ""}
-                              defaultPurpose={getPurposeFromStage(dealStage)}
+                          <p className="text-sm font-medium">Préparez votre script</p>
+
+                          <div className="relative">
+                            <div className="absolute top-2 right-2 z-10">
+                              <ScriptGenerator
+                                onScriptGenerated={(generatedScript) => setFacecamScript(generatedScript)}
+                                senderName={`${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Votre nom"}
+                                senderTitle={profile?.title || "Votre titre"}
+                                defaultCompany={prospectCompany}
+                                defaultContact={contacts[0]?.firstName || ""}
+                                defaultPurpose={getPurposeFromStage(dealStage)}
+                              />
+                            </div>
+                            <Textarea
+                              value={facecamScript}
+                              onChange={(e) => setFacecamScript(e.target.value)}
+                              rows={8}
+                              className="text-sm min-h-[200px] pr-36 leading-relaxed"
+                              placeholder="Écrivez votre script ici..."
                             />
                           </div>
-
-                          <div className="flex gap-2">
-                            {[
-                              { key: "intro", label: "Intro" },
-                              { key: "relance", label: "Relance" },
-                              { key: "reponse", label: "Réponse" },
-                            ].map((v) => (
-                              <Button
-                                key={v.key}
-                                size="sm"
-                                variant={facecamVariant === v.key ? "default" : "outline"}
-                                onClick={() => switchFacecamVariant(v.key)}
-                                className="text-xs"
-                              >
-                                {v.label}
-                              </Button>
-                            ))}
-                          </div>
-
-                          <Textarea
-                            value={facecamScript}
-                            onChange={(e) => setFacecamScript(e.target.value)}
-                            rows={5}
-                            className="text-sm min-h-[120px]"
-                            placeholder="Écrivez votre script ici..."
-                          />
 
                           <div className="flex flex-col gap-2">
                             <Button
