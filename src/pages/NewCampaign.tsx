@@ -363,15 +363,13 @@ export default function NewCampaign() {
 
   const STEPS = [
     { num: 1, label: "Contexte", icon: Building2 },
-    { num: 2, label: "Calibration", icon: Target },
-    { num: 3, label: "Asset", icon: FileVideo },
-    { num: 4, label: "Concurrent", icon: Swords },
-    { num: 5, label: "Contacts", icon: UserPlus },
+    { num: 2, label: "Asset", icon: FileVideo },
+    { num: 3, label: "Concurrent", icon: Swords },
+    { num: 4, label: "Contacts", icon: UserPlus },
   ];
 
   const canProceedStep1 = campaignName.trim() && prospectCompany.trim();
-  const canProceedStep2 = motionType && decisionStructure;
-  const canProceedStep3 = assetType && (assetType === "document" || selectedIdentityId);
+  const canProceedStep2 = assetType && (assetType === "document" || selectedIdentityId);
 
   return (
     <AppLayout>
