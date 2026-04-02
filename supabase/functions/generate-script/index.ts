@@ -37,6 +37,8 @@ Les scripts doivent être:
 - Authentiques et naturels (pas de langage corporate)
 - Orientés vers l'action avec un CTA clair
 
+RÈGLE ABSOLUE : utiliser systématiquement le vouvoiement (vous, votre, vos). Ne jamais utiliser le tutoiement (tu, ton, tes) sauf si l'utilisateur écrit explicitement dans ses points clés ou son CTA une instruction comme "utiliser le tu" ou "tutoyer".
+
 Utilise les variables suivantes dans ton script:
 - {prénom} pour le prénom du destinataire
 - {nom} pour le nom du destinataire  
