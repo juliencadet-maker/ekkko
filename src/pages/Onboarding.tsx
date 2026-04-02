@@ -496,7 +496,7 @@ export default function Onboarding() {
                   <Input id="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Europe/Paris" />
                 </div>
                 <Button onClick={handleProfileSubmit} className="w-full" disabled={isLoading}>
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</> : <>Continuer<ArrowRight className="ml-2 h-4 w-4" /></>}
+                  {isLoading ? <><EkkoLoader mode="once" size={16} className="mr-2" />Enregistrement...</> : <>Continuer<ArrowRight className="ml-2 h-4 w-4" /></>}
                 </Button>
               </CardContent>
             </>
