@@ -270,7 +270,7 @@ export default function NewCampaign() {
         .insert({
           org_id: membership!.org_id,
           created_by_user_id: user.id,
-          identity_id: assetType === "video" ? selectedIdentity?.id : null,
+          identity_id: isExecVideo ? selectedIdentity?.id : null,
           name: campaignName,
           script: script || "—",
           is_self_campaign: assetType === "video" ? isSelfIdentity : true,
