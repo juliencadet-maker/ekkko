@@ -739,14 +739,13 @@ export default function NewCampaign() {
                   {/* Video sub-flow: choose mode */}
                   {assetType === "video" && !videoMode && (
                     <div className="space-y-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => setAssetType("")}
-                        className="text-muted-foreground -mt-2"
+                        className="link-action text-sm flex items-center gap-1 -mt-2"
                       >
-                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer le type d'asset
-                      </Button>
+                        <ArrowLeft className="h-3 w-3" /> Changer le type d'asset
+                      </button>
                       <p className="text-sm font-medium">Comment voulez-vous créer cette vidéo ?</p>
                       <div className="space-y-2">
                         {[
