@@ -289,7 +289,7 @@ export default function Index() {
                 </div>
                 <div className="px-5 py-3 bg-destructive/5 border-b border-destructive/10 flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-destructive flex-shrink-0"></div>
-                  <p className="text-xs text-destructive font-medium">CFO silencieux depuis 12 jours — action requise</p>
+                  <p className="text-xs text-destructive font-medium">CFO · 12j sans signal — action requise</p>
                 </div>
                 <div className="p-4 space-y-2">
                   {[
