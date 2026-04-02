@@ -75,12 +75,10 @@ export default function DealIntelligence() {
           supabase.from("viewers").select("id", { count: "exact", head: true }).in("campaign_id", campaignIds),
         ]);
 
-        const campaignList = (campaignsRes.data || []) as CampaignRow[];
-        setCampaigns(campaignList);
-
         // Only keep latest score per campaign
         const allScores = (scoresRes.data || []) as DealScoreRow[];
-        const campaignIds = new Set(campaignList.map((c) => c.id));
+        const campaignIdSet = new Set(campaignIds);
+        const latestMap = new Map<string, DealScoreRow>();
         const latestMap = new Map<string, DealScoreRow>();
         for (const s of allScores) {
           if (campaignIds.has(s.campaign_id) && !latestMap.has(s.campaign_id)) {
