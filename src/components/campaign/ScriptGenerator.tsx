@@ -19,7 +19,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Wand2 } from "lucide-react";
+import { Sparkles, Wand2 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 const TONE_OPTIONS = [
   { value: "professionnel", label: "Professionnel" },
