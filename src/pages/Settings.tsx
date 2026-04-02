@@ -10,7 +10,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { canManageOrg } from "@/lib/roles";
 import { toast } from "sonner";
-import { Check, Loader2, ExternalLink, Link2, Link2Off, MessageSquare, Hash, ShieldOff } from "lucide-react";
+import { Check, ExternalLink, Link2, Link2Off, MessageSquare, Hash, ShieldOff } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 export default function Settings() {
   const { profile, org, membership } = useAuthContext();
