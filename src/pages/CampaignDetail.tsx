@@ -717,7 +717,7 @@ export default function CampaignDetail() {
         <Alert className="mb-6 border-primary/30 bg-primary/5">
           <div className="flex items-center gap-3">
             {hasActiveJobs ? (
-              <Loader2 className="h-5 w-5 text-primary animate-spin" />
+              <EkkoLoader mode="loop" size={24} />
             ) : (
               <CheckCircle2 className="h-5 w-5 text-primary" />
             )}
