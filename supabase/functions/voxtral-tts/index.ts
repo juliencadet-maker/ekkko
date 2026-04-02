@@ -128,7 +128,7 @@ serve(async (req) => {
 
     // Append a natural closing phrase for TTS only (not stored in DB script_oral)
     // This ensures the video ends smoothly instead of cutting abruptly
-    const TTS_CLOSING_PHRASE = "\n\nJe reste disponible pour échanger. À très bientôt.";
+    const TTS_CLOSING_PHRASE = "\n\nJe reste disponible pour échanger. À très bientôt.....";
     const ttsScript = script.trimEnd() + TTS_CLOSING_PHRASE;
 
     // Call Voxtral TTS with voice cloning (zero-shot)
