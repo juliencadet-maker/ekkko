@@ -610,8 +610,8 @@ export default function NewCampaign() {
             </Card>
           )}
 
-          {/* STEP 4 — Competitor (optional) */}
-          {currentStep === 4 && (
+          {/* STEP 3 — Competitor (optional) */}
+          {currentStep === 3 && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
