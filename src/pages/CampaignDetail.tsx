@@ -445,10 +445,8 @@ export default function CampaignDetail() {
 
   const landingPageUrl = id ? `${window.location.origin}/lp/${id}` : "";
 
-  const generateShareLink = (videoId?: string) => {
-    const baseUrl = window.location.origin;
-    const token = videoId || "demo-token-" + Date.now();
-    return `${baseUrl}/v/${token}`;
+  const generateShareLink = () => {
+    return landingPageUrl;
   };
 
   const copyShareLink = (link: string) => {
