@@ -1,8 +1,9 @@
 import { ReactNode, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { Loader2, Clock, LogOut } from "lucide-react";
+import { Clock, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 interface AuthGuardProps {
   children: ReactNode;
