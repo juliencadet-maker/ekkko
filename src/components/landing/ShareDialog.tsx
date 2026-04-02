@@ -224,7 +224,7 @@ export function ShareDialog({
             disabled={!isValid || isSending}
           >
             {isSending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <EkkoLoader mode="once" size={16} />
             ) : (
               <Send className="h-4 w-4" />
             )}

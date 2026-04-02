@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Play, 
-  Play, 
   Square, 
   RotateCcw, 
   Upload, 
