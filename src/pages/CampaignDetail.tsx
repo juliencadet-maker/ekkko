@@ -55,6 +55,7 @@ import {
   Zap,
   Sparkles,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
