@@ -31,9 +31,26 @@ export default function UserApprovals() {
   const isAdmin = membership?.role === "org_owner" || membership?.role === "org_admin";
 
   const fetchUsers = async () => {
+    if (!membership?.org_id) return;
+
+    // Get user_ids in the same org via org_memberships
+    const { data: members } = await supabase
+      .from("org_memberships")
+      .select("user_id")
+      .eq("org_id", membership.org_id)
+      .eq("is_active", true);
+
+    const userIds = (members || []).map((m) => m.user_id);
+    if (userIds.length === 0) {
+      setUsers([]);
+      setIsLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .select("id, user_id, email, first_name, last_name, company, is_approved, created_at")
+      .in("user_id", userIds)
       .order("created_at", { ascending: false });
 
     if (!error && data) {
