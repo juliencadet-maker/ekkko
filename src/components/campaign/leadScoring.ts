@@ -136,7 +136,7 @@ export function generateAlerts(entries: Array<{
         viewerName: entry.displayName,
         score: entry.leadScore.total,
         timestamp: entry.lastWatchedAt,
-        icon: "👑",
+        icon: "champion_activity",
       });
     }
   }
