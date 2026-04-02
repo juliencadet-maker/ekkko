@@ -136,7 +136,7 @@ export default function Index() {
               icon: AlertTriangle,
               iconBg: "bg-info/10",
               iconColor: "text-info",
-              title: "Votre champion vous dit que ça avance.\nIl n'a rien ouvert depuis 12 jours.",
+              title: "Le contact qui porte le dossier en interne\nn'a rien ouvert depuis 12 jours.",
               badge: "Contradiction détectée.",
               badgeColor: "text-destructive",
             },
