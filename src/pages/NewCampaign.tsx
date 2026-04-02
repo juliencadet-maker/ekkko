@@ -104,11 +104,13 @@ export default function NewCampaign() {
   const [importedFile, setImportedFile] = useState<File | null>(null);
 
   // Facecam phases
-  const [facecamPhase, setFacecamPhase] = useState<"script" | "recording">("script");
+  const [facecamPhase, setFacecamPhase] = useState<"script" | "naturalizing" | "review" | "recording">("script");
   const [facecamScript, setFacecamScript] = useState("");
+  const [facecamOriginalScript, setFacecamOriginalScript] = useState("");
   const [facecamVariant, setFacecamVariant] = useState("intro");
   const [facecamWithTeleprompter, setFacecamWithTeleprompter] = useState(false);
   const [facecamTransitioning, setFacecamTransitioning] = useState(false);
+  const [showOriginalScript, setShowOriginalScript] = useState(false);
 
   // Script for identity path
   const [script, setScript] = useState("");
@@ -245,6 +247,30 @@ export default function NewCampaign() {
   const switchFacecamVariant = (v: string) => {
     setFacecamVariant(v);
     setFacecamScript(generateFacecamScript(v, prospectCompany, contacts[0]?.firstName || ""));
+  };
+
+  const naturalizeScript = async () => {
+    if (!facecamScript.trim()) {
+      transitionToRecording(true);
+      return;
+    }
+    setFacecamOriginalScript(facecamScript);
+    setFacecamPhase("naturalizing");
+    try {
+      const res = await supabase.functions.invoke("transform-script-to-speech", {
+        body: { campaign_id: "00000000-0000-0000-0000-000000000000", script: facecamScript },
+      });
+      if (res.error || !res.data?.script_oral) {
+        // Fallback: use original script
+        setFacecamPhase("review");
+        return;
+      }
+      setFacecamScript(res.data.script_oral);
+      setFacecamPhase("review");
+    } catch {
+      // Fallback silently
+      setFacecamPhase("review");
+    }
   };
 
   const transitionToRecording = (withTeleprompter: boolean) => {
@@ -759,7 +785,9 @@ export default function NewCampaign() {
                           setFacecamBlob(null);
                           setFacecamPhase("script");
                           setFacecamScript("");
+                          setFacecamOriginalScript("");
                           setFacecamWithTeleprompter(false);
+                          setShowOriginalScript(false);
                         }}
                         className="text-muted-foreground -mt-2"
                       >
@@ -813,7 +841,7 @@ export default function NewCampaign() {
 
                           <div className="flex flex-col gap-2">
                             <Button
-                              onClick={() => transitionToRecording(true)}
+                              onClick={() => naturalizeScript()}
                               className="w-full min-h-12 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
                             >
                               Valider ce script <ArrowRight className="h-4 w-4" />
@@ -826,6 +854,52 @@ export default function NewCampaign() {
                               Enregistrer sans script →
                             </Button>
                           </div>
+                        </div>
+                      )}
+
+                      {/* PHASE — Naturalizing */}
+                      {facecamPhase === "naturalizing" && (
+                        <div className="flex flex-col items-center justify-center py-12 gap-4">
+                          <EkkoLoader mode="once" size={40} />
+                          <p className="text-sm text-muted-foreground">Adaptation du script pour l'oral…</p>
+                        </div>
+                      )}
+
+                      {/* PHASE — Review naturalized script */}
+                      {facecamPhase === "review" && (
+                        <div className="space-y-4 animate-fade-in">
+                          <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
+                            <p className="text-sm text-foreground">
+                              Ekko a adapté votre script pour sonner naturel à l'oral. Modifiez-le librement.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setShowOriginalScript(!showOriginalScript)}
+                              className="text-xs text-muted-foreground underline mt-1 hover:text-foreground transition-colors"
+                            >
+                              {showOriginalScript ? "Masquer le script original" : "Voir le script original"}
+                            </button>
+                          </div>
+
+                          {showOriginalScript && (
+                            <div className="p-3 bg-muted rounded-lg text-xs text-muted-foreground whitespace-pre-wrap">
+                              {facecamOriginalScript}
+                            </div>
+                          )}
+
+                          <Textarea
+                            value={facecamScript}
+                            onChange={(e) => setFacecamScript(e.target.value)}
+                            rows={5}
+                            className="text-sm min-h-[120px]"
+                          />
+
+                          <Button
+                            onClick={() => transitionToRecording(true)}
+                            className="w-full min-h-12 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+                          >
+                            Lancer l'enregistrement <ArrowRight className="h-4 w-4" />
+                          </Button>
                         </div>
                       )}
 
