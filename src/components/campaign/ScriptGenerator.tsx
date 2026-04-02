@@ -184,7 +184,7 @@ export function ScriptGenerator({
 
           {/* CTA */}
           <div className="space-y-2">
-            <Label>Call-to-action souhaité</Label>
+            <Label>Action souhaitée</Label>
             <Input value={context.callToAction} onChange={(e) => setContext({ ...context, callToAction: e.target.value })} placeholder="Ex: Réserver une démo, Répondre..." />
           </div>
 
