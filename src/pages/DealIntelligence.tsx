@@ -79,9 +79,8 @@ export default function DealIntelligence() {
         const allScores = (scoresRes.data || []) as DealScoreRow[];
         const campaignIdSet = new Set(campaignIds);
         const latestMap = new Map<string, DealScoreRow>();
-        const latestMap = new Map<string, DealScoreRow>();
         for (const s of allScores) {
-          if (campaignIds.has(s.campaign_id) && !latestMap.has(s.campaign_id)) {
+          if (campaignIdSet.has(s.campaign_id) && !latestMap.has(s.campaign_id)) {
             latestMap.set(s.campaign_id, s);
           }
         }
