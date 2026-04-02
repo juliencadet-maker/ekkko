@@ -1,0 +1,1 @@
+UPDATE public.identities SET provider_identity_id = 'rf954a557741', clone_status = 'ready', metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{tavus_replica_id}', '"rf954a557741"') WHERE id IN ('26b2ff4a-f34b-469e-9d1e-058dba80a38a', '486cc4ec-db9a-42ca-a531-c87a12707681');
