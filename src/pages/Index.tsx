@@ -327,9 +327,9 @@ export default function Index() {
           <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Comment ça marche</p>
           <h2 className="text-4xl font-bold text-center tracking-tight mb-4">De l'envoi au signal en 4 étapes</h2>
           <p className="text-lg text-muted-foreground text-center max-w-2xl mx-auto mb-16">
-            Chaque deal stratégique bénéficie d'une présence exécutive.
+            Chaque deal crée des signaux.
             <br />
-            Chaque interaction révèle la carte politique de votre prospect.
+            Ekko les capte pendant que vous n'êtes pas là.
           </p>
 
           <div className="grid md:grid-cols-4 gap-4">
