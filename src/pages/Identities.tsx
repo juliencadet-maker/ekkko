@@ -22,7 +22,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Loader2, Plus, Star, MoreVertical, Trash2, Share2 } from "lucide-react";
+import { Users, Plus, Star, MoreVertical, Trash2, Share2 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { useToast } from "@/hooks/use-toast";
 import type { Identity } from "@/types/database";
 import { CreateIdentityDialog } from "@/components/identity/CreateIdentityDialog";
