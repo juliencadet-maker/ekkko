@@ -844,8 +844,8 @@ export default function NewCampaign() {
                   ))}
                 </div>
 
-                {/* Approval info for video */}
-                {assetType === "video" && requiresApproval() && (
+                {/* Approval info for identity video */}
+                {assetType === "video" && videoMode === "identity" && requiresApproval() && (
                   <div className="p-3 bg-warning/10 rounded-lg border border-warning/20 flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
                     <div>
