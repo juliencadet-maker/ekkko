@@ -92,7 +92,7 @@ export default function NewCampaign() {
   const [hasIncumbent, setHasIncumbent] = useState<"yes" | "no" | "unknown" | "">("");
   const [incumbentType, setIncumbentType] = useState("");
 
-  // Step 5 — Contacts
+  // Step 4 — Contacts
   const [contacts, setContacts] = useState<Contact[]>([{ email: "", firstName: "", lastName: "", title: "" }]);
 
   // Script (generated later in campaign detail)
