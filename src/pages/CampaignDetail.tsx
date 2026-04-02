@@ -312,13 +312,17 @@ export default function CampaignDetail() {
           .order("version_number", { ascending: false });
         setScriptVersions(versionsData || []);
 
-        // Fetch deal score + viewers for agent
-        const [dealScoreRes, viewersRes] = await Promise.all([
+        // Fetch deal score + viewers + agent_context
+        const [dealScoreRes, viewersRes, agentCtxRes] = await Promise.all([
           supabase.from("deal_scores").select("*").eq("campaign_id", id).order("scored_at", { ascending: false }).limit(1),
           supabase.from("viewers").select("*").eq("campaign_id", id).order("contact_score", { ascending: false, nullsFirst: false }),
+          supabase.from("agent_context").select("*").eq("campaign_id", id).maybeSingle(),
         ]);
         if (dealScoreRes.data?.[0]) setDealScore(dealScoreRes.data[0]);
         if (viewersRes.data) setViewers(viewersRes.data);
+        if (agentCtxRes.data) setAgentContext(agentCtxRes.data);
+        // Initialize snooze date from campaign
+        if (campaignData.snoozed_until) setSnoozeDate(new Date(campaignData.snoozed_until));
       } catch {
         console.error("Fetch campaign failed");
         toast.error("Erreur lors du chargement de la campagne");
