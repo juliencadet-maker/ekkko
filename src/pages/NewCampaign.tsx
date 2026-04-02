@@ -470,13 +470,13 @@ export default function NewCampaign() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Valeur estimée (EUR)</Label>
+                  <Label>Valeur estimée (k€)</Label>
                   <Input
                     type="number"
                     min="0"
                     value={dealValue}
                     onChange={(e) => setDealValue(e.target.value)}
-                    placeholder="Ex : 50000"
+                    placeholder="Ex : 200"
                   />
                 </div>
 
