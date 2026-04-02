@@ -46,7 +46,7 @@ serve(async (req) => {
     // Fetch approval
     const { data: approval, error: fetchError } = await admin
       .from("approval_requests")
-      .select("*, campaigns(id, name, identity_id, created_by_user_id)")
+      .select("*, campaigns(id, name, script, identity_id, created_by_user_id)")
       .eq("id", approval_id)
       .single();
 
@@ -60,6 +60,7 @@ serve(async (req) => {
     const campaignId = approval.campaign_id;
 
     if (action === "approved") {
+      // --- Step 0: Update campaign status to approved ---
       const campaignUpdate: Record<string, unknown> = {
         status: "approved",
         approved_at: new Date().toISOString(),
@@ -70,6 +71,7 @@ serve(async (req) => {
       }
       await admin.from("campaigns").update(campaignUpdate).eq("id", campaignId);
 
+      // Audit logs
       await admin.from("audit_logs").insert({
         org_id: approval.org_id,
         user_id: approval.assigned_to_user_id,
@@ -92,13 +94,16 @@ serve(async (req) => {
         metadata: { approved_via: "external_link" },
       });
 
-      // Trigger script-to-speech transformation then video generation
+      // --- PIPELINE: Script Oral → Voxtral → Tavus ---
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-      // Step 1: Transform script to spoken language
       const scriptToTransform = safeScript || approval.campaigns?.script;
+
+      let scriptOral: string | null = null;
+
+      // --- Step 1: Transform script to spoken language (MANDATORY) ---
       if (scriptToTransform) {
+        console.log(`[Pipeline] Step 1: Transforming script to oral for campaign ${campaignId}`);
         try {
           const ttsRes = await fetch(`${supabaseUrl}/functions/v1/transform-script-to-speech`, {
             method: "POST",
@@ -109,29 +114,52 @@ serve(async (req) => {
             body: JSON.stringify({ campaign_id: campaignId, script: scriptToTransform }),
           });
           const ttsData = await ttsRes.json();
-          console.log("Script oral transformation:", ttsRes.status, JSON.stringify(ttsData));
+          console.log("[Pipeline] Step 1 result:", ttsRes.status, JSON.stringify(ttsData));
+
+          if (ttsRes.ok && ttsData.script_oral) {
+            scriptOral = ttsData.script_oral;
+            console.log(`[Pipeline] Step 1 SUCCESS: script_oral generated (${scriptOral!.length} chars)`);
+          } else {
+            console.error("[Pipeline] Step 1 FAILED: no script_oral returned, will use original script");
+            // Fallback: use original script as script_oral
+            scriptOral = scriptToTransform;
+          }
         } catch (ttsError) {
-          console.error("Script oral transformation failed (continuing):", ttsError);
+          console.error("[Pipeline] Step 1 ERROR:", ttsError);
+          // Fallback: use original script
+          scriptOral = scriptToTransform;
         }
       }
 
-      // Step 2: Auto-trigger video generation
-      try {
-        const genRes = await fetch(`${supabaseUrl}/functions/v1/tavus-generate-video`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")!}`,
-            "x-internal-secret": serviceKey,
-          },
-          body: JSON.stringify({ campaign_id: campaignId }),
-        });
-        const genData = await genRes.json();
-        console.log("Video generation triggered:", genRes.status, JSON.stringify(genData));
-      } catch (genError) {
-        console.error("Auto video generation trigger failed:", genError);
+      // --- Step 2: Trigger video generation (Voxtral TTS + Tavus lip-sync) ---
+      // Only proceed if we have a script to work with
+      if (scriptOral || scriptToTransform) {
+        console.log(`[Pipeline] Step 2: Triggering video generation for campaign ${campaignId}`);
+        try {
+          const genRes = await fetch(`${supabaseUrl}/functions/v1/tavus-generate-video`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")!}`,
+              "x-internal-secret": serviceKey,
+            },
+            body: JSON.stringify({ campaign_id: campaignId }),
+          });
+          const genData = await genRes.json();
+          console.log("[Pipeline] Step 2 result:", genRes.status, JSON.stringify(genData));
+        } catch (genError) {
+          console.error("[Pipeline] Step 2 ERROR:", genError);
+          // Log system failure for visibility
+          await admin.from("system_failures").insert({
+            campaign_id: campaignId,
+            failure_type: "video_generation_trigger",
+            message: `Video generation trigger failed after approval: ${genError instanceof Error ? genError.message : "Unknown error"}`,
+            severity: "high",
+          });
+        }
       }
     } else {
+      // REJECTED
       await admin.from("campaigns").update({ status: "draft" }).eq("id", campaignId);
 
       await admin.from("audit_logs").insert({
