@@ -742,7 +742,7 @@ export default function NewCampaign() {
                       <button
                         type="button"
                         onClick={() => setAssetType("")}
-                        className="link-action text-sm flex items-center gap-1 -mt-2"
+                         className="link-action text-sm flex items-center gap-1"
                       >
                         <ArrowLeft className="h-3 w-3" /> Changer le type d'asset
                       </button>
