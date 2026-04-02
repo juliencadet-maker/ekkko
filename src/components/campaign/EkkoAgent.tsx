@@ -249,8 +249,8 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                       <Bot className="h-3.5 w-3.5 text-primary-foreground" />
                     </div>
                     <div className="bg-muted rounded-xl px-4 py-3 flex items-center gap-1.5">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Analyse en cours...</span>
+                      <EkkoLoader mode="loop" size={14} />
+                      <span className="text-xs text-muted-foreground ml-1.5">Analyse en cours...</span>
                     </div>
                   </div>
                 )}

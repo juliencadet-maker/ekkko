@@ -597,7 +597,7 @@ function HubSpotPushButton({
         disabled={isSyncing || !entry.viewer_email}
       >
         {isSyncing ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" />
+          <EkkoLoader mode="once" size={14} className="mr-2" />
         ) : (
           <Upload className="h-3.5 w-3.5 mr-2" />
         )}
