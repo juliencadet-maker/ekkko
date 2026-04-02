@@ -443,7 +443,7 @@ export default function NewCampaign() {
         toast({ title: "Deal créé", description: "Vous pouvez maintenant ajouter des assets." });
       }
 
-      navigate("/app/campaigns");
+      navigate(`/app/campaigns/${campaign.id}`);
     } catch {
       toast({ title: "Erreur", description: "Impossible de créer le deal", variant: "destructive" });
     } finally {
