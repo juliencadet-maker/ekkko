@@ -252,6 +252,16 @@ serve(async (req) => {
       );
     }
 
+    // --- Variable preservation: extract {prénom}, {entreprise}, etc. ---
+    const varMap: Map<string, string> = new Map();
+    let varIndex = 0;
+    const scriptWithPlaceholders = script.replace(/\{([^}]+)\}/g, (_match: string, varName: string) => {
+      const placeholder = `__VAR_${varIndex}__`;
+      varMap.set(placeholder, `{${varName}}`);
+      varIndex++;
+      return placeholder;
+    });
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY manquante");
@@ -268,7 +278,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `SCRIPT À TRANSFORMER :\n${script}` },
+          { role: "user", content: `SCRIPT À TRANSFORMER :\n${scriptWithPlaceholders}` },
         ],
       }),
     });
