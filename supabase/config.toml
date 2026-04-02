@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.notify-waitlist]
 verify_jwt = false
+
+[functions.transform-script-to-speech]
+verify_jwt = false
