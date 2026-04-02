@@ -83,11 +83,7 @@ export default function NewCampaign() {
   const [existingAccount, setExistingAccount] = useState<{ id: string; name: string } | null>(null);
   const [accountSuggestion, setAccountSuggestion] = useState<{ id: string; name: string } | null>(null);
 
-  // Step 2 — Calibration
-  const [motionType, setMotionType] = useState("");
-  const [decisionStructure, setDecisionStructure] = useState("");
-
-  // Step 3 — Starting asset
+  // Step 2 — Starting asset
   const [assetType, setAssetType] = useState<"video" | "document" | "">("");
   const [selectedIdentityId, setSelectedIdentityId] = useState("");
   const [selectedIdentity, setSelectedIdentity] = useState<Identity | null>(null);
