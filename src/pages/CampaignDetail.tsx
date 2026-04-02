@@ -49,7 +49,7 @@ import {
   FileText,
   MessageSquare,
   GitCompareArrows,
-  Loader2,
+  
   Globe,
   RefreshCw,
   Zap,
