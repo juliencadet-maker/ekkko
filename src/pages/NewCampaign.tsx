@@ -684,13 +684,13 @@ export default function NewCampaign() {
                   </Button>
                 </div>
 
-                <Button
-                  variant="outline"
+                <button
+                  type="button"
                   onClick={() => setCurrentStep(4)}
-                  className="w-full min-h-12 border-[#0D1B2A] text-[#0D1B2A] bg-transparent hover:bg-[#0D1B2A]/5"
+                  className="link-action w-full text-center text-sm py-3"
                 >
                   Passer — j'ajouterai les contacts plus tard
-                </Button>
+                </button>
               </CardContent>
             </Card>
           )}
