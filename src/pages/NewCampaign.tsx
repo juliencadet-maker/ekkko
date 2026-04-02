@@ -869,10 +869,12 @@ export default function NewCampaign() {
                   >
                     {isSubmitting ? (
                       <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</>
-                    ) : assetType === "video" && !requiresApproval() ? (
+                    ) : assetType === "video" && videoMode === "identity" && !requiresApproval() ? (
                       <><CheckCircle2 className="mr-2 h-4 w-4" />Créer et générer la vidéo</>
-                    ) : assetType === "video" && requiresApproval() ? (
+                    ) : assetType === "video" && videoMode === "identity" && requiresApproval() ? (
                       <><Send className="mr-2 h-4 w-4" />Créer et envoyer en validation</>
+                    ) : assetType === "video" && (videoMode === "facecam" || videoMode === "import") ? (
+                      <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal et uploader la vidéo</>
                     ) : (
                       <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal</>
                     )}
