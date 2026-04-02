@@ -9,7 +9,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Share2, Plus, Trash2, Send, Loader2 } from "lucide-react";
+import { Share2, Plus, Trash2, Send } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { toast } from "sonner";
 
 interface Collaborator {
