@@ -385,15 +385,26 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          account_id: string | null
           approved_at: string | null
           approved_by_user_id: string | null
           completed_at: string | null
           created_at: string
           created_by_user_id: string | null
+          crm_stage: string | null
+          deal_experience_mode: string | null
+          deal_identity_status: string | null
+          deal_owner_id: string | null
+          deal_risk_level: string | null
+          deal_risk_override: boolean | null
           deal_status: string | null
+          deleted_at: string | null
           description: string | null
+          first_action_completed_at: string | null
+          first_outcome_detected_at: string | null
+          first_signal_at: string | null
           id: string
-          identity_id: string
+          identity_id: string | null
           is_self_campaign: boolean | null
           metadata: Json | null
           name: string
@@ -403,20 +414,32 @@ export type Database = {
           script: string
           script_oral: string | null
           script_oral_generated_at: string | null
+          snoozed_until: string | null
           status: Database["public"]["Enums"]["campaign_status"]
           template_id: string | null
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           approved_at?: string | null
           approved_by_user_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          crm_stage?: string | null
+          deal_experience_mode?: string | null
+          deal_identity_status?: string | null
+          deal_owner_id?: string | null
+          deal_risk_level?: string | null
+          deal_risk_override?: boolean | null
           deal_status?: string | null
+          deleted_at?: string | null
           description?: string | null
+          first_action_completed_at?: string | null
+          first_outcome_detected_at?: string | null
+          first_signal_at?: string | null
           id?: string
-          identity_id: string
+          identity_id?: string | null
           is_self_campaign?: boolean | null
           metadata?: Json | null
           name: string
@@ -426,20 +449,32 @@ export type Database = {
           script: string
           script_oral?: string | null
           script_oral_generated_at?: string | null
+          snoozed_until?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           template_id?: string | null
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           approved_at?: string | null
           approved_by_user_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          crm_stage?: string | null
+          deal_experience_mode?: string | null
+          deal_identity_status?: string | null
+          deal_owner_id?: string | null
+          deal_risk_level?: string | null
+          deal_risk_override?: boolean | null
           deal_status?: string | null
+          deleted_at?: string | null
           description?: string | null
+          first_action_completed_at?: string | null
+          first_outcome_detected_at?: string | null
+          first_signal_at?: string | null
           id?: string
-          identity_id?: string
+          identity_id?: string | null
           is_self_campaign?: boolean | null
           metadata?: Json | null
           name?: string
@@ -449,6 +484,7 @@ export type Database = {
           script?: string
           script_oral?: string | null
           script_oral_generated_at?: string | null
+          snoozed_until?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           template_id?: string | null
           updated_at?: string
@@ -847,16 +883,20 @@ export type Database = {
           event_velocity: number | null
           graph_centralization: number | null
           id: string
+          layer_coverage: Json | null
           metadata: Json | null
           momentum: string | null
           multi_threading_score: number | null
+          priority_deal_score: number | null
           priority_score: number | null
           recommended_action: Json | null
           recommended_action_v2: Json | null
           risk_level: string | null
           scored_at: string
+          signal_coverage: number | null
           sponsor_count: number | null
           stage_signal_gap: number | null
+          trajectory: string | null
           viewer_count: number | null
         }
         Insert: {
@@ -874,16 +914,20 @@ export type Database = {
           event_velocity?: number | null
           graph_centralization?: number | null
           id?: string
+          layer_coverage?: Json | null
           metadata?: Json | null
           momentum?: string | null
           multi_threading_score?: number | null
+          priority_deal_score?: number | null
           priority_score?: number | null
           recommended_action?: Json | null
           recommended_action_v2?: Json | null
           risk_level?: string | null
           scored_at?: string
+          signal_coverage?: number | null
           sponsor_count?: number | null
           stage_signal_gap?: number | null
+          trajectory?: string | null
           viewer_count?: number | null
         }
         Update: {
@@ -901,16 +945,20 @@ export type Database = {
           event_velocity?: number | null
           graph_centralization?: number | null
           id?: string
+          layer_coverage?: Json | null
           metadata?: Json | null
           momentum?: string | null
           multi_threading_score?: number | null
+          priority_deal_score?: number | null
           priority_score?: number | null
           recommended_action?: Json | null
           recommended_action_v2?: Json | null
           risk_level?: string | null
           scored_at?: string
+          signal_coverage?: number | null
           sponsor_count?: number | null
           stage_signal_gap?: number | null
+          trajectory?: string | null
           viewer_count?: number | null
         }
         Relationships: [
@@ -2216,6 +2264,7 @@ export type Database = {
           campaign_id: string
           company: string | null
           contact_score: number | null
+          contact_type: string | null
           created_at: string
           cta_clicked: boolean | null
           domain: string | null
@@ -2223,6 +2272,8 @@ export type Database = {
           fingerprint: string | null
           first_seen_at: string | null
           id: string
+          identity_cluster_id: string | null
+          identity_confidence: string | null
           inferred_role: string | null
           influence_score: number | null
           is_known: boolean | null
@@ -2248,6 +2299,7 @@ export type Database = {
           campaign_id: string
           company?: string | null
           contact_score?: number | null
+          contact_type?: string | null
           created_at?: string
           cta_clicked?: boolean | null
           domain?: string | null
@@ -2255,6 +2307,8 @@ export type Database = {
           fingerprint?: string | null
           first_seen_at?: string | null
           id?: string
+          identity_cluster_id?: string | null
+          identity_confidence?: string | null
           inferred_role?: string | null
           influence_score?: number | null
           is_known?: boolean | null
@@ -2280,6 +2334,7 @@ export type Database = {
           campaign_id?: string
           company?: string | null
           contact_score?: number | null
+          contact_type?: string | null
           created_at?: string
           cta_clicked?: boolean | null
           domain?: string | null
@@ -2287,6 +2342,8 @@ export type Database = {
           fingerprint?: string | null
           first_seen_at?: string | null
           id?: string
+          identity_cluster_id?: string | null
+          identity_confidence?: string | null
           inferred_role?: string | null
           influence_score?: number | null
           is_known?: boolean | null
