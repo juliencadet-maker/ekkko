@@ -114,14 +114,17 @@ serve(async (req) => {
     // VIDEO GENERATION CALLBACK
     // Tavus sends: { video_id, status, download_url, hosted_url, stream_url }
     // ═══════════════════════════════════════════════════════
-    const tavusVideoId = payload.video_id;
+    // Tavus sends the video ID as "id" (not "video_id")
+    const tavusVideoId = payload.video_id || payload.id;
 
     if (!tavusVideoId) {
-      console.log("No video_id or replica_id in webhook payload, ignoring");
+      console.log("No video_id, id, or replica_id in webhook payload, ignoring");
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log("Processing video callback for tavus video:", tavusVideoId, "status:", status);
 
     const downloadUrl = payload.download_url;
     const hostedUrl = payload.hosted_url;
