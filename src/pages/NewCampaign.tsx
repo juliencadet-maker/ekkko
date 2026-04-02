@@ -280,7 +280,7 @@ export default function NewCampaign() {
           deal_experience_mode: assetType === "document" ? "pull_only" : "push_only",
           metadata: {
             stage: dealStage || null,
-            deal_value: dealValue ? parseFloat(dealValue) : null,
+            deal_value: dealValue ? parseFloat(dealValue) * 1000 : null,
             asset_type: assetType,
           },
         })
@@ -470,13 +470,13 @@ export default function NewCampaign() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Valeur estimée (EUR)</Label>
+                  <Label>Valeur estimée (k€)</Label>
                   <Input
                     type="number"
                     min="0"
                     value={dealValue}
                     onChange={(e) => setDealValue(e.target.value)}
-                    placeholder="Ex : 50000"
+                    placeholder="Ex : 200"
                   />
                 </div>
 
