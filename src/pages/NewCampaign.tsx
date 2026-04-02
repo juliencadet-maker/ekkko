@@ -249,6 +249,30 @@ export default function NewCampaign() {
     setFacecamScript(generateFacecamScript(v, prospectCompany, contacts[0]?.firstName || ""));
   };
 
+  const naturalizeScript = async () => {
+    if (!facecamScript.trim()) {
+      transitionToRecording(true);
+      return;
+    }
+    setFacecamOriginalScript(facecamScript);
+    setFacecamPhase("naturalizing");
+    try {
+      const res = await supabase.functions.invoke("transform-script-to-speech", {
+        body: { campaign_id: "temp-facecam", script: facecamScript },
+      });
+      if (res.error || !res.data?.script_oral) {
+        // Fallback: use original script
+        setFacecamPhase("review");
+        return;
+      }
+      setFacecamScript(res.data.script_oral);
+      setFacecamPhase("review");
+    } catch {
+      // Fallback silently
+      setFacecamPhase("review");
+    }
+  };
+
   const transitionToRecording = (withTeleprompter: boolean) => {
     setFacecamWithTeleprompter(withTeleprompter);
     setFacecamTransitioning(true);
