@@ -194,6 +194,8 @@ export type Database = {
           parent_campaign_id: string | null
           scheduled_at: string | null
           script: string
+          script_oral: string | null
+          script_oral_generated_at: string | null
           status: Database["public"]["Enums"]["campaign_status"]
           template_id: string | null
           updated_at: string
@@ -214,6 +216,8 @@ export type Database = {
           parent_campaign_id?: string | null
           scheduled_at?: string | null
           script: string
+          script_oral?: string | null
+          script_oral_generated_at?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           template_id?: string | null
           updated_at?: string
@@ -234,6 +238,8 @@ export type Database = {
           parent_campaign_id?: string | null
           scheduled_at?: string | null
           script?: string
+          script_oral?: string | null
+          script_oral_generated_at?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           template_id?: string | null
           updated_at?: string
