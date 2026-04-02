@@ -41,12 +41,11 @@ function generateCombinedScript(firstName: string, lastName: string, company: st
 
 ${companyLine}
 
-Je fais cet enregistrement pour être présent sur nos deals stratégiques sans mobiliser mon agenda.
+Je fais cet enregistrement pour être présent sur nos deals stratégiques.
 Chacune de mes apparitions vidéo est approuvée par moi avant envoi.
 
 Je confirme que j'autorise la création d'un clone numérique de mon apparence et de ma voix,
 exclusivement pour des communications professionnelles via la plateforme Ekko.
-Mon code de vérification est ${code}.
 
 Merci.`,
   };
