@@ -80,7 +80,7 @@ serve(async (req) => {
     for (const approval of (pendingApprovals || [])) {
       const meta = approval.slack_metadata as any;
       if (!meta?.channel_id || !meta?.message_ts) {
-        console.log(`Skipping approval ${approval.id}: no channel_id or message_ts`);
+        debugLog.push(`${approval.id}: skipped (no channel_id/message_ts), meta=${JSON.stringify(meta)}`);
         continue;
       }
 
