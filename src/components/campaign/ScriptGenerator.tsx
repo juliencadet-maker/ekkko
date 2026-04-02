@@ -171,6 +171,7 @@ export function ScriptGenerator({
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">Le script utilisera le vouvoiement par défaut.</p>
           </div>
 
           {/* 3 Key Points */}
