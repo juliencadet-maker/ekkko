@@ -646,7 +646,7 @@ export default function Onboarding() {
                           </Button>
                           <Button onClick={handleComplete} size="lg" disabled={isLoading || !consentGiven}>
                             {isLoading ? (
-                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création en cours...</>
+                              <><EkkoLoader mode="loop" size={16} className="mr-2" />Création en cours...</>
                             ) : (
                               <>Créer mon clone<ArrowRight className="ml-2 h-4 w-4" /></>
                             )}
