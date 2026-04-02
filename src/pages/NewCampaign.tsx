@@ -20,7 +20,7 @@ import { VideoImportUpload } from "@/components/campaign/VideoImportUpload";
 import {
   ArrowLeft,
   ArrowRight,
-  Loader2,
+  
   Send,
   CheckCircle2,
   AlertCircle,
