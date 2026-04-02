@@ -197,31 +197,37 @@ export default function NewCampaign() {
 
       await logEvent({ eventType: "campaign_created", entityType: "campaign", entityId: campaign.id, newValues: { name: campaignName, identityId: selectedIdentity.id } });
 
-      if (needsApproval) {
-        const assignedTo = !isSelfIdentity ? selectedIdentity.owner_user_id : null;
-        const { data: approvalData } = await supabase.from("approval_requests").insert({
-          org_id: membership!.org_id,
-          campaign_id: campaign.id,
-          requested_by_user_id: user.id,
-          assigned_to_user_id: assignedTo,
-          approval_type: "script",
-          script_snapshot: script,
-        }).select("id").single();
+      // Always create an approval_request to go through the orchestrator pipeline
+      const assignedTo = !isSelfIdentity ? selectedIdentity.owner_user_id : user.id;
+      const { data: approvalData } = await supabase.from("approval_requests").insert({
+        org_id: membership!.org_id,
+        campaign_id: campaign.id,
+        requested_by_user_id: user.id,
+        assigned_to_user_id: assignedTo,
+        approval_type: "script",
+        script_snapshot: script,
+      }).select("id").single();
 
+      if (needsApproval) {
         if (approvalData?.id) {
           supabase.functions.invoke("notify-approval", { body: { approval_id: approvalData.id } }).catch(() => {});
         }
-
         await logEvent({ eventType: "approval_requested", entityType: "campaign", entityId: campaign.id });
         toast({ title: "Deal envoyé en validation", description: "La demande de validation a été envoyée." });
       } else {
-        await logEvent({ eventType: "campaign_approved", entityType: "campaign", entityId: campaign.id });
-        try {
-          await tavusApi.generateVideo(campaign.id);
-          toast({ title: "Deal créé", description: "La génération vidéo est en cours." });
-        } catch {
-          toast({ title: "Deal créé", description: "Approuvé mais la génération vidéo a rencontré une erreur.", variant: "destructive" });
+        // Self-campaign auto-approval: call orchestrator to trigger full pipeline
+        // (transform-script-to-speech → video generation)
+        if (approvalData?.id) {
+          try {
+            await supabase.functions.invoke("process-approval-decision", {
+              body: { approval_id: approvalData.id, action: "approved" },
+            });
+            toast({ title: "Deal créé", description: "La génération vidéo est en cours." });
+          } catch {
+            toast({ title: "Deal créé", description: "Approuvé mais la génération vidéo a rencontré une erreur.", variant: "destructive" });
+          }
         }
+        await logEvent({ eventType: "campaign_approved", entityType: "campaign", entityId: campaign.id });
       }
 
       navigate("/app/campaigns");
