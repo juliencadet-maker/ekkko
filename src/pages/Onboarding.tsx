@@ -553,7 +553,7 @@ export default function Onboarding() {
                     </div>
 
                     <Button onClick={handleComplete} className="w-full" size="lg" disabled={isLoading || !consentGiven}>
-                      {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création en cours...</> : <>Créer mon identité démo<ArrowRight className="ml-2 h-4 w-4" /></>}
+                      {isLoading ? <><EkkoLoader mode="loop" size={16} className="mr-2" />Création en cours...</> : <>Créer mon identité démo<ArrowRight className="ml-2 h-4 w-4" /></>}
                     </Button>
                   </>
                 ) : (
