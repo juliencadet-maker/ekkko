@@ -319,7 +319,7 @@ export default function Settings() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={testConnection} disabled={isTestingConnection || connectionStatus === "unknown"}>
-                    {isTestingConnection ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                    {isTestingConnection ? <EkkoLoader mode="once" size={14} className="mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
                     Tester la connexion
                   </Button>
                   {connectionStatus === "connected" && (
