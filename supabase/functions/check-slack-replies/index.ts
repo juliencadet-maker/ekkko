@@ -79,25 +79,35 @@ serve(async (req) => {
 
     for (const approval of (pendingApprovals || [])) {
       const meta = approval.slack_metadata as any;
-      if (!meta?.channel_id || !meta?.message_ts) continue;
+      if (!meta?.channel_id || !meta?.message_ts) {
+        console.log(`Skipping approval ${approval.id}: no channel_id or message_ts`);
+        continue;
+      }
 
       // Fetch thread replies
       try {
-        const repliesRes = await fetch(
-          `${SLACK_GATEWAY_URL}/conversations.replies?channel=${meta.channel_id}&ts=${meta.message_ts}`,
-          { headers: slackHeaders },
-        );
+        const repliesUrl = `${SLACK_GATEWAY_URL}/conversations.replies?channel=${meta.channel_id}&ts=${meta.message_ts}`;
+        console.log(`[${approval.id}] Fetching replies from: ${repliesUrl}`);
+        
+        const repliesRes = await fetch(repliesUrl, { headers: slackHeaders });
         const repliesData = await repliesRes.json();
+        
+        console.log(`[${approval.id}] Slack API response status: ${repliesRes.status}, ok: ${repliesData.ok}, messages count: ${repliesData.messages?.length || 0}`);
+        if (!repliesData.ok) {
+          console.error(`[${approval.id}] Slack API error:`, JSON.stringify(repliesData));
+        }
 
         if (!repliesData.ok || !repliesData.messages) continue;
 
         // Skip first message (it's the original post), look at replies
         const replies = repliesData.messages.filter((m: any) => m.ts !== meta.message_ts);
+        console.log(`[${approval.id}] Thread replies (excluding original): ${replies.length}`, replies.map((r: any) => ({ ts: r.ts, text: r.text?.substring(0, 50), user: r.user })));
         if (replies.length === 0) continue;
 
         // Check already-processed replies
         const lastProcessedTs = meta.last_checked_ts || "0";
         const newReplies = replies.filter((m: any) => m.ts > lastProcessedTs);
+        console.log(`[${approval.id}] New replies since ${lastProcessedTs}: ${newReplies.length}`);
         if (newReplies.length === 0) continue;
 
         // Check the latest reply for a decision
