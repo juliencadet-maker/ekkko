@@ -43,6 +43,7 @@ export default function Approvals() {
   const [comment, setComment] = useState("");
   const [editedScript, setEditedScript] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [execGuardrailMessage, setExecGuardrailMessage] = useState<string | null>(null);
 
   const { user, membership } = useAuthContext();
   
