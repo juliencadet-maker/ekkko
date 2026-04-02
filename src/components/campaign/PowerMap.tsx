@@ -513,7 +513,11 @@ export function PowerMap({ campaignId, orgId }: PowerMapProps) {
                   }}
                   className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:shadow-md transition-all text-left cursor-pointer"
                 >
-                  <span className="text-lg mt-0.5">{alert.icon}</span>
+                  <span className="mt-0.5">
+                    {alert.icon === "hot_lead" && <Flame className="h-4 w-4 text-orange-500" />}
+                    {alert.icon === "re_engagement" && <Zap className="h-4 w-4 text-amber-500" />}
+                    {alert.icon === "champion_activity" && <Crown className="h-4 w-4 text-primary" />}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold truncate">{alert.title}</p>

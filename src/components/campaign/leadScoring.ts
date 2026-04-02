@@ -108,7 +108,7 @@ export function generateAlerts(entries: Array<{
         viewerName: entry.displayName,
         score: entry.leadScore.total,
         timestamp: entry.lastWatchedAt,
-        icon: "🔥",
+        icon: "hot_lead",
       });
     }
 
@@ -122,7 +122,7 @@ export function generateAlerts(entries: Array<{
         viewerName: entry.displayName,
         score: entry.leadScore.total,
         timestamp: entry.lastWatchedAt,
-        icon: "🔄",
+        icon: "re_engagement",
       });
     }
 
@@ -136,7 +136,7 @@ export function generateAlerts(entries: Array<{
         viewerName: entry.displayName,
         score: entry.leadScore.total,
         timestamp: entry.lastWatchedAt,
-        icon: "👑",
+        icon: "champion_activity",
       });
     }
   }
