@@ -65,7 +65,7 @@ export default function Index() {
               Vos deals racontent <span className="text-muted-foreground">autre chose.</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-lg mb-8 leading-relaxed">
-              Ekko révèle <strong className="text-foreground font-semibold">qui soutient, qui hésite et qui bloque</strong> pour agir avant que le deal ne vous échappe.
+              Ekko révèle <strong className="text-foreground font-semibold">qui avance, qui hésite et où ça ralentit</strong> pour agir avant que le deal ne vous échappe.
             </p>
             <div className="flex gap-3">
               <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => { setWaitlistSource("hero"); setWaitlistOpen(true); }}>
@@ -85,10 +85,10 @@ export default function Index() {
               <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-destructive flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-primary-foreground truncate">TotalEnergies — RFP Q2</p>
-                  <p className="text-[11px] text-primary-foreground/40">CFO silencieux 12j · 1 bloqueur</p>
+                  <p className="text-[11px] text-primary-foreground/40">CFO · 12j sans signal · 1 rôle clé manquant</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">En danger</span>
+                  <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">À traiter</span>
                   <span className="text-xs font-bold text-destructive">54</span>
                 </div>
               </div>
@@ -136,7 +136,7 @@ export default function Index() {
               icon: AlertTriangle,
               iconBg: "bg-info/10",
               iconColor: "text-info",
-              title: "Votre champion vous dit que ça avance.\nIl n'a rien ouvert depuis 12 jours.",
+              title: "Le contact qui porte le dossier en interne\nn'a rien ouvert depuis 12 jours.",
               badge: "Contradiction détectée.",
               badgeColor: "text-destructive",
             },
@@ -255,7 +255,7 @@ export default function Index() {
                 </div>
                 <div className="p-4 space-y-3">
                   {[
-                    { name: 'TotalEnergies — RFP Q2', meta: 'CFO silencieux depuis 12j · 1 bloqueur', badge: 'En danger', score: '54', border: 'border-destructive', tc: 'text-destructive', bg: 'bg-destructive/10' },
+                    { name: 'TotalEnergies — RFP Q2', meta: 'CFO · 12j sans signal · 1 rôle clé manquant', badge: 'À traiter', score: '54', border: 'border-destructive', tc: 'text-destructive', bg: 'bg-destructive/10' },
                     { name: 'Schneider Electric — ERP', meta: '3 nouveaux contacts détectés cette semaine', badge: 'À surveiller', score: '71', border: 'border-warning', tc: 'text-warning', bg: 'bg-warning/10' },
                     { name: 'Airbus — Transformation SI', meta: '2 sponsors actifs · Momentum en hausse', badge: 'Sain', score: '87', border: 'border-accent', tc: 'text-accent', bg: 'bg-accent/10' },
                   ].map(d => (
@@ -285,11 +285,11 @@ export default function Index() {
                     <p className="text-sm font-semibold text-primary-foreground">TotalEnergies — RFP Q2</p>
                     <p className="text-xs text-primary-foreground/30 mt-0.5">Buying committee · 5 contacts</p>
                   </div>
-                  <span className="text-xs font-bold bg-destructive/10 text-destructive px-3 py-1 rounded-lg">En danger</span>
+                  <span className="text-xs font-bold bg-destructive/10 text-destructive px-3 py-1 rounded-lg">À traiter</span>
                 </div>
                 <div className="px-5 py-3 bg-destructive/5 border-b border-destructive/10 flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-destructive flex-shrink-0"></div>
-                  <p className="text-xs text-destructive font-medium">CFO silencieux depuis 12 jours — action requise</p>
+                  <p className="text-xs text-destructive font-medium">CFO · 12j sans signal — action requise</p>
                 </div>
                 <div className="p-4 space-y-2">
                   {[
@@ -327,16 +327,16 @@ export default function Index() {
           <p className="text-xs uppercase text-muted-foreground tracking-widest text-center mb-4">Comment ça marche</p>
           <h2 className="text-4xl font-bold text-center tracking-tight mb-4">De l'envoi au signal en 4 étapes</h2>
           <p className="text-lg text-muted-foreground text-center max-w-2xl mx-auto mb-16">
-            Chaque deal stratégique bénéficie d'une présence exécutive.
+            Chaque deal crée des signaux.
             <br />
-            Chaque interaction révèle la carte politique de votre prospect.
+            Ekko les capte pendant que vous n'êtes pas là.
           </p>
 
           <div className="grid md:grid-cols-4 gap-4">
             {[
               { num: "1", icon: FileText, title: "Vous ciblez un deal", text: "L'AE crée le deal. Script personnalisé pour le bon décideur en 30 secondes.", highlight: false },
               { num: "2", icon: CheckSquare, title: "Votre exec intervient", text: "L'exec approuve en un clic via email, Slack ou WhatsApp. Sans login.", highlight: false },
-              { num: "3", icon: Send, title: "Le deal réagit", text: "Présence exécutive sur chaque deal stratégique au moment où elle compte.", highlight: false },
+              { num: "3", icon: Send, title: "Ekko observe", text: "Vos assets sont partagés, lus, transmis. Ekko capte chaque signal.", highlight: false },
               { num: "4", icon: Eye, title: "La lecture politique", text: "Qui soutient, qui hésite, qui bloque.\nLa carte politique de votre deal en temps réel.", highlight: true },
             ].map((step, i) => (
               <FadeIn key={step.num} delay={i * 0.1}>
@@ -432,7 +432,7 @@ export default function Index() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8">
           <div>
             <EkkoLogo size={24} textSize={18} onDark={true} />
-            <p className="text-sm text-primary-foreground/30 mt-2">Deal Intelligence · Buying Committee Signal · Exec Presence</p>
+            <p className="text-sm text-primary-foreground/30 mt-2">Deal Intelligence · Buying Committee Signal</p>
           </div>
 
           <div className="grid grid-cols-3 gap-8 text-sm">
