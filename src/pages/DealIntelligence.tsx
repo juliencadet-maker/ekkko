@@ -56,11 +56,23 @@ export default function DealIntelligence() {
     const fetch = async () => {
       if (!membership?.org_id) return;
       try {
-        const [campaignsRes, scoresRes, outcomesRes, viewersRes] = await Promise.all([
-          supabase.from("campaigns").select("id, name, status, created_at").eq("org_id", membership.org_id),
-          supabase.from("deal_scores").select("*").order("scored_at", { ascending: false }),
-          supabase.from("deal_outcomes").select("campaign_id, outcome"),
-          supabase.from("viewers").select("id", { count: "exact", head: true }),
+        const campaignsRes = await supabase.from("campaigns").select("id, name, status, created_at").eq("org_id", membership.org_id);
+        const campaignList = (campaignsRes.data || []) as CampaignRow[];
+        const campaignIds = campaignList.map((c) => c.id);
+        setCampaigns(campaignList);
+
+        if (campaignIds.length === 0) {
+          setScores([]);
+          setOutcomes([]);
+          setTotalViewers(0);
+          setIsLoading(false);
+          return;
+        }
+
+        const [scoresRes, outcomesRes, viewersRes] = await Promise.all([
+          supabase.from("deal_scores").select("*").in("campaign_id", campaignIds).order("scored_at", { ascending: false }),
+          supabase.from("deal_outcomes").select("campaign_id, outcome").in("campaign_id", campaignIds),
+          supabase.from("viewers").select("id", { count: "exact", head: true }).in("campaign_id", campaignIds),
         ]);
 
         const campaignList = (campaignsRes.data || []) as CampaignRow[];
