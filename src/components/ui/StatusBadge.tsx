@@ -82,7 +82,7 @@ const statusConfig: Record<StatusType, {
   processing: {
     label: "En cours",
     className: "status-badge-generating",
-    icon: Loader2,
+    icon: Zap,
   },
   failed: {
     label: "Échoué",
