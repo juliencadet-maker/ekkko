@@ -47,9 +47,19 @@ async function deleteUserAndData(admin: any, email: string) {
       await admin.from("deal_signals").delete().in("campaign_id", campaignIds);
       await admin.from("recommendation_outcomes").delete().in("campaign_id", campaignIds);
       await admin.from("agent_conversations").delete().in("campaign_id", campaignIds);
+      await admin.from("agent_context").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_contact_roles").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_triggers").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_permissions").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_rooms").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_assets").delete().in("campaign_id", campaignIds);
+      await admin.from("asset_deliveries").delete().in("campaign_id", campaignIds);
+      await admin.from("asset_page_events").delete().in("campaign_id", campaignIds);
+      await admin.from("timeline_events").delete().in("campaign_id", campaignIds);
       await admin.from("script_versions").delete().in("campaign_id", campaignIds);
     }
     await admin.from("campaigns").delete().eq("org_id", orgId);
+    await admin.from("accounts").delete().eq("org_id", orgId);
     await admin.from("identities").delete().eq("org_id", orgId);
     await admin.from("providers").delete().eq("org_id", orgId);
     await admin.from("policies").delete().eq("org_id", orgId);
@@ -365,199 +375,144 @@ serve(async (req) => {
       }
     }
 
-    // ── ACCOUNT 2: Schneider Electric ──────────────────────────────────────
-    const { data: schneiderParent } = await admin.from("campaigns").insert({
+    // ── ACCOUNT: Schneider Electric ──────────────────────────────────────
+    const { data: schneiderAccount } = await admin.from("accounts").insert({
+      org_id: orgId,
+      name: "Schneider Electric",
+      normalized_name: "schneider electric",
+      domain: "se.com",
+      created_from: "deal_creation",
+    }).select().single();
+
+    const decisionWindowA = new Date(Date.now() + 21 * 24 * 3600 * 1000).toISOString().split("T")[0];
+    const { data: schneiderDeal } = await admin.from("campaigns").insert({
       org_id: orgId,
       identity_id: salesIdentityId,
       created_by_user_id: salesUserId,
-      name: "Schneider Electric — ERP",
-      description: "Modernisation ERP — migration SAP vers solution cloud. Sponsor identifié côté achats.",
+      account_id: schneiderAccount!.id,
+      name: "Schneider Electric — Expansion IoT",
+      description: "Expansion IoT — déploiement capteurs industriels et plateforme de monitoring.",
       script: "",
       status: "completed",
+      deal_status: "observing",
       is_self_campaign: false,
-      metadata: {},
+      metadata: { deal_value: 380000 },
     }).select().single();
 
-    // ── ACCOUNT 3: Airbus ──────────────────────────────────────
-    const { data: airbusParent } = await admin.from("campaigns").insert({
-      org_id: orgId,
-      identity_id: salesIdentityId,
-      created_by_user_id: salesUserId,
-      name: "Airbus — Transformation SI",
-      description: "Transformation SI — refonte de l'architecture applicative. Comité d'achat mobilisé.",
-      script: "",
-      status: "completed",
-      is_self_campaign: false,
-      metadata: {},
-    }).select().single();
-
-    // ── Pending approval request (exec must approve) ──────────────
-    const { data: execCampaign } = await admin.from("campaigns").insert({
-      org_id: orgId,
-      identity_id: execIdentityId,
-      created_by_user_id: salesUserId,
-      parent_campaign_id: tvParentId,
-      name: "Engagement CEO — Sponsor Deal",
-      description: "Message personnalisé du CEO pour réaffirmer l'engagement d'Acme Corp sur le deal TotalEnergies.",
-      script: "Bonjour Sophie, je suis Marc Lefevre, CEO d'Acme Corp. Je souhaitais personnellement vous assurer de notre engagement total sur ce partenariat stratégique avec TotalEnergies. Nos équipes sont mobilisées pour garantir le succès de cette collaboration.",
-      status: "pending_approval",
-      is_self_campaign: false,
-      metadata: totalEnergiesMeta,
-    }).select().single();
-
-    await admin.from("recipients").insert({
-      org_id: orgId,
-      campaign_id: execCampaign!.id,
-      email: "sophie.renard@totalenergies.fr",
-      first_name: "Sophie",
-      last_name: "Renard",
-      company: "TotalEnergies",
-      variables: { title: "DRH" },
+    await admin.from("agent_context").insert({
+      campaign_id: schneiderDeal!.id,
+      stage: "negotiation",
+      incumbent_present: true,
+      incumbent_type: "competitor_named",
+      competitive_situation: "replacement",
+      decision_window: decisionWindowA,
+      committee_size_declared: 6,
     });
 
-    // Approval assigned to EXEC user (not sales user)
-    const { data: approvalReq } = await admin.from("approval_requests").insert({
-      org_id: orgId,
-      campaign_id: execCampaign!.id,
-      requested_by_user_id: salesUserId,
-      assigned_to_user_id: execUserId,
-      approval_type: "script",
-      script_snapshot: execCampaign!.script,
-      status: "pending",
-    }).select().single();
-
-    // ── VIEWERS for TotalEnergies (buying committee) ──────────────────
-    const tvViewerProfiles = [
-      { name: "Sophie Renard", email: "sophie.renard@totalenergies.fr", title: "DRH", company: "TotalEnergies", status: "sponsor_actif", contact_score: 92, sponsor_score: 85, influence_score: 78, blocker_score: 5, share_count: 3, viewers_generated: 2, total_watch_depth: 88, replay_count: 2, cta_clicked: true, is_known: true, last_event_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() },
-      { name: "Marc Duval", email: "marc.duval@totalenergies.fr", title: "COO", company: "TotalEnergies", status: "sponsor_actif", contact_score: 78, sponsor_score: 70, influence_score: 65, blocker_score: 0, share_count: 1, viewers_generated: 1, total_watch_depth: 72, replay_count: 1, cta_clicked: false, is_known: true, last_event_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString() },
-      { name: "Pierre Blanc", email: "pierre.blanc@totalenergies.fr", title: "CFO", company: "TotalEnergies", status: "neutre", contact_score: 38, sponsor_score: 15, influence_score: 40, blocker_score: 20, share_count: 0, viewers_generated: 0, total_watch_depth: 45, replay_count: 0, cta_clicked: false, is_known: true, last_event_at: new Date(Date.now() - 12 * 24 * 3600 * 1000).toISOString() },
-      { name: "Thomas Girard", email: "thomas.girard@totalenergies.fr", title: "DSI", company: "TotalEnergies", status: "bloqueur_potentiel", contact_score: 18, sponsor_score: 0, influence_score: 30, blocker_score: 80, share_count: 0, viewers_generated: 0, total_watch_depth: 8, replay_count: 0, cta_clicked: false, is_known: true, last_event_at: new Date(Date.now() - 15 * 24 * 3600 * 1000).toISOString() },
+    // 3 viewers for Schneider
+    const schneiderViewers = [
+      { name: "Claire Martin", email: "claire.martin@se.com", title: "VP Innovation", company: "Schneider Electric", status: "sponsor_actif", contact_score: 85, sponsor_score: 75, influence_score: 70, blocker_score: 5 },
+      { name: "Lucas Perrin", email: "lucas.perrin@se.com", title: "Directeur Achats", company: "Schneider Electric", status: "neutre", contact_score: 42, sponsor_score: 20, influence_score: 35, blocker_score: 15 },
+      { name: "Nathalie Roy", email: "nathalie.roy@se.com", title: "Responsable IT", company: "Schneider Electric", status: "peu_engagé", contact_score: 18, sponsor_score: 5, influence_score: 15, blocker_score: 10 },
     ];
-
-    const createdViewerIds: string[] = [];
-    for (const vp of tvViewerProfiles) {
-      const { data: viewer } = await admin.from("viewers").insert({
-        campaign_id: tvParentId,
+    for (const vp of schneiderViewers) {
+      await admin.from("viewers").insert({
+        campaign_id: schneiderDeal!.id,
         viewer_hash: `vh_${vp.email.split("@")[0]}`,
-        name: vp.name,
-        email: vp.email,
-        title: vp.title,
-        company: vp.company,
-        domain: "totalenergies.fr",
-        is_known: vp.is_known,
-        status: vp.status,
-        contact_score: vp.contact_score,
-        sponsor_score: vp.sponsor_score,
-        influence_score: vp.influence_score,
-        blocker_score: vp.blocker_score,
-        share_count: vp.share_count,
-        viewers_generated: vp.viewers_generated,
-        total_watch_depth: vp.total_watch_depth,
-        replay_count: vp.replay_count,
-        cta_clicked: vp.cta_clicked,
-        first_seen_at: new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString(),
-        last_event_at: vp.last_event_at,
-      }).select().single();
-      if (viewer) createdViewerIds.push(viewer.id);
+        name: vp.name, email: vp.email, title: vp.title, company: vp.company, domain: "se.com",
+        is_known: true, status: vp.status, contact_score: vp.contact_score,
+        sponsor_score: vp.sponsor_score, influence_score: vp.influence_score, blocker_score: vp.blocker_score,
+        share_count: 0, viewers_generated: 0, total_watch_depth: 40, replay_count: 0, cta_clicked: false,
+        first_seen_at: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString(),
+        last_event_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
+      });
     }
 
-    // Unknown contact
+    await admin.from("deal_scores").insert({
+      campaign_id: schneiderDeal!.id,
+      des: 62, viewer_count: 3, sponsor_count: 1, blocker_count: 0,
+      avg_watch_depth: 48, breadth: 40, event_velocity: 3, multi_threading_score: 2,
+      momentum: "declining", cold_start_regime: "warm_account", risk_level: "watch",
+      priority_score: 74, days_since_last_signal: 12,
+      alerts: [{ type: "warning", text: "Momentum en déclin — relancer les contacts" }],
+      recommended_action: { action: "re_engage", label: "Relancer le comité — 12 jours sans signal", confidence: 0.75 },
+    });
+
+    // ── ACCOUNT: TotalEnergies (Deal B) ──────────────────────────────────
+    const { data: totalAccount } = await admin.from("accounts").insert({
+      org_id: orgId,
+      name: "TotalEnergies",
+      normalized_name: "totalenergies",
+      domain: "totalenergies.fr",
+      created_from: "deal_creation",
+    }).select().single();
+
+    const { data: totalDealB } = await admin.from("campaigns").insert({
+      org_id: orgId,
+      identity_id: salesIdentityId,
+      created_by_user_id: salesUserId,
+      account_id: totalAccount!.id,
+      name: "TotalEnergies — Renouvellement RH",
+      description: "Renouvellement du SIRH — qualification en cours.",
+      script: "",
+      status: "completed",
+      deal_status: "active",
+      is_self_campaign: false,
+      metadata: { deal_value: 220000 },
+    }).select().single();
+
+    await admin.from("agent_context").insert({
+      campaign_id: totalDealB!.id,
+      stage: "qualification",
+      incumbent_present: false,
+      competitive_situation: "greenfield",
+    });
+    // No viewers, no deal_scores for Deal B
+
+    // ── ACCOUNT: BNP Paribas (Deal C) ──────────────────────────────────
+    const { data: bnpAccount } = await admin.from("accounts").insert({
+      org_id: orgId,
+      name: "BNP Paribas",
+      normalized_name: "bnp paribas",
+      domain: "bnpparibas.com",
+      created_from: "deal_creation",
+    }).select().single();
+
+    const snoozedUntil = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+    const { data: bnpDeal } = await admin.from("campaigns").insert({
+      org_id: orgId,
+      identity_id: salesIdentityId,
+      created_by_user_id: salesUserId,
+      account_id: bnpAccount!.id,
+      name: "BNP Paribas — Migration CRM",
+      description: "Migration CRM — shortlist en cours, deal snoozé 7 jours.",
+      script: "",
+      status: "completed",
+      deal_status: "snoozed",
+      snoozed_until: snoozedUntil,
+      is_self_campaign: false,
+      metadata: { deal_value: 150000 },
+    }).select().single();
+
+    await admin.from("agent_context").insert({
+      campaign_id: bnpDeal!.id,
+      stage: "shortlist",
+      incumbent_present: true,
+      incumbent_type: "internal_tool",
+      competitive_situation: "replacement",
+    });
+
+    // 1 viewer for BNP
     await admin.from("viewers").insert({
-      campaign_id: tvParentId,
-      viewer_hash: "unknown_1",
-      name: null,
-      email: null,
-      title: null,
-      company: null,
-      domain: null,
-      is_known: false,
-      status: "inconnu",
-      contact_score: 52,
-      sponsor_score: 0,
-      influence_score: 20,
-      blocker_score: 10,
-      share_count: 0,
-      viewers_generated: 0,
-      total_watch_depth: 60,
-      replay_count: 1,
-      cta_clicked: false,
-      first_seen_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
-      last_event_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
-    });
-
-    // Viewer relationships (Sophie forwarded to Marc)
-    if (createdViewerIds.length >= 2) {
-      await admin.from("viewer_relationships").insert([
-        { campaign_id: tvParentId, source_viewer_id: createdViewerIds[0], target_viewer_id: createdViewerIds[1], relationship_type: "forwarded", forward_probability: 0.92, evidence: { type: "referral_link" } },
-      ]);
-    }
-
-    // ── DEAL SCORES for TotalEnergies ──────────────────────────────────
-    await admin.from("deal_scores").insert({
-      campaign_id: tvParentId,
-      des: 54,
-      viewer_count: 5,
-      sponsor_count: 2,
-      blocker_count: 1,
-      avg_watch_depth: 55,
-      breadth: 60,
-      event_velocity: 2,
-      multi_threading_score: 3,
-      momentum: "declining",
-      cold_start_regime: "warm_account",
-      risk_level: "critical",
-      priority_score: 78,
-      days_since_last_signal: 12,
-      alerts: [
-        { type: "danger", text: "Thomas Girard — bloqueur potentiel (score 80)" },
-        { type: "warning", text: "Pierre Blanc — silence depuis 12 jours" },
-        { type: "info", text: "Sophie Renard — champion actif, 3 partages" },
-      ],
-      recommended_action: { action: "address_blockers", label: "Traiter les bloqueurs — DSI non engagé", confidence: 0.82 },
-    });
-
-    // ── DEAL SCORE for Schneider Electric ──────────────────────────────
-    await admin.from("deal_scores").insert({
-      campaign_id: schneiderParent!.id,
-      des: 71,
-      viewer_count: 3,
-      sponsor_count: 1,
-      blocker_count: 0,
-      avg_watch_depth: 62,
-      breadth: 45,
-      event_velocity: 4,
-      multi_threading_score: 2,
-      momentum: "stable",
-      cold_start_regime: "cold_account",
-      risk_level: "watch",
-      priority_score: 45,
-      days_since_last_signal: 3,
-      alerts: [
-        { type: "warning", text: "Sponsor unique — comité encore étroit" },
-      ],
-      recommended_action: { action: "expand_committee", label: "Élargir le buying committee", confidence: 0.7 },
-    });
-
-    // ── DEAL SCORE for Airbus ──────────────────────────────────
-    await admin.from("deal_scores").insert({
-      campaign_id: airbusParent!.id,
-      des: 87,
-      viewer_count: 4,
-      sponsor_count: 2,
-      blocker_count: 0,
-      avg_watch_depth: 78,
-      breadth: 75,
-      event_velocity: 8,
-      multi_threading_score: 4,
-      momentum: "rising",
-      cold_start_regime: "warm_account",
-      risk_level: "healthy",
-      priority_score: 20,
-      days_since_last_signal: 1,
-      alerts: [
-        { type: "info", text: "Signaux favorables — pousser vers la clôture" },
-      ],
-      recommended_action: { action: "push_for_close", label: "Pousser vers la clôture — signaux favorables", confidence: 0.88 },
+      campaign_id: bnpDeal!.id,
+      viewer_hash: "vh_anne.leroy",
+      name: "Anne Leroy", email: "anne.leroy@bnpparibas.com", title: "Directrice CRM",
+      company: "BNP Paribas", domain: "bnpparibas.com",
+      is_known: true, status: "neutre", contact_score: 55,
+      sponsor_score: 30, influence_score: 45, blocker_score: 10,
+      share_count: 0, viewers_generated: 0, total_watch_depth: 50, replay_count: 0, cta_clicked: false,
+      first_seen_at: new Date(Date.now() - 8 * 24 * 3600 * 1000).toISOString(),
+      last_event_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
     });
 
     // ── VIDEO EVENTS (recent signals for dashboard) ──────────────────
