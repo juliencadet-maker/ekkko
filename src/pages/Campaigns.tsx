@@ -219,11 +219,21 @@ export default function Campaigns() {
             const signalBadges = getSignalBadges(score);
 
             return (
-              <div
-                key={campaign.id}
-                className={`group flex items-center gap-4 p-4 bg-card rounded-card shadow-card border-l-4 ${getBorderColor(score)} cursor-pointer hover:shadow-lg transition-all`}
-                onClick={() => navigate(`/app/campaigns/${campaign.id}`)}
-              >
+              <div key={campaign.id}>
+                {/* First action spotlight banner */}
+                {!(campaign as any).first_action_completed_at && (
+                  <div className="mb-1 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-t-lg border border-b-0 border-accent/20">
+                    Signal détecté — 1 action disponible maintenant
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    "group flex items-center gap-4 p-4 bg-card rounded-card shadow-card border-l-4 cursor-pointer hover:shadow-lg transition-all",
+                    getBorderColor(score),
+                    !(campaign as any).first_action_completed_at && "border-l-accent animate-pulse-border"
+                  )}
+                  onClick={() => navigate(`/app/campaigns/${campaign.id}`)}
+                >
                 <DealRiskBadge
                   level={(score?.risk_level as 'healthy' | 'watch' | 'critical') || null}
                   reason={score?.risk_level === 'critical' ? 'DES critique ou silence prolongé' :
