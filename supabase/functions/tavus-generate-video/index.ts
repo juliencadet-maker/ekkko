@@ -155,7 +155,7 @@ serve(async (req) => {
       );
     }
 
-    // Fetch campaign with identity
+    // Fetch campaign with identity (include script_oral)
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
       .select("*, identities(id, provider_identity_id, display_name, metadata, reference_video_path)")
@@ -210,8 +210,11 @@ serve(async (req) => {
     const results = [];
 
     for (const recipient of (recipients || [])) {
+      // Use script_oral (spoken version) if available, otherwise fall back to original script
+      const baseScript = (campaign as any).script_oral || campaign.script;
+
       // Personalize script
-      let personalizedScript = campaign.script;
+      let personalizedScript = baseScript;
       if (recipient.first_name) {
         personalizedScript = personalizedScript.replace(/\{prénom\}/gi, recipient.first_name);
         personalizedScript = personalizedScript.replace(/\{prenom\}/gi, recipient.first_name);
