@@ -103,7 +103,7 @@ export default function Governance() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <EkkoLoader mode="once" size={32} />
         </div>
       </AppLayout>
     );

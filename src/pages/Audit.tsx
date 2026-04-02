@@ -56,7 +56,7 @@ export default function Audit() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+            <div className="flex items-center justify-center h-64"><EkkoLoader mode="once" size={40} /></div>
           ) : (
             <Table>
               <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Événement</TableHead><TableHead>Type</TableHead></TableRow></TableHeader>
