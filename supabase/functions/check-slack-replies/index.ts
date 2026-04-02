@@ -184,7 +184,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, checked: pendingApprovals?.length || 0, processed }),
+      JSON.stringify({ success: true, checked: pendingApprovals?.length || 0, processed, debug: debugLog }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
