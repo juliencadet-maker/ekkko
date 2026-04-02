@@ -322,7 +322,7 @@ export default function Onboarding() {
     }
   };
 
-  const canSkip = isDemoAccount || isExecAccount;
+  const canSkip = true; // All users can skip
 
   const handleSkipOnboarding = async () => {
     setIsLoading(true);
