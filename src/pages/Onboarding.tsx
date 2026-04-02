@@ -628,7 +628,7 @@ export default function Onboarding() {
                         {/* Status Messages */}
                         {cloneStatus === "uploading" && (
                           <Alert>
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <EkkoLoader mode="loop" size={16} />
                             <AlertDescription>Upload de la vidéo en cours...</AlertDescription>
                           </Alert>
                         )}
