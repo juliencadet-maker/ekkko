@@ -26,7 +26,7 @@ import {
   Trash2,
   Users,
   Building2,
-  Target,
+  
   FileVideo,
   FileText,
   Swords,
