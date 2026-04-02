@@ -104,11 +104,13 @@ export default function NewCampaign() {
   const [importedFile, setImportedFile] = useState<File | null>(null);
 
   // Facecam phases
-  const [facecamPhase, setFacecamPhase] = useState<"script" | "recording">("script");
+  const [facecamPhase, setFacecamPhase] = useState<"script" | "naturalizing" | "review" | "recording">("script");
   const [facecamScript, setFacecamScript] = useState("");
+  const [facecamOriginalScript, setFacecamOriginalScript] = useState("");
   const [facecamVariant, setFacecamVariant] = useState("intro");
   const [facecamWithTeleprompter, setFacecamWithTeleprompter] = useState(false);
   const [facecamTransitioning, setFacecamTransitioning] = useState(false);
+  const [showOriginalScript, setShowOriginalScript] = useState(false);
 
   // Script for identity path
   const [script, setScript] = useState("");
