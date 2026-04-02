@@ -85,7 +85,7 @@ export default function Index() {
               <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-destructive flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-primary-foreground truncate">TotalEnergies — RFP Q2</p>
-                  <p className="text-[11px] text-primary-foreground/40">CFO · 12j sans signal · 1 rôle clé manquant</p>
+                  <p className="text-[11px] text-primary-foreground/40">CFO · 12j sans signal · 1 contact à qualifier</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">À traiter</span>
