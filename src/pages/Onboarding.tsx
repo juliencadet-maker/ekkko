@@ -634,7 +634,7 @@ export default function Onboarding() {
                         )}
                         {cloneStatus === "creating" && (
                           <Alert>
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <EkkoLoader mode="loop" size={16} />
                             <AlertDescription>Création des clones visuel et vocal en cours...</AlertDescription>
                           </Alert>
                         )}
