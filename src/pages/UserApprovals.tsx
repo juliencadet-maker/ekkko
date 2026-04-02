@@ -124,7 +124,7 @@ export default function UserApprovals() {
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <EkkoLoader mode="once" size={32} />
         </div>
       ) : (
         <div className="space-y-6">
