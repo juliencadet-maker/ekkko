@@ -252,7 +252,7 @@ export default function Settings() {
                 {(slackStatus === "connected" || slackStatus === "testing") && (
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={testSlack} disabled={slackStatus === "testing"}>
-                      {slackStatus === "testing" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                      {slackStatus === "testing" ? <EkkoLoader mode="once" size={14} className="mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
                       Envoyer un message test
                     </Button>
                     <Button variant="ghost" size="sm" className="text-destructive" onClick={disconnectSlack}>
