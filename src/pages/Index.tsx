@@ -65,7 +65,7 @@ export default function Index() {
               Vos deals racontent <span className="text-muted-foreground">autre chose.</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-lg mb-8 leading-relaxed">
-              Ekko révèle <strong className="text-foreground font-semibold">qui soutient, qui hésite et qui bloque</strong> pour agir avant que le deal ne vous échappe.
+              Ekko révèle <strong className="text-foreground font-semibold">qui avance, qui hésite et où ça ralentit</strong> pour agir avant que le deal ne vous échappe.
             </p>
             <div className="flex gap-3">
               <Button size="lg" className="rounded-full bg-primary text-accent font-semibold px-8" onClick={() => { setWaitlistSource("hero"); setWaitlistOpen(true); }}>
