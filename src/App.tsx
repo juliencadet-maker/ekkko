@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import ApprovalReview from "./pages/ApprovalReview";
+import DealQuickView from "./pages/DealQuickView";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthDemo from "./pages/AuthDemo";
