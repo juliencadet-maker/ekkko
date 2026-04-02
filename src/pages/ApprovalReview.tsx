@@ -8,7 +8,6 @@ import { EkkoLogo } from "@/components/ui/EkkoLogo";
 import {
   CheckCircle2,
   XCircle,
-  Loader2,
   ShieldCheck,
   AlertTriangle,
   Edit3,
@@ -16,6 +15,7 @@ import {
   Building2,
   User,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 type ReviewState = "loading" | "ready" | "done" | "error";
 
