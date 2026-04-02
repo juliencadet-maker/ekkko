@@ -62,7 +62,7 @@ const statusConfig: Record<StatusType, {
   generating: {
     label: "Génération...",
     className: "status-badge-generating",
-    icon: Loader2,
+    icon: Zap,
   },
   completed: {
     label: "Terminé",
