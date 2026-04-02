@@ -45,7 +45,7 @@ export default function Approvals() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user, membership } = useAuthContext();
-  const { logEvent } = useAuditLog();
+  
   const { toast } = useToast();
 
   const fetchApprovals = async () => {
