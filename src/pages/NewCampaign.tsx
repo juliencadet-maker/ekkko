@@ -839,7 +839,7 @@ export default function NewCampaign() {
 
                           <div className="flex flex-col gap-2">
                             <Button
-                              onClick={() => transitionToRecording(true)}
+                              onClick={() => naturalizeScript()}
                               className="w-full min-h-12 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
                             >
                               Valider ce script <ArrowRight className="h-4 w-4" />
@@ -852,6 +852,52 @@ export default function NewCampaign() {
                               Enregistrer sans script →
                             </Button>
                           </div>
+                        </div>
+                      )}
+
+                      {/* PHASE — Naturalizing */}
+                      {facecamPhase === "naturalizing" && (
+                        <div className="flex flex-col items-center justify-center py-12 gap-4">
+                          <EkkoLoader mode="once" size={40} />
+                          <p className="text-sm text-muted-foreground">Adaptation du script pour l'oral…</p>
+                        </div>
+                      )}
+
+                      {/* PHASE — Review naturalized script */}
+                      {facecamPhase === "review" && (
+                        <div className="space-y-4 animate-fade-in">
+                          <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
+                            <p className="text-sm text-foreground">
+                              Ekko a adapté votre script pour sonner naturel à l'oral. Modifiez-le librement.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setShowOriginalScript(!showOriginalScript)}
+                              className="text-xs text-muted-foreground underline mt-1 hover:text-foreground transition-colors"
+                            >
+                              {showOriginalScript ? "Masquer le script original" : "Voir le script original"}
+                            </button>
+                          </div>
+
+                          {showOriginalScript && (
+                            <div className="p-3 bg-muted rounded-lg text-xs text-muted-foreground whitespace-pre-wrap">
+                              {facecamOriginalScript}
+                            </div>
+                          )}
+
+                          <Textarea
+                            value={facecamScript}
+                            onChange={(e) => setFacecamScript(e.target.value)}
+                            rows={5}
+                            className="text-sm min-h-[120px]"
+                          />
+
+                          <Button
+                            onClick={() => transitionToRecording(true)}
+                            className="w-full min-h-12 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+                          >
+                            Lancer l'enregistrement <ArrowRight className="h-4 w-4" />
+                          </Button>
                         </div>
                       )}
 
