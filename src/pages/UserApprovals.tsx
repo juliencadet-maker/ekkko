@@ -190,7 +190,7 @@ export default function UserApprovals() {
                           Actif
                         </Badge>
                         <Button variant="ghost" size="sm" className="text-destructive h-7 text-xs" onClick={() => revokeUser(u.id)} disabled={processingIds.has(u.id)}>
-                          {processingIds.has(u.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3 mr-1" />}
+                          {processingIds.has(u.id) ? <EkkoLoader mode="once" size={12} /> : <X className="h-3 w-3 mr-1" />}
                           Révoquer
                         </Button>
                       </div>

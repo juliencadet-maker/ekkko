@@ -266,7 +266,7 @@ export default function ApprovalReview() {
             disabled={isSubmitting || !editedScript.trim()}
           >
             {isSubmitting ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <EkkoLoader mode="once" size={24} />
             ) : (
               <>
                 <CheckCircle2 className="mr-2 h-5 w-5" />

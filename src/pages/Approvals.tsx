@@ -356,7 +356,7 @@ export default function Approvals() {
                   </Button>
                 ) : (
                   <Button variant="destructive" onClick={() => handleApprovalAction("reject")} disabled={isSubmitting}>
-                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</> : <>Refuser</>}
+                    {isSubmitting ? <><EkkoLoader mode="once" size={16} className="mr-2" />Traitement...</> : <>Refuser</>}
                   </Button>
                 )}
               </DialogFooter>
