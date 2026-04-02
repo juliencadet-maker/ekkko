@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,6 @@ const TONE_OPTIONS = [
   { value: "empathique", label: "Empathique et à l'écoute" },
 ];
 
-// Objectif = stages du cycle de vente
 const PURPOSE_OPTIONS = [
   { value: "qualification", label: "Qualification" },
   { value: "rfp", label: "RFP" },
@@ -49,15 +48,26 @@ interface ScriptGeneratorProps {
   onScriptGenerated: (script: string, recipientData?: RecipientData) => void;
   senderName: string;
   senderTitle: string;
+  /** Pre-fill from deal context */
+  defaultCompany?: string;
+  defaultContact?: string;
+  defaultPurpose?: string;
 }
 
-export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: ScriptGeneratorProps) {
+export function ScriptGenerator({
+  onScriptGenerated,
+  senderName,
+  senderTitle,
+  defaultCompany = "",
+  defaultContact = "",
+  defaultPurpose = "",
+}: ScriptGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [context, setContext] = useState({
-    recipientName: "",
-    recipientCompany: "",
-    purpose: "",
+    recipientName: defaultContact,
+    recipientCompany: defaultCompany,
+    purpose: defaultPurpose,
     tone: "professionnel",
     keyPoint1: "",
     keyPoint2: "",
@@ -65,6 +75,16 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
     callToAction: "",
   });
   const { toast } = useToast();
+
+  // Sync defaults when they change (e.g. step navigation)
+  useEffect(() => {
+    setContext((prev) => ({
+      ...prev,
+      recipientCompany: prev.recipientCompany || defaultCompany,
+      recipientName: prev.recipientName || defaultContact,
+      purpose: prev.purpose || defaultPurpose,
+    }));
+  }, [defaultCompany, defaultContact, defaultPurpose]);
 
   const handleGenerate = async () => {
     if (!context.purpose) {
@@ -97,12 +117,7 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
       if (data?.script) {
         onScriptGenerated(data.script, data.recipientData);
         setIsOpen(false);
-        toast({
-          title: "Script généré !",
-          description: data.recipientData?.firstName 
-            ? "Le script et les informations du destinataire ont été ajoutés."
-            : "Le script a été ajouté. Vous pouvez le modifier si nécessaire.",
-        });
+        toast({ title: "Script généré", description: "Le script a été ajouté. Vous pouvez le modifier si nécessaire." });
       }
     } catch {
       toast({ title: "Erreur", description: "Impossible de générer le script. Réessayez.", variant: "destructive" });
@@ -116,7 +131,7 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
       <SheetTrigger asChild>
         <Button variant="outline" type="button" className="gap-2" size="sm">
           <Sparkles className="h-3.5 w-3.5" />
-          Générer avec l'IA
+          Générer
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
@@ -131,7 +146,7 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
         </SheetHeader>
 
         <div className="space-y-5 py-6">
-          {/* Purpose — deal stages */}
+          {/* Purpose */}
           <div className="space-y-2">
             <Label>Objectif de la vidéo *</Label>
             <Select value={context.purpose} onValueChange={(value) => setContext({ ...context, purpose: value })}>
@@ -160,49 +175,25 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
           {/* 3 Key Points */}
           <div className="space-y-3">
             <Label>Points clés à mentionner *</Label>
-            <Input
-              value={context.keyPoint1}
-              onChange={(e) => setContext({ ...context, keyPoint1: e.target.value })}
-              placeholder="Point clé 1"
-            />
-            <Input
-              value={context.keyPoint2}
-              onChange={(e) => setContext({ ...context, keyPoint2: e.target.value })}
-              placeholder="Point clé 2"
-            />
-            <Input
-              value={context.keyPoint3}
-              onChange={(e) => setContext({ ...context, keyPoint3: e.target.value })}
-              placeholder="Point clé 3"
-            />
+            <Input value={context.keyPoint1} onChange={(e) => setContext({ ...context, keyPoint1: e.target.value })} placeholder="Point clé 1" />
+            <Input value={context.keyPoint2} onChange={(e) => setContext({ ...context, keyPoint2: e.target.value })} placeholder="Point clé 2" />
+            <Input value={context.keyPoint3} onChange={(e) => setContext({ ...context, keyPoint3: e.target.value })} placeholder="Point clé 3" />
           </div>
 
           {/* CTA */}
           <div className="space-y-2">
             <Label>Call-to-action souhaité</Label>
-            <Input
-              value={context.callToAction}
-              onChange={(e) => setContext({ ...context, callToAction: e.target.value })}
-              placeholder="Ex: Réserver une démo, Répondre à cet email..."
-            />
+            <Input value={context.callToAction} onChange={(e) => setContext({ ...context, callToAction: e.target.value })} placeholder="Ex: Réserver une démo, Répondre..." />
           </div>
 
           {/* Recipient info */}
           <div className="space-y-3 pt-4 border-t">
             <p className="text-sm font-medium text-muted-foreground">
-              Destinataire : ces informations seront intégrées dans le script
+              Destinataire : intégré dans le script
             </p>
             <div className="grid grid-cols-2 gap-3">
-              <Input
-                value={context.recipientName}
-                onChange={(e) => setContext({ ...context, recipientName: e.target.value })}
-                placeholder="Prénom exemple"
-              />
-              <Input
-                value={context.recipientCompany}
-                onChange={(e) => setContext({ ...context, recipientCompany: e.target.value })}
-                placeholder="Entreprise exemple"
-              />
+              <Input value={context.recipientName} onChange={(e) => setContext({ ...context, recipientName: e.target.value })} placeholder="Prénom" />
+              <Input value={context.recipientCompany} onChange={(e) => setContext({ ...context, recipientCompany: e.target.value })} placeholder="Entreprise" />
             </div>
           </div>
 
@@ -215,7 +206,7 @@ export function ScriptGenerator({ onScriptGenerated, senderName, senderTitle }: 
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Le script généré utilisera les variables {"{prénom}"}, {"{nom}"} et {"{entreprise}"} pour la personnalisation automatique
+            Le script utilisera {"{prénom}"}, {"{nom}"} et {"{entreprise}"} pour la personnalisation
           </p>
         </div>
       </SheetContent>
