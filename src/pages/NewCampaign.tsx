@@ -862,7 +862,7 @@ export default function NewCampaign() {
                             <button
                               type="button"
                               onClick={() => setShowOriginalScript(!showOriginalScript)}
-                              className="text-xs text-muted-foreground underline mt-1 hover:text-foreground transition-colors"
+                              className="link-action text-xs mt-1"
                             >
                               {showOriginalScript ? "Masquer le script original" : "Voir le script original"}
                             </button>
