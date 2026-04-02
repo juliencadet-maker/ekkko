@@ -280,7 +280,7 @@ export default function NewCampaign() {
           deal_experience_mode: assetType === "document" ? "pull_only" : "push_only",
           metadata: {
             stage: dealStage || null,
-            deal_value: dealValue ? parseFloat(dealValue) : null,
+            deal_value: dealValue ? parseFloat(dealValue) * 1000 : null,
             asset_type: assetType,
           },
         })
