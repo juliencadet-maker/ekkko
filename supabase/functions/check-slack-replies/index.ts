@@ -27,12 +27,29 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  // Allow service-to-service calls (pg_cron) - validate service role key if present
+  // Authenticate: accept service role key, anon key, or valid user JWT
   const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const token = authHeader.replace("Bearer ", "");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  if (authHeader) {
-    const token = authHeader.replace("Bearer ", "");
-    if (token !== serviceRoleKey && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+  // Allow service role or anon key directly
+  const isServiceOrAnon = token === serviceRoleKey || token === anonKey;
+
+  if (!isServiceOrAnon) {
+    // Validate as user JWT
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const authClient = createClient(supabaseUrl, anonKey!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data, error } = await authClient.auth.getUser();
+    if (error || !data?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
