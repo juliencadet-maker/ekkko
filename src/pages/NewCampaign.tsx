@@ -720,7 +720,7 @@ export default function NewCampaign() {
                 )}
 
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(4)}>
+                  <Button variant="outline" onClick={() => setCurrentStep(3)}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Retour
                   </Button>
