@@ -14,6 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          account_domain_group: string | null
+          created_at: string
+          created_from: string | null
+          domain: string | null
+          id: string
+          name: string
+          normalized_name: string | null
+          org_id: string
+        }
+        Insert: {
+          account_domain_group?: string | null
+          created_at?: string
+          created_from?: string | null
+          domain?: string | null
+          id?: string
+          name: string
+          normalized_name?: string | null
+          org_id: string
+        }
+        Update: {
+          account_domain_group?: string | null
+          created_at?: string
+          created_from?: string | null
+          domain?: string | null
+          id?: string
+          name?: string
+          normalized_name?: string | null
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_context: {
+        Row: {
+          campaign_id: string
+          committee_size_declared: number | null
+          competitive_situation: string | null
+          crm_stage: string | null
+          decision_structure: string | null
+          decision_window: string | null
+          id: string
+          incumbent_present: boolean | null
+          incumbent_type: string | null
+          key_contacts: Json | null
+          motion_type: string | null
+          stage: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          committee_size_declared?: number | null
+          competitive_situation?: string | null
+          crm_stage?: string | null
+          decision_structure?: string | null
+          decision_window?: string | null
+          id?: string
+          incumbent_present?: boolean | null
+          incumbent_type?: string | null
+          key_contacts?: Json | null
+          motion_type?: string | null
+          stage?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          committee_size_declared?: number | null
+          competitive_situation?: string | null
+          crm_stage?: string | null
+          decision_structure?: string | null
+          decision_window?: string | null
+          id?: string
+          incumbent_present?: boolean | null
+          incumbent_type?: string | null
+          key_contacts?: Json | null
+          motion_type?: string | null
+          stage?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_context_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_conversations: {
         Row: {
           campaign_id: string
@@ -124,6 +221,115 @@ export type Database = {
           },
         ]
       }
+      asset_deliveries: {
+        Row: {
+          asset_id: string
+          campaign_id: string
+          created_at: string
+          delivery_token: string
+          id: string
+          intended_contact_id: string | null
+          sent_at: string | null
+          share_mode: string | null
+        }
+        Insert: {
+          asset_id: string
+          campaign_id: string
+          created_at?: string
+          delivery_token: string
+          id?: string
+          intended_contact_id?: string | null
+          sent_at?: string | null
+          share_mode?: string | null
+        }
+        Update: {
+          asset_id?: string
+          campaign_id?: string
+          created_at?: string
+          delivery_token?: string
+          id?: string
+          intended_contact_id?: string | null
+          sent_at?: string | null
+          share_mode?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_deliveries_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "deal_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_deliveries_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_page_events: {
+        Row: {
+          asset_id: string
+          campaign_id: string
+          created_at: string
+          event_hash: string | null
+          id: string
+          identity_cluster_id: string | null
+          max_scroll_pct: number | null
+          page_number: number | null
+          time_spent_seconds: number | null
+          viewer_id: string | null
+        }
+        Insert: {
+          asset_id: string
+          campaign_id: string
+          created_at?: string
+          event_hash?: string | null
+          id?: string
+          identity_cluster_id?: string | null
+          max_scroll_pct?: number | null
+          page_number?: number | null
+          time_spent_seconds?: number | null
+          viewer_id?: string | null
+        }
+        Update: {
+          asset_id?: string
+          campaign_id?: string
+          created_at?: string
+          event_hash?: string | null
+          id?: string
+          identity_cluster_id?: string | null
+          max_scroll_pct?: number | null
+          page_number?: number | null
+          time_spent_seconds?: number | null
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_page_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "deal_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_page_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_page_events_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "viewers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           created_at: string
@@ -184,6 +390,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by_user_id: string | null
+          deal_status: string | null
           description: string | null
           id: string
           identity_id: string
@@ -206,6 +413,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          deal_status?: string | null
           description?: string | null
           id?: string
           identity_id: string
@@ -228,6 +436,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          deal_status?: string | null
           description?: string | null
           id?: string
           identity_id?: string
@@ -271,6 +480,188 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      churn_signals: {
+        Row: {
+          action_taken: string | null
+          detected_at: string
+          id: string
+          org_id: string
+          resolved_at: string | null
+          risk_level: string
+          signal_type: string
+          user_id: string
+        }
+        Insert: {
+          action_taken?: string | null
+          detected_at?: string
+          id?: string
+          org_id: string
+          resolved_at?: string | null
+          risk_level: string
+          signal_type: string
+          user_id: string
+        }
+        Update: {
+          action_taken?: string | null
+          detected_at?: string
+          id?: string
+          org_id?: string
+          resolved_at?: string | null
+          risk_level?: string
+          signal_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "churn_signals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      committee_layers: {
+        Row: {
+          asset_affinity: string[] | null
+          expected_weight: number
+          layer: string
+          level: string
+          typical_titles: string[] | null
+        }
+        Insert: {
+          asset_affinity?: string[] | null
+          expected_weight: number
+          layer: string
+          level: string
+          typical_titles?: string[] | null
+        }
+        Update: {
+          asset_affinity?: string[] | null
+          expected_weight?: number
+          layer?: string
+          level?: string
+          typical_titles?: string[] | null
+        }
+        Relationships: []
+      }
+      deal_assets: {
+        Row: {
+          asset_hash: string | null
+          asset_purpose: string
+          asset_status: string | null
+          asset_type: string
+          campaign_id: string
+          created_at: string
+          deleted_at: string | null
+          file_url: string | null
+          id: string
+          parent_asset_id: string | null
+          tracked_links: Json | null
+          version_number: number | null
+        }
+        Insert: {
+          asset_hash?: string | null
+          asset_purpose: string
+          asset_status?: string | null
+          asset_type: string
+          campaign_id: string
+          created_at?: string
+          deleted_at?: string | null
+          file_url?: string | null
+          id?: string
+          parent_asset_id?: string | null
+          tracked_links?: Json | null
+          version_number?: number | null
+        }
+        Update: {
+          asset_hash?: string | null
+          asset_purpose?: string
+          asset_status?: string | null
+          asset_type?: string
+          campaign_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          file_url?: string | null
+          id?: string
+          parent_asset_id?: string | null
+          tracked_links?: Json | null
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_assets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_assets_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "deal_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_contact_roles: {
+        Row: {
+          campaign_id: string
+          confidence: number | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          identity_cluster_id: string | null
+          insight_reasons: Json | null
+          layer: string | null
+          role: string | null
+          source: string | null
+          viewer_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          confidence?: number | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          identity_cluster_id?: string | null
+          insight_reasons?: Json | null
+          layer?: string | null
+          role?: string | null
+          source?: string | null
+          viewer_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          confidence?: number | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          identity_cluster_id?: string | null
+          insight_reasons?: Json | null
+          layer?: string | null
+          role?: string | null
+          source?: string | null
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_contact_roles_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_contact_roles_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "viewers"
             referencedColumns: ["id"]
           },
         ]
@@ -369,6 +760,70 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "deal_outcomes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_permissions: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_permissions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_rooms: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          is_public: boolean | null
+          slug: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          slug?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          slug?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_rooms_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: true
             referencedRelation: "campaigns"
@@ -515,6 +970,97 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_triggers: {
+        Row: {
+          acted_on_at: string | null
+          campaign_id: string
+          created_at: string
+          delivered_at: string | null
+          id: string
+          message_action: string | null
+          message_what: string | null
+          message_why: string | null
+          owner_type: string
+          priority_score: number | null
+          trigger_type: string
+        }
+        Insert: {
+          acted_on_at?: string | null
+          campaign_id: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          message_action?: string | null
+          message_what?: string | null
+          message_why?: string | null
+          owner_type?: string
+          priority_score?: number | null
+          trigger_type: string
+        }
+        Update: {
+          acted_on_at?: string | null
+          campaign_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          message_action?: string | null
+          message_what?: string | null
+          message_why?: string | null
+          owner_type?: string
+          priority_score?: number | null
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_triggers_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      execution_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          executed_at: string | null
+          executed_from: string | null
+          execution_token: string
+          guardrail_status: string | null
+          id: string
+          trigger_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          executed_at?: string | null
+          executed_from?: string | null
+          execution_token: string
+          guardrail_status?: string | null
+          id?: string
+          trigger_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          executed_at?: string | null
+          executed_from?: string | null
+          execution_token?: string
+          guardrail_status?: string | null
+          id?: string
+          trigger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_actions_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "deal_triggers"
             referencedColumns: ["id"]
           },
         ]
@@ -685,6 +1231,7 @@ export type Database = {
       orgs: {
         Row: {
           created_at: string
+          feature_flags: Json | null
           id: string
           is_demo_org: boolean | null
           logo_url: string | null
@@ -695,6 +1242,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          feature_flags?: Json | null
           id?: string
           is_demo_org?: boolean | null
           logo_url?: string | null
@@ -705,6 +1253,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          feature_flags?: Json | null
           id?: string
           is_demo_org?: boolean | null
           logo_url?: string | null
@@ -969,6 +1518,44 @@ export type Database = {
           },
         ]
       }
+      sales_calibration_profile: {
+        Row: {
+          active_profile: string | null
+          calibration_confidence: number | null
+          declared_profile: Json | null
+          initial_hypothesis: Json | null
+          observed_profile: Json | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          active_profile?: string | null
+          calibration_confidence?: number | null
+          declared_profile?: Json | null
+          initial_hypothesis?: Json | null
+          observed_profile?: Json | null
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          active_profile?: string | null
+          calibration_confidence?: number | null
+          declared_profile?: Json | null
+          initial_hypothesis?: Json | null
+          observed_profile?: Json | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_calibration_profile_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       script_versions: {
         Row: {
           campaign_id: string
@@ -1020,6 +1607,50 @@ export type Database = {
           },
         ]
       }
+      system_failures: {
+        Row: {
+          campaign_id: string | null
+          detected_at: string
+          failure_type: string
+          id: string
+          message: string
+          reason: string | null
+          resolved_at: string | null
+          severity: string | null
+          ui_message: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          detected_at?: string
+          failure_type: string
+          id?: string
+          message: string
+          reason?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          ui_message?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          detected_at?: string
+          failure_type?: string
+          id?: string
+          message?: string
+          reason?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          ui_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_failures_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           created_at: string
@@ -1060,6 +1691,57 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_events: {
+        Row: {
+          asset_id: string | null
+          campaign_id: string
+          created_at: string
+          event_data: Json | null
+          event_layer: string | null
+          event_type: string
+          id: string
+          identity_cluster_id: string | null
+          viewer_id: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          campaign_id: string
+          created_at?: string
+          event_data?: Json | null
+          event_layer?: string | null
+          event_type: string
+          id?: string
+          identity_cluster_id?: string | null
+          viewer_id?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          campaign_id?: string
+          created_at?: string
+          event_data?: Json | null
+          event_layer?: string | null
+          event_type?: string
+          id?: string
+          identity_cluster_id?: string | null
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_events_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "viewers"
             referencedColumns: ["id"]
           },
         ]
