@@ -288,8 +288,6 @@ export default function NewCampaign() {
       // 4. Create agent_context
       await supabase.from("agent_context").insert({
         campaign_id: campaign.id,
-        motion_type: motionType || null,
-        decision_structure: decisionStructure || null,
         stage: dealStage || null,
         incumbent_present: hasIncumbent === "yes",
         incumbent_type: hasIncumbent === "yes" ? (incumbentType || "unknown") : null,
