@@ -176,7 +176,7 @@ export function ScriptGenerator({
 
           {/* 3 Key Points */}
           <div className="space-y-3">
-            <Label>Points clés à mentionner *</Label>
+            <Label>Points à aborder *</Label>
             <Input value={context.keyPoint1} onChange={(e) => setContext({ ...context, keyPoint1: e.target.value })} placeholder="Point clé 1" />
             <Input value={context.keyPoint2} onChange={(e) => setContext({ ...context, keyPoint2: e.target.value })} placeholder="Point clé 2" />
             <Input value={context.keyPoint3} onChange={(e) => setContext({ ...context, keyPoint3: e.target.value })} placeholder="Point clé 3" />
