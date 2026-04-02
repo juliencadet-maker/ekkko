@@ -255,7 +255,7 @@ export default function Index() {
                 </div>
                 <div className="p-4 space-y-3">
                   {[
-                    { name: 'TotalEnergies — RFP Q2', meta: 'CFO · 12j sans signal · 1 rôle clé manquant', badge: 'À traiter', score: '54', border: 'border-destructive', tc: 'text-destructive', bg: 'bg-destructive/10' },
+                    { name: 'TotalEnergies — RFP Q2', meta: 'CFO · 12j sans signal · 1 contact à qualifier', badge: 'À traiter', score: '54', border: 'border-destructive', tc: 'text-destructive', bg: 'bg-destructive/10' },
                     { name: 'Schneider Electric — ERP', meta: '3 nouveaux contacts détectés cette semaine', badge: 'À surveiller', score: '71', border: 'border-warning', tc: 'text-warning', bg: 'bg-warning/10' },
                     { name: 'Airbus — Transformation SI', meta: '2 sponsors actifs · Momentum en hausse', badge: 'Sain', score: '87', border: 'border-accent', tc: 'text-accent', bg: 'bg-accent/10' },
                   ].map(d => (
