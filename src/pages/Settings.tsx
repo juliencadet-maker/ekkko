@@ -313,7 +313,7 @@ export default function Settings() {
                     className="font-mono text-sm"
                   />
                   <Button onClick={saveHubspotKey} disabled={isSaving || !hubspotKey || hubspotKey.startsWith("••••")}>
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
+                    {isSaving ? <EkkoLoader mode="once" size={16} /> : <Link2 className="h-4 w-4 mr-1" />}
                     Sauvegarder
                   </Button>
                 </div>
