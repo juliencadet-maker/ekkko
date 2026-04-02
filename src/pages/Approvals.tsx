@@ -24,13 +24,13 @@ import {
   CheckSquare, 
   CheckCircle2, 
   XCircle, 
-  Loader2,
   Clock,
   FileText,
   Pencil,
   User,
   AlertCircle,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { ApprovalRequest } from "@/types/database";
