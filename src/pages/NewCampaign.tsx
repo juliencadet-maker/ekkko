@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { ScriptGenerator } from "@/components/campaign/ScriptGenerator";
+import { FacecamRecorder } from "@/components/campaign/FacecamRecorder";
+import { VideoImportUpload } from "@/components/campaign/VideoImportUpload";
 import {
   ArrowLeft,
   ArrowRight,
@@ -26,11 +28,13 @@ import {
   Trash2,
   Users,
   Building2,
-  
   FileVideo,
   FileText,
   Swords,
   UserPlus,
+  Camera,
+  Upload,
+  Bot,
 } from "lucide-react";
 import type { Identity, Policy } from "@/types/database";
 
@@ -77,6 +81,9 @@ export default function NewCampaign() {
   const [assetType, setAssetType] = useState<"video" | "document" | "">("");
   const [selectedIdentityId, setSelectedIdentityId] = useState("");
   const [selectedIdentity, setSelectedIdentity] = useState<Identity | null>(null);
+  const [videoMode, setVideoMode] = useState<"" | "facecam" | "identity" | "import">("");
+  const [facecamBlob, setFacecamBlob] = useState<Blob | null>(null);
+  const [importedFile, setImportedFile] = useState<File | null>(null);
 
   // Step 3 — Competitor
   const [hasIncumbent, setHasIncumbent] = useState<"yes" | "no" | "unknown" | "">("");
@@ -213,12 +220,20 @@ export default function NewCampaign() {
   };
 
   const handleSubmit = async () => {
-    if (assetType === "video" && !selectedIdentity) {
+    if (assetType === "video" && videoMode === "identity" && !selectedIdentity) {
       toast({ title: "Identité requise", description: "Veuillez sélectionner une identité pour la vidéo exec.", variant: "destructive" });
       return;
     }
-    if (assetType === "video" && !script.trim()) {
+    if (assetType === "video" && videoMode === "identity" && !script.trim()) {
       toast({ title: "Script requis", description: "Veuillez rédiger ou générer un script.", variant: "destructive" });
+      return;
+    }
+    if (assetType === "video" && videoMode === "facecam" && !facecamBlob) {
+      toast({ title: "Vidéo requise", description: "Veuillez enregistrer une vidéo.", variant: "destructive" });
+      return;
+    }
+    if (assetType === "video" && videoMode === "import" && !importedFile) {
+      toast({ title: "Fichier requis", description: "Veuillez importer une vidéo.", variant: "destructive" });
       return;
     }
     if (!campaignName.trim()) {
@@ -245,8 +260,9 @@ export default function NewCampaign() {
       }
 
       // 2. Determine approval
-      const needsApproval = assetType === "video" ? requiresApproval() : false;
-      const initialStatus = needsApproval ? "pending_approval" : (assetType === "video" ? "approved" : "draft");
+      const isExecVideo = assetType === "video" && videoMode === "identity";
+      const needsApproval = isExecVideo ? requiresApproval() : false;
+      const initialStatus = needsApproval ? "pending_approval" : (isExecVideo ? "approved" : "draft");
 
       // 3. Create campaign
       const { data: campaign, error: campaignError } = await supabase
@@ -254,13 +270,13 @@ export default function NewCampaign() {
         .insert({
           org_id: membership!.org_id,
           created_by_user_id: user.id,
-          identity_id: assetType === "video" ? selectedIdentity?.id : null,
+          identity_id: isExecVideo ? selectedIdentity?.id : null,
           name: campaignName,
           script: script || "—",
-          is_self_campaign: assetType === "video" ? isSelfIdentity : true,
+          is_self_campaign: isExecVideo ? isSelfIdentity : true,
           status: initialStatus,
-          approved_at: !needsApproval && assetType === "video" ? new Date().toISOString() : null,
-          approved_by_user_id: !needsApproval && assetType === "video" ? user.id : null,
+          approved_at: !needsApproval && isExecVideo ? new Date().toISOString() : null,
+          approved_by_user_id: !needsApproval && isExecVideo ? user.id : null,
           account_id: accountId,
           crm_stage: dealStage || null,
           deal_experience_mode: assetType === "document" ? "pull_only" : "push_only",
@@ -268,6 +284,7 @@ export default function NewCampaign() {
             stage: dealStage || null,
             deal_value: dealValue ? parseFloat(dealValue) * 1000 : null,
             asset_type: assetType,
+            video_mode: assetType === "video" ? videoMode : null,
           },
         })
         .select()
@@ -304,8 +321,29 @@ export default function NewCampaign() {
         newValues: { name: campaignName, assetType, dealStage },
       });
 
-      // 6. Handle video pipeline if asset = video
-      if (assetType === "video" && selectedIdentity) {
+      // 6. Handle video upload or exec pipeline
+      if (assetType === "video" && (videoMode === "facecam" || videoMode === "import")) {
+        const fileToUpload = videoMode === "facecam" ? facecamBlob! : importedFile!;
+        const ext = videoMode === "facecam" ? "webm" : (importedFile?.name.split(".").pop() || "mp4");
+        const filePath = `${membership!.org_id}/${campaign.id}/video-${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("deal-videos")
+          .upload(filePath, fileToUpload, {
+            contentType: videoMode === "facecam" ? "video/webm" : importedFile?.type || "video/mp4",
+          });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from("deal-videos").getPublicUrl(filePath);
+          await supabase.from("deal_assets").insert({
+            campaign_id: campaign.id,
+            asset_type: "video",
+            asset_purpose: "intro",
+            file_url: urlData.publicUrl,
+          });
+        }
+        toast({ title: "Deal créé", description: "La vidéo a été uploadée avec succès." });
+      } else if (isExecVideo && selectedIdentity) {
         const assignedTo = !isSelfIdentity ? selectedIdentity.owner_user_id : user.id;
         const { data: approvalData } = await supabase
           .from("approval_requests")
@@ -359,7 +397,10 @@ export default function NewCampaign() {
   ];
 
   const canProceedStep1 = campaignName.trim() && prospectCompany.trim();
-  const canProceedStep2 = assetType && (assetType === "document" || selectedIdentityId);
+  const canProceedStep2 = assetType === "document" ||
+    (assetType === "video" && videoMode === "facecam" && !!facecamBlob) ||
+    (assetType === "video" && videoMode === "identity" && !!selectedIdentityId && !!script.trim()) ||
+    (assetType === "video" && videoMode === "import" && !!importedFile);
 
   return (
     <AppLayout>
@@ -499,102 +540,207 @@ export default function NewCampaign() {
                 </CardTitle>
                 <CardDescription>Que voulez-vous envoyer ?</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <RadioGroup value={assetType} onValueChange={(v) => setAssetType(v as "video" | "document")} className="space-y-2">
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="video" id="asset-video" />
-                    <FileVideo className="h-5 w-5 text-muted-foreground" />
-                    <Label htmlFor="asset-video" className="cursor-pointer flex-1">
-                      <span className="block">Envoyer une vidéo</span>
-                      <span className="block text-xs font-normal text-muted-foreground">Facecam, exec ou démo produit</span>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="document" id="asset-document" />
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                    <Label htmlFor="asset-document" className="cursor-pointer flex-1">
-                      <span className="block">Partager un document</span>
-                      <span className="block text-xs font-normal text-muted-foreground">PDF, présentation, pricing</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-
-                {/* Identity selector — only if video */}
-                {assetType === "video" && (
-                  <div className="space-y-3">
-                    <Label>Qui apparaît dans la vidéo ? *</Label>
-                    {identities.length === 0 ? (
-                      <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
-                        Aucune identité disponible. Créez-en une dans la section Identités.
+              <CardContent className="flex flex-col" style={{ maxHeight: "calc(100vh - 260px)" }}>
+                <div className="flex-1 overflow-y-auto space-y-6 pb-4">
+                  {/* Initial choice: video or document */}
+                  {assetType !== "video" && (
+                    <RadioGroup
+                      value={assetType}
+                      onValueChange={(v) => {
+                        setAssetType(v as "video" | "document");
+                        setVideoMode("");
+                      }}
+                      className="space-y-2"
+                    >
+                      <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                        <RadioGroupItem value="video" id="asset-video" />
+                        <FileVideo className="h-5 w-5 text-muted-foreground" />
+                        <Label htmlFor="asset-video" className="cursor-pointer flex-1">
+                          <span className="block">Envoyer une vidéo</span>
+                          <span className="block text-xs font-normal text-muted-foreground">Facecam, exec ou démo produit</span>
+                        </Label>
                       </div>
-                    ) : (
-                      <div className="grid gap-2">
-                        {identities.map((identity) => (
+                      <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                        <RadioGroupItem value="document" id="asset-document" />
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                        <Label htmlFor="asset-document" className="cursor-pointer flex-1">
+                          <span className="block">Partager un document</span>
+                          <span className="block text-xs font-normal text-muted-foreground">PDF, présentation, pricing</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  )}
+
+                  {/* Video sub-flow: choose mode */}
+                  {assetType === "video" && !videoMode && (
+                    <div className="space-y-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAssetType("")}
+                        className="text-muted-foreground -mt-2"
+                      >
+                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer le type d'asset
+                      </Button>
+                      <p className="text-sm font-medium">Comment voulez-vous créer cette vidéo ?</p>
+                      <div className="space-y-2">
+                        {[
+                          { key: "facecam" as const, icon: Camera, label: "Enregistrer maintenant", desc: "Je me filme depuis mon navigateur" },
+                          { key: "identity" as const, icon: Bot, label: "Utiliser une identité", desc: "Vidéo générée avec un clone vocal et visuel" },
+                          { key: "import" as const, icon: Upload, label: "Importer une vidéo existante", desc: "Réunion enregistrée, démo, présentation filmée" },
+                        ].map((opt) => (
                           <div
-                            key={identity.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                              selectedIdentityId === identity.id ? "border-accent bg-accent/5" : "border-transparent bg-muted hover:border-border"
-                            }`}
-                            onClick={() => handleIdentitySelect(identity.id)}
+                            key={opt.key}
+                            className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                            onClick={() => setVideoMode(opt.key)}
                           >
-                            <div className="w-10 h-10 rounded-full bg-marine flex items-center justify-center flex-shrink-0">
-                              <span className="text-sm font-bold text-signal">{identity.display_name[0].toUpperCase()}</span>
+                            <opt.icon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{opt.label}</p>
+                              <p className="text-xs text-muted-foreground">{opt.desc}</p>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm">{identity.display_name}</p>
-                              <p className="text-xs text-muted-foreground">{getIdentityRoleLabel(identity)}</p>
-                            </div>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         ))}
                       </div>
-                    )}
-
-                    {selectedIdentity && !isSelfIdentity && (
-                      <div className="p-3 bg-warning/10 rounded-lg border border-warning/20 flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-warning text-sm">Validation requise</p>
-                          <p className="text-xs text-muted-foreground">Le propriétaire de cette identité devra approuver votre script.</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Script section for video */}
-                {assetType === "video" && selectedIdentity && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Script de la vidéo *</Label>
-                      <div className="flex items-center gap-3">
-                        {script.trim() && (
-                          <span className="text-xs text-muted-foreground">
-                            Durée estimée : {getDurationLabel()} — {getDurationHint()}
-                          </span>
-                        )}
-                        <ScriptGenerator
-                          onScriptGenerated={(generatedScript) => setScript(generatedScript)}
-                          senderName={`${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Votre nom"}
-                          senderTitle={profile?.title || "Votre titre"}
-                          defaultCompany={prospectCompany}
-                          defaultContact={contacts[0]?.firstName || ""}
-                          defaultPurpose={getPurposeFromStage(dealStage)}
-                        />
-                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Utilisez {"{prénom}"}, {"{nom}"}, {"{entreprise}"} pour personnaliser.
-                    </p>
-                    <Textarea value={script} onChange={(e) => setScript(e.target.value)} placeholder="Bonjour {prénom},&#10;&#10;..." rows={8} />
-                  </div>
-                )}
+                  )}
 
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                  {/* FACECAM PATH */}
+                  {assetType === "video" && videoMode === "facecam" && (
+                    <div className="space-y-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setVideoMode(""); setFacecamBlob(null); }}
+                        className="text-muted-foreground -mt-2"
+                      >
+                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
+                      </Button>
+                      <FacecamRecorder
+                        company={prospectCompany}
+                        contactName={contacts[0]?.firstName || ""}
+                        onRecorded={(blob) => setFacecamBlob(blob)}
+                        onClear={() => setFacecamBlob(null)}
+                        recordedBlob={facecamBlob}
+                      />
+                    </div>
+                  )}
+
+                  {/* IDENTITY PATH */}
+                  {assetType === "video" && videoMode === "identity" && (
+                    <div className="space-y-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setVideoMode(""); setSelectedIdentityId(""); setSelectedIdentity(null); setScript(""); }}
+                        className="text-muted-foreground -mt-2"
+                      >
+                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
+                      </Button>
+
+                      <div className="space-y-3">
+                        <Label>Qui apparaît dans la vidéo ? *</Label>
+                        {identities.length === 0 ? (
+                          <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
+                            <p>Aucune identité configurée.</p>
+                            <Button variant="link" className="mt-1" onClick={() => navigate("/app/identities")}>
+                              Créer une identité
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="grid gap-2">
+                            {identities.map((identity) => (
+                              <div
+                                key={identity.id}
+                                className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                  selectedIdentityId === identity.id ? "border-accent bg-accent/5" : "border-transparent bg-muted hover:border-border"
+                                }`}
+                                onClick={() => handleIdentitySelect(identity.id)}
+                              >
+                                <div className="w-10 h-10 rounded-full bg-marine flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sm font-bold text-signal">{identity.display_name[0].toUpperCase()}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm">{identity.display_name}</p>
+                                  <p className="text-xs text-muted-foreground">{getIdentityRoleLabel(identity)}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {selectedIdentity && !isSelfIdentity && (
+                          <div className="p-3 bg-warning/10 rounded-lg border border-warning/20 flex items-start gap-3">
+                            <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-warning text-sm">Validation requise</p>
+                              <p className="text-xs text-muted-foreground">Le propriétaire de cette identité devra approuver votre script.</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {selectedIdentity && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label>Script de la vidéo *</Label>
+                            <div className="flex items-center gap-3">
+                              {script.trim() && (
+                                <span className="text-xs text-muted-foreground">
+                                  Durée estimée : {getDurationLabel()} — {getDurationHint()}
+                                </span>
+                              )}
+                              <ScriptGenerator
+                                onScriptGenerated={(generatedScript) => setScript(generatedScript)}
+                                senderName={`${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Votre nom"}
+                                senderTitle={profile?.title || "Votre titre"}
+                                defaultCompany={prospectCompany}
+                                defaultContact={contacts[0]?.firstName || ""}
+                                defaultPurpose={getPurposeFromStage(dealStage)}
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Utilisez {"{prénom}"}, {"{nom}"}, {"{entreprise}"} pour personnaliser.
+                          </p>
+                          <Textarea value={script} onChange={(e) => setScript(e.target.value)} placeholder="Bonjour {prénom},&#10;&#10;..." rows={8} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* IMPORT PATH */}
+                  {assetType === "video" && videoMode === "import" && (
+                    <div className="space-y-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setVideoMode(""); setImportedFile(null); }}
+                        className="text-muted-foreground -mt-2"
+                      >
+                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
+                      </Button>
+                      <VideoImportUpload
+                        onFileSelected={(file) => setImportedFile(file)}
+                        onClear={() => setImportedFile(null)}
+                        selectedFile={importedFile}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Sticky footer */}
+                <div className="flex gap-3 pt-4 border-t flex-shrink-0">
+                  <Button variant="outline" onClick={() => { setCurrentStep(1); setAssetType(""); setVideoMode(""); }}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Retour
                   </Button>
-                  <Button onClick={() => setCurrentStep(3)} disabled={!canProceedStep2} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button
+                    onClick={() => setCurrentStep(3)}
+                    disabled={!canProceedStep2}
+                    className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90"
+                  >
                     Continuer <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
@@ -698,8 +844,8 @@ export default function NewCampaign() {
                   ))}
                 </div>
 
-                {/* Approval info for video */}
-                {assetType === "video" && requiresApproval() && (
+                {/* Approval info for identity video */}
+                {assetType === "video" && videoMode === "identity" && requiresApproval() && (
                   <div className="p-3 bg-warning/10 rounded-lg border border-warning/20 flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
                     <div>
@@ -723,10 +869,12 @@ export default function NewCampaign() {
                   >
                     {isSubmitting ? (
                       <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</>
-                    ) : assetType === "video" && !requiresApproval() ? (
+                    ) : assetType === "video" && videoMode === "identity" && !requiresApproval() ? (
                       <><CheckCircle2 className="mr-2 h-4 w-4" />Créer et générer la vidéo</>
-                    ) : assetType === "video" && requiresApproval() ? (
+                    ) : assetType === "video" && videoMode === "identity" && requiresApproval() ? (
                       <><Send className="mr-2 h-4 w-4" />Créer et envoyer en validation</>
+                    ) : assetType === "video" && (videoMode === "facecam" || videoMode === "import") ? (
+                      <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal et uploader la vidéo</>
                     ) : (
                       <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal</>
                     )}
