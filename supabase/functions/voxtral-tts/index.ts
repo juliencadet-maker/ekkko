@@ -126,7 +126,13 @@ serve(async (req) => {
     };
     const mimeType = mimeMap[ext] || 'audio/webm';
 
+    // Append a natural closing phrase for TTS only (not stored in DB script_oral)
+    // This ensures the video ends smoothly instead of cutting abruptly
+    const TTS_CLOSING_PHRASE = "\n\nJe reste disponible pour échanger. À très bientôt.";
+    const ttsScript = script.trimEnd() + TTS_CLOSING_PHRASE;
+
     // Call Voxtral TTS with voice cloning (zero-shot)
+    // Note: Mistral Voxtral does not support SSML tags like <break/>
     const voxtralResponse = await fetch(MISTRAL_API_URL, {
       method: "POST",
       headers: {
@@ -135,7 +141,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "voxtral-mini-tts-2603",
-        input: script,
+        input: ttsScript,
         ref_audio: refVideoBase64,
         response_format: "wav",
       }),
