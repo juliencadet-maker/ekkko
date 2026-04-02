@@ -3,9 +3,9 @@ import {
   Clock, 
   CheckCircle2, 
   XCircle, 
-  Loader2, 
   FileEdit,
-  AlertCircle
+  AlertCircle,
+  Zap,
 } from "lucide-react";
 
 type StatusType = 
