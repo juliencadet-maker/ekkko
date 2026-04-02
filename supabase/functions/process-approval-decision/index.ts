@@ -92,9 +92,30 @@ serve(async (req) => {
         metadata: { approved_via: "external_link" },
       });
 
-      // Auto-trigger video generation using service role key
+      // Trigger script-to-speech transformation then video generation
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+      // Step 1: Transform script to spoken language
+      const scriptToTransform = safeScript || approval.campaigns?.script;
+      if (scriptToTransform) {
+        try {
+          const ttsRes = await fetch(`${supabaseUrl}/functions/v1/transform-script-to-speech`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")!}`,
+            },
+            body: JSON.stringify({ campaign_id: campaignId, script: scriptToTransform }),
+          });
+          const ttsData = await ttsRes.json();
+          console.log("Script oral transformation:", ttsRes.status, JSON.stringify(ttsData));
+        } catch (ttsError) {
+          console.error("Script oral transformation failed (continuing):", ttsError);
+        }
+      }
+
+      // Step 2: Auto-trigger video generation
       try {
         const genRes = await fetch(`${supabaseUrl}/functions/v1/tavus-generate-video`, {
           method: "POST",
