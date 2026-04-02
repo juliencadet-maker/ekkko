@@ -566,6 +566,14 @@ export default function Onboarding() {
                     {/* Sub-step: Recording */}
                     {identitySubStep === "record" && (
                       <div className="space-y-4">
+                        {/* Verification code displayed separately */}
+                        {scriptData?.code && (
+                          <div className="p-4 bg-accent/10 border border-accent/30 rounded-lg text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Votre code de vérification</p>
+                            <p className="text-3xl font-bold tracking-widest text-accent">{scriptData.code}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Prononcez ce code à la fin de votre enregistrement</p>
+                          </div>
+                        )}
                         <VideoRecorder
                           onVideoReady={handleVideoReady}
                           onAudioReady={handleAudioReady}
