@@ -61,7 +61,7 @@ export default function UserApprovals() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [membership?.org_id]);
 
   const approveUser = async (profileId: string) => {
     setProcessingIds((prev) => new Set(prev).add(profileId));
