@@ -397,7 +397,10 @@ export default function NewCampaign() {
   ];
 
   const canProceedStep1 = campaignName.trim() && prospectCompany.trim();
-  const canProceedStep2 = assetType && (assetType === "document" || selectedIdentityId);
+  const canProceedStep2 = assetType === "document" ||
+    (assetType === "video" && videoMode === "facecam" && !!facecamBlob) ||
+    (assetType === "video" && videoMode === "identity" && !!selectedIdentityId && !!script.trim()) ||
+    (assetType === "video" && videoMode === "import" && !!importedFile);
 
   return (
     <AppLayout>
