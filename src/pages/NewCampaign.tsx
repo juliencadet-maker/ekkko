@@ -88,7 +88,7 @@ export default function NewCampaign() {
   const [selectedIdentityId, setSelectedIdentityId] = useState("");
   const [selectedIdentity, setSelectedIdentity] = useState<Identity | null>(null);
 
-  // Step 4 — Competitor
+  // Step 3 — Competitor
   const [hasIncumbent, setHasIncumbent] = useState<"yes" | "no" | "unknown" | "">("");
   const [incumbentType, setIncumbentType] = useState("");
 
