@@ -311,9 +311,13 @@ export default function Approvals() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Fermer</Button>
-                <Button variant="outline" onClick={() => {
-                  if (selectedApproval?.approval_token) {
-                    const link = `${window.location.origin}/approve/${selectedApproval.approval_token}`;
+              <Button variant="outline" onClick={() => {
+                if ((selectedApproval as any)?.approval_token) {
+                  const link = `${window.location.origin}/approve/${(selectedApproval as any).approval_token}`;
+                  navigator.clipboard.writeText(link);
+                  toast({ title: "Lien copié", description: "Le lien de validation exec a été copié." });
+                }
+              }}>
                     navigator.clipboard.writeText(link);
                     toast({ title: "Lien copié", description: "Le lien de validation exec a été copié." });
                   }
