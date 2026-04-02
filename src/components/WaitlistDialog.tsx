@@ -183,7 +183,7 @@ export function WaitlistDialog({ open, onOpenChange, source = "landing" }: Waitl
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <EkkoLoader mode="once" size={16} className="mr-2" />
                   Envoi en cours...
                 </>
               ) : (
