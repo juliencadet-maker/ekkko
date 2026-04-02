@@ -12,7 +12,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 interface DealCloseModalProps {
   open: boolean;
