@@ -17,11 +17,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
 import { EkkoAgent } from "@/components/campaign/EkkoAgent";
 import { DealCloseModal } from "@/components/campaign/DealCloseModal";
 import { PowerMap } from "@/components/campaign/PowerMap";
+import { NBACard } from "@/components/campaign/NBACard";
+import { InsightCard } from "@/components/campaign/InsightCard";
+import { DealTimeline } from "@/components/campaign/DealTimeline";
+import { WhatHappenedWidget } from "@/components/campaign/WhatHappenedWidget";
+import { LayerCoverage } from "@/components/campaign/LayerCoverage";
 import {
   ArrowLeft,
   Play,
@@ -49,11 +56,12 @@ import {
   FileText,
   MessageSquare,
   GitCompareArrows,
-  
   Globe,
   RefreshCw,
   Zap,
   Sparkles,
+  CalendarIcon,
+  PauseCircle,
 } from "lucide-react";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
