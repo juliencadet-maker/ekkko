@@ -1,21 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Camera, Square, RotateCcw, Check, Circle } from "lucide-react";
-
-const generateScript = (variant: string, company: string, contact: string): string => {
-  switch (variant) {
-    case "intro":
-      return `Bonjour${contact ? ` ${contact}` : ""},\n\nJe me permets de vous contacter au sujet de ${company || "votre projet"}. J'aimerais vous montrer comment nous pouvons vous accompagner.\n\nSeriez-vous disponible pour un échange rapide cette semaine ?`;
-    case "relance":
-      return `Bonjour${contact ? ` ${contact}` : ""},\n\nJe reviens vers vous suite à notre précédent échange concernant ${company || "votre projet"}.\n\nAvez-vous eu le temps de réfléchir à notre proposition ?`;
-    case "reponse":
-      return `Bonjour${contact ? ` ${contact}` : ""},\n\nMerci pour votre retour concernant ${company || "votre projet"}. Je souhaitais apporter quelques précisions.\n\nN'hésitez pas à me faire part de vos questions.`;
-    default:
-      return "";
-  }
-};
 
 type RecordingState = "idle" | "recording" | "recorded";
 
@@ -25,14 +11,26 @@ interface FacecamRecorderProps {
   onRecorded: (blob: Blob) => void;
   onClear: () => void;
   recordedBlob: Blob | null;
+  /** When provided, use this text for the teleprompter instead of internal script */
+  externalScript?: string;
+  /** When true, show the teleprompter overlay with externalScript */
+  showTeleprompter?: boolean;
 }
 
-export function FacecamRecorder({ company, contactName, onRecorded, onClear, recordedBlob }: FacecamRecorderProps) {
+export function FacecamRecorder({
+  company,
+  contactName,
+  onRecorded,
+  onClear,
+  recordedBlob,
+  externalScript = "",
+  showTeleprompter = false,
+}: FacecamRecorderProps) {
   const isMobile = useIsMobile();
   const [state, setState] = useState<RecordingState>(recordedBlob ? "recorded" : "idle");
-  const [script, setScript] = useState(() => generateScript("intro", company, contactName));
-  const [activeVariant, setActiveVariant] = useState("intro");
   const [cameraReady, setCameraReady] = useState(false);
+
+  const teleprompterText = showTeleprompter ? externalScript : "";
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -127,11 +125,6 @@ export function FacecamRecorder({ company, contactName, onRecorded, onClear, rec
     if (teleprompterRef.current) teleprompterRef.current.scrollTop = 0;
   };
 
-  const switchVariant = (v: string) => {
-    setActiveVariant(v);
-    setScript(generateScript(v, company, contactName));
-  };
-
   // ── RECORDED ──
   if (state === "recorded" || recordedBlob) {
     const url = previewUrlRef.current || (recordedBlob ? URL.createObjectURL(recordedBlob) : null);
@@ -153,36 +146,6 @@ export function FacecamRecorder({ company, contactName, onRecorded, onClear, rec
   // ── IDLE / RECORDING ──
   return (
     <div className="space-y-4">
-      {/* Script variant selector (only before recording) */}
-      {state === "idle" && (
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            {[
-              { key: "intro", label: "Intro" },
-              { key: "relance", label: "Relance" },
-              { key: "reponse", label: "Réponse" },
-            ].map((v) => (
-              <Button
-                key={v.key}
-                size="sm"
-                variant={activeVariant === v.key ? "default" : "outline"}
-                onClick={() => switchVariant(v.key)}
-                className="text-xs"
-              >
-                {v.label}
-              </Button>
-            ))}
-          </div>
-          <Textarea
-            value={script}
-            onChange={(e) => setScript(e.target.value)}
-            rows={3}
-            className="text-sm"
-            placeholder="Écrivez votre script ici (optionnel)..."
-          />
-        </div>
-      )}
-
       {/* Camera view */}
       <div className="relative">
         <video
@@ -195,12 +158,12 @@ export function FacecamRecorder({ company, contactName, onRecorded, onClear, rec
         />
 
         {/* Desktop teleprompter overlay */}
-        {!isMobile && script.trim() && (
+        {!isMobile && teleprompterText.trim() && (
           <div
             ref={teleprompterRef}
             className="absolute bottom-0 left-0 right-0 max-h-[40%] overflow-y-auto p-4 bg-black/60 rounded-b-lg"
           >
-            <p className="text-white text-center text-sm whitespace-pre-wrap leading-relaxed">{script}</p>
+            <p className="text-white text-center text-sm whitespace-pre-wrap leading-relaxed">{teleprompterText}</p>
           </div>
         )}
 
@@ -214,13 +177,13 @@ export function FacecamRecorder({ company, contactName, onRecorded, onClear, rec
       </div>
 
       {/* Mobile teleprompter below video */}
-      {isMobile && script.trim() && (
+      {isMobile && teleprompterText.trim() && (
         <div
           ref={teleprompterRef}
           className="max-h-32 overflow-y-auto p-3 bg-muted rounded-lg"
         >
           <p className="text-foreground text-center whitespace-pre-wrap leading-relaxed" style={{ fontSize: "18px" }}>
-            {script}
+            {teleprompterText}
           </p>
         </div>
       )}
