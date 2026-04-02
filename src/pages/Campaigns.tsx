@@ -113,8 +113,11 @@ export default function Campaigns() {
       c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Sort by priority_score descending
+    // First action spotlight: deals with no first_action_completed_at come first
     filtered.sort((a, b) => {
+      const aSpotlight = !(a as any).first_action_completed_at ? 1 : 0;
+      const bSpotlight = !(b as any).first_action_completed_at ? 1 : 0;
+      if (bSpotlight !== aSpotlight) return bSpotlight - aSpotlight;
       const prioA = dealScores[a.id]?.priority_score ?? 0;
       const prioB = dealScores[b.id]?.priority_score ?? 0;
       return prioB - prioA;
