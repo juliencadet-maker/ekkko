@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { useAuditLog } from "@/hooks/useAuditLog";
-import { tavusApi } from "@/lib/api/tavus";
+
+
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -45,7 +45,7 @@ export default function Approvals() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user, membership } = useAuthContext();
-  const { logEvent } = useAuditLog();
+  
   const { toast } = useToast();
 
   const fetchApprovals = async () => {
@@ -71,9 +71,22 @@ export default function Approvals() {
     if (!selectedApproval) return;
     setIsSubmitting(true);
     try {
-      const newStatus = action === "approve" ? "approved" : "rejected";
       const scriptChanged = action === "approve" && editedScript !== (selectedApproval.script_snapshot || (selectedApproval as any).campaigns?.script);
       
+      // Use the orchestrator edge function for the full pipeline
+      const { error } = await supabase.functions.invoke("process-approval-decision", {
+        body: {
+          approval_id: selectedApproval.id,
+          action: action === "approve" ? "approved" : "rejected",
+          ...(scriptChanged ? { edited_script: editedScript } : {}),
+          ...(comment ? { comment } : {}),
+        },
+      });
+
+      if (error) throw error;
+
+      // Update local approval_request status
+      const newStatus = action === "approve" ? "approved" : "rejected";
       await supabase.from("approval_requests").update({
         status: newStatus,
         decision_comment: comment || null,
@@ -81,23 +94,6 @@ export default function Approvals() {
         decided_by_user_id: user.id,
         ...(scriptChanged ? { script_snapshot: editedScript } : {}),
       }).eq("id", selectedApproval.id);
-
-      if (action === "approve") {
-        await supabase.from("campaigns").update({
-          status: "approved",
-          approved_at: new Date().toISOString(),
-          approved_by_user_id: user.id,
-          ...(scriptChanged ? { script: editedScript } : {}),
-        }).eq("id", selectedApproval.campaign_id);
-
-        await logEvent({ eventType: "approval_approved", entityType: "approval_request", entityId: selectedApproval.id, metadata: scriptChanged ? { script_modified: true } : undefined });
-        await logEvent({ eventType: "campaign_approved", entityType: "campaign", entityId: selectedApproval.campaign_id });
-        try { await tavusApi.generateVideo(selectedApproval.campaign_id); } catch {}
-      } else {
-        await supabase.from("campaigns").update({ status: "draft" }).eq("id", selectedApproval.campaign_id);
-        await logEvent({ eventType: "approval_rejected", entityType: "approval_request", entityId: selectedApproval.id, metadata: { comment } });
-        await logEvent({ eventType: "campaign_rejected", entityType: "campaign", entityId: selectedApproval.campaign_id });
-      }
 
       toast({
         title: action === "approve" ? "Approuvé ✓" : "Refusé",
