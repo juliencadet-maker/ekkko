@@ -848,7 +848,7 @@ export default function CampaignDetail() {
                         id="campaign-video"
                         src={url}
                         className="w-full h-full object-cover"
-                        poster="/placeholder.svg"
+                        preload="metadata"
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
                         onEnded={() => setIsPlaying(false)}
