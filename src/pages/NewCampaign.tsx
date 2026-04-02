@@ -785,7 +785,9 @@ export default function NewCampaign() {
                           setFacecamBlob(null);
                           setFacecamPhase("script");
                           setFacecamScript("");
+                          setFacecamOriginalScript("");
                           setFacecamWithTeleprompter(false);
+                          setShowOriginalScript(false);
                         }}
                         className="text-muted-foreground -mt-2"
                       >
