@@ -499,60 +499,8 @@ export default function NewCampaign() {
             </Card>
           )}
 
-          {/* STEP 2 — Calibration */}
+          {/* STEP 2 — Starting Asset */}
           {currentStep === 2 && (
-            <Card className="animate-fade-in rounded-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Calibration
-                </CardTitle>
-                <CardDescription>Ces informations permettent de calibrer les signaux attendus.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label>Quel est le contexte ? *</Label>
-                  <RadioGroup value={motionType} onValueChange={setMotionType} className="space-y-2">
-                    {MOTION_TYPES.map((mt) => (
-                      <div key={mt.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                        <RadioGroupItem value={mt.value} id={`motion-${mt.value}`} />
-                        <Label htmlFor={`motion-${mt.value}`} className="cursor-pointer flex-1">
-                          {mt.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Comment se prend la décision ? *</Label>
-                  <RadioGroup value={decisionStructure} onValueChange={setDecisionStructure} className="space-y-2">
-                    {DECISION_STRUCTURES.map((ds) => (
-                      <div key={ds.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                        <RadioGroupItem value={ds.value} id={`decision-${ds.value}`} />
-                        <Label htmlFor={`decision-${ds.value}`} className="cursor-pointer flex-1">
-                          {ds.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Retour
-                  </Button>
-                  <Button onClick={() => setCurrentStep(3)} disabled={!canProceedStep2} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                    Continuer <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP 3 — Starting Asset */}
-          {currentStep === 3 && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
