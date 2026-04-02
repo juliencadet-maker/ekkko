@@ -284,6 +284,7 @@ export default function NewCampaign() {
             stage: dealStage || null,
             deal_value: dealValue ? parseFloat(dealValue) * 1000 : null,
             asset_type: assetType,
+            video_mode: assetType === "video" ? videoMode : null,
           },
         })
         .select()
