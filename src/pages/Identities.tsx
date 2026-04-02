@@ -252,7 +252,7 @@ export default function Identities() {
               onClick={() => confirmDeleteIdentity && handleDelete(confirmDeleteIdentity)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deletingId ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deletingId ? <EkkoLoader mode="once" size={16} className="mr-2" /> : null}
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
