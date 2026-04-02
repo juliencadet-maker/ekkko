@@ -35,6 +35,7 @@ import {
   Camera,
   Upload,
   Bot,
+  Sparkles,
 } from "lucide-react";
 import type { Identity, Policy } from "@/types/database";
 
@@ -46,14 +47,24 @@ const DEAL_STAGES = [
   { value: "close", label: "Close" },
 ];
 
-
-
-
 const INCUMBENT_TYPES = [
   { value: "internal", label: "Outil interne" },
   { value: "named_competitor", label: "Concurrent nommé" },
   { value: "unknown", label: "Inconnu" },
 ];
+
+const generateFacecamScript = (variant: string, company: string, contact: string): string => {
+  switch (variant) {
+    case "intro":
+      return `Bonjour${contact ? ` ${contact}` : ""},\n\nJe me permets de vous contacter au sujet de ${company || "votre projet"}. J'aimerais vous montrer comment nous pouvons vous accompagner.\n\nSeriez-vous disponible pour un échange rapide cette semaine ?`;
+    case "relance":
+      return `Bonjour${contact ? ` ${contact}` : ""},\n\nJe reviens vers vous suite à notre précédent échange concernant ${company || "votre projet"}.\n\nAvez-vous eu le temps de réfléchir à notre proposition ?`;
+    case "reponse":
+      return `Bonjour${contact ? ` ${contact}` : ""},\n\nMerci pour votre retour concernant ${company || "votre projet"}. Je souhaitais apporter quelques précisions.\n\nN'hésitez pas à me faire part de vos questions.`;
+    default:
+      return "";
+  }
+};
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -77,7 +88,14 @@ export default function NewCampaign() {
   const [existingAccount, setExistingAccount] = useState<{ id: string; name: string } | null>(null);
   const [accountSuggestion, setAccountSuggestion] = useState<{ id: string; name: string } | null>(null);
 
-  // Step 2 — Starting asset
+  // Step 2 — Competitor
+  const [hasIncumbent, setHasIncumbent] = useState<"yes" | "no" | "unknown" | "">("");
+  const [incumbentType, setIncumbentType] = useState("");
+
+  // Step 3 — Contacts
+  const [contacts, setContacts] = useState<Contact[]>([{ email: "", firstName: "", lastName: "", title: "" }]);
+
+  // Step 4 — Starting asset
   const [assetType, setAssetType] = useState<"video" | "document" | "">("");
   const [selectedIdentityId, setSelectedIdentityId] = useState("");
   const [selectedIdentity, setSelectedIdentity] = useState<Identity | null>(null);
@@ -85,14 +103,14 @@ export default function NewCampaign() {
   const [facecamBlob, setFacecamBlob] = useState<Blob | null>(null);
   const [importedFile, setImportedFile] = useState<File | null>(null);
 
-  // Step 3 — Competitor
-  const [hasIncumbent, setHasIncumbent] = useState<"yes" | "no" | "unknown" | "">("");
-  const [incumbentType, setIncumbentType] = useState("");
+  // Facecam phases
+  const [facecamPhase, setFacecamPhase] = useState<"script" | "recording">("script");
+  const [facecamScript, setFacecamScript] = useState("");
+  const [facecamVariant, setFacecamVariant] = useState("intro");
+  const [facecamWithTeleprompter, setFacecamWithTeleprompter] = useState(false);
+  const [facecamTransitioning, setFacecamTransitioning] = useState(false);
 
-  // Step 4 — Contacts
-  const [contacts, setContacts] = useState<Contact[]>([{ email: "", firstName: "", lastName: "", title: "" }]);
-
-  // Script (generated later in campaign detail)
+  // Script for identity path
   const [script, setScript] = useState("");
 
   // Data
@@ -124,7 +142,13 @@ export default function NewCampaign() {
     fetchData();
   }, [membership?.org_id]);
 
-  // Account lookup on company name blur
+  // Initialize facecam script when entering facecam mode
+  useEffect(() => {
+    if (videoMode === "facecam" && !facecamScript) {
+      setFacecamScript(generateFacecamScript("intro", prospectCompany, contacts[0]?.firstName || ""));
+    }
+  }, [videoMode, facecamScript, prospectCompany, contacts]);
+
   const handleCompanyBlur = async () => {
     if (!prospectCompany.trim() || !membership?.org_id) return;
     const normalized = prospectCompany.trim().toLowerCase();
@@ -207,7 +231,6 @@ export default function NewCampaign() {
     return "Clone";
   };
 
-  // Purpose mapping from stage
   const getPurposeFromStage = (stage: string) => {
     const map: Record<string, string> = {
       qualification: "qualification",
@@ -218,6 +241,26 @@ export default function NewCampaign() {
     };
     return map[stage] || "";
   };
+
+  const switchFacecamVariant = (v: string) => {
+    setFacecamVariant(v);
+    setFacecamScript(generateFacecamScript(v, prospectCompany, contacts[0]?.firstName || ""));
+  };
+
+  const transitionToRecording = (withTeleprompter: boolean) => {
+    setFacecamWithTeleprompter(withTeleprompter);
+    setFacecamTransitioning(true);
+    setTimeout(() => {
+      setFacecamPhase("recording");
+      setFacecamTransitioning(false);
+    }, 300);
+  };
+
+  const canProceedAsset =
+    assetType === "document" ||
+    (assetType === "video" && videoMode === "facecam" && !!facecamBlob) ||
+    (assetType === "video" && videoMode === "identity" && !!selectedIdentityId && !!script.trim()) ||
+    (assetType === "video" && videoMode === "import" && !!importedFile);
 
   const handleSubmit = async () => {
     if (assetType === "video" && videoMode === "identity" && !selectedIdentity) {
@@ -243,7 +286,6 @@ export default function NewCampaign() {
 
     setIsSubmitting(true);
     try {
-      // 1. Create or reuse account
       let accountId = existingAccount?.id || null;
       if (!accountId && prospectCompany.trim()) {
         const { data: newAccount } = await supabase
@@ -259,12 +301,10 @@ export default function NewCampaign() {
         accountId = newAccount?.id || null;
       }
 
-      // 2. Determine approval
       const isExecVideo = assetType === "video" && videoMode === "identity";
       const needsApproval = isExecVideo ? requiresApproval() : false;
       const initialStatus = needsApproval ? "pending_approval" : (isExecVideo ? "approved" : "draft");
 
-      // 3. Create campaign
       const { data: campaign, error: campaignError } = await supabase
         .from("campaigns")
         .insert({
@@ -292,7 +332,6 @@ export default function NewCampaign() {
 
       if (campaignError) throw campaignError;
 
-      // 4. Create agent_context
       await supabase.from("agent_context").insert({
         campaign_id: campaign.id,
         stage: dealStage || null,
@@ -301,7 +340,6 @@ export default function NewCampaign() {
         competitive_situation: hasIncumbent === "yes" ? "incumbent" : hasIncumbent === "unknown" ? "unknown" : "greenfield",
       });
 
-      // 5. Create contacts as recipients
       const validContacts = contacts.filter((c) => c.email.trim());
       for (const c of validContacts) {
         await supabase.from("recipients").insert({
@@ -321,7 +359,6 @@ export default function NewCampaign() {
         newValues: { name: campaignName, assetType, dealStage },
       });
 
-      // 6. Handle video upload or exec pipeline
       if (assetType === "video" && (videoMode === "facecam" || videoMode === "import")) {
         const fileToUpload = videoMode === "facecam" ? facecamBlob! : importedFile!;
         const ext = videoMode === "facecam" ? "webm" : (importedFile?.name.split(".").pop() || "mp4");
@@ -334,7 +371,6 @@ export default function NewCampaign() {
           });
 
         if (!uploadError) {
-          // Store the storage path (bucket is private, use signed URLs to display)
           await supabase.from("deal_assets").insert({
             campaign_id: campaign.id,
             asset_type: "video",
@@ -391,16 +427,12 @@ export default function NewCampaign() {
 
   const STEPS = [
     { num: 1, label: "Contexte", icon: Building2 },
-    { num: 2, label: "Asset", icon: FileVideo },
-    { num: 3, label: "Concurrent", icon: Swords },
-    { num: 4, label: "Contacts", icon: UserPlus },
+    { num: 2, label: "Concurrent", icon: Swords },
+    { num: 3, label: "Contacts", icon: UserPlus },
+    { num: 4, label: "Asset", icon: FileVideo },
   ];
 
   const canProceedStep1 = campaignName.trim() && prospectCompany.trim();
-  const canProceedStep2 = assetType === "document" ||
-    (assetType === "video" && videoMode === "facecam" && !!facecamBlob) ||
-    (assetType === "video" && videoMode === "identity" && !!selectedIdentityId && !!script.trim()) ||
-    (assetType === "video" && videoMode === "import" && !!importedFile);
 
   return (
     <AppLayout>
@@ -448,7 +480,7 @@ export default function NewCampaign() {
             ))}
           </div>
 
-          {/* STEP 1 — Deal Context */}
+          {/* ════════ STEP 1 — Context ════════ */}
           {currentStep === 1 && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
@@ -494,13 +526,7 @@ export default function NewCampaign() {
 
                 <div className="space-y-2">
                   <Label>Valeur estimée (k€)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={dealValue}
-                    onChange={(e) => setDealValue(e.target.value)}
-                    placeholder="Ex : 200"
-                  />
+                  <Input type="number" min="0" value={dealValue} onChange={(e) => setDealValue(e.target.value)} placeholder="Ex : 200" />
                 </div>
 
                 <div className="space-y-2">
@@ -511,9 +537,7 @@ export default function NewCampaign() {
                     </SelectTrigger>
                     <SelectContent>
                       {DEAL_STAGES.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>
-                          {s.label}
-                        </SelectItem>
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -530,8 +554,119 @@ export default function NewCampaign() {
             </Card>
           )}
 
-          {/* STEP 2 — Starting Asset */}
+          {/* ════════ STEP 2 — Competitor ════════ */}
           {currentStep === 2 && (
+            <Card className="animate-fade-in rounded-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Swords className="h-5 w-5" />
+                  Contexte concurrent
+                </CardTitle>
+                <CardDescription>Optionnel — aide à calibrer les actions prioritaires.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <Label>Y a-t-il un concurrent ou outil en place ?</Label>
+                  <RadioGroup value={hasIncumbent} onValueChange={(v) => setHasIncumbent(v as "yes" | "no" | "unknown")} className="space-y-2">
+                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                      <RadioGroupItem value="yes" id="inc-yes" />
+                      <Label htmlFor="inc-yes" className="cursor-pointer flex-1">Oui</Label>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                      <RadioGroupItem value="no" id="inc-no" />
+                      <Label htmlFor="inc-no" className="cursor-pointer flex-1">Non</Label>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                      <RadioGroupItem value="unknown" id="inc-unknown" />
+                      <Label htmlFor="inc-unknown" className="cursor-pointer flex-1">Je ne sais pas</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {hasIncumbent === "yes" && (
+                  <div className="space-y-3">
+                    <Label>Type</Label>
+                    <RadioGroup value={incumbentType} onValueChange={setIncumbentType} className="space-y-2">
+                      {INCUMBENT_TYPES.map((it) => (
+                        <div key={it.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                          <RadioGroupItem value={it.value} id={`inc-type-${it.value}`} />
+                          <Label htmlFor={`inc-type-${it.value}`} className="cursor-pointer flex-1">{it.label}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Retour
+                  </Button>
+                  <Button onClick={() => setCurrentStep(3)} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                    Continuer <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ════════ STEP 3 — Contacts ════════ */}
+          {currentStep === 3 && (
+            <Card className="animate-fade-in rounded-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  Contacts connus
+                </CardTitle>
+                <CardDescription>Optionnel — vous pourrez ajouter les contacts plus tard.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-2">
+                      <Users className="h-4 w-4" /> Contacts
+                    </Label>
+                    <Button type="button" variant="ghost" size="sm" onClick={addContact}>
+                      <Plus className="h-3 w-3 mr-1" /> Ajouter
+                    </Button>
+                  </div>
+                  {contacts.map((c, idx) => (
+                    <div key={idx} className="p-3 bg-muted rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Contact {idx + 1}</span>
+                        {contacts.length > 1 && (
+                          <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => removeContact(idx)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <Input type="email" value={c.email} onChange={(e) => updateContact(idx, "email", e.target.value)} placeholder="contact@entreprise.com" />
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input value={c.firstName} onChange={(e) => updateContact(idx, "firstName", e.target.value)} placeholder="Prénom" />
+                        <Input value={c.lastName} onChange={(e) => updateContact(idx, "lastName", e.target.value)} placeholder="Nom" />
+                        <Input value={c.title} onChange={(e) => updateContact(idx, "title", e.target.value)} placeholder="Titre / Fonction" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setCurrentStep(2)}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Retour
+                  </Button>
+                  <Button onClick={() => setCurrentStep(4)} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                    Continuer <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+
+                <Button variant="ghost" onClick={() => setCurrentStep(4)} className="w-full text-muted-foreground text-sm">
+                  Passer — j'ajouterai les contacts plus tard
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ════════ STEP 4 — Asset ════════ */}
+          {currentStep === 4 && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -557,7 +692,7 @@ export default function NewCampaign() {
                         <FileVideo className="h-5 w-5 text-muted-foreground" />
                         <Label htmlFor="asset-video" className="cursor-pointer flex-1">
                           <span className="block">Envoyer une vidéo</span>
-                          <span className="block text-xs font-normal text-muted-foreground">Facecam, exec ou démo produit</span>
+                          <span className="block text-xs font-normal text-muted-foreground">Facecam, clone ou démo produit</span>
                         </Label>
                       </div>
                       <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer">
@@ -592,7 +727,14 @@ export default function NewCampaign() {
                           <div
                             key={opt.key}
                             className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                            onClick={() => setVideoMode(opt.key)}
+                            onClick={() => {
+                              setVideoMode(opt.key);
+                              if (opt.key === "facecam") {
+                                setFacecamPhase("script");
+                                setFacecamBlob(null);
+                                setFacecamWithTeleprompter(false);
+                              }
+                            }}
                           >
                             <opt.icon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                             <div className="flex-1">
@@ -606,28 +748,105 @@ export default function NewCampaign() {
                     </div>
                   )}
 
-                  {/* FACECAM PATH */}
+                  {/* ──── FACECAM PATH ──── */}
                   {assetType === "video" && videoMode === "facecam" && (
                     <div className="space-y-4">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => { setVideoMode(""); setFacecamBlob(null); }}
+                        onClick={() => {
+                          setVideoMode("");
+                          setFacecamBlob(null);
+                          setFacecamPhase("script");
+                          setFacecamScript("");
+                          setFacecamWithTeleprompter(false);
+                        }}
                         className="text-muted-foreground -mt-2"
                       >
                         <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
                       </Button>
-                      <FacecamRecorder
-                        company={prospectCompany}
-                        contactName={contacts[0]?.firstName || ""}
-                        onRecorded={(blob) => setFacecamBlob(blob)}
-                        onClear={() => setFacecamBlob(null)}
-                        recordedBlob={facecamBlob}
-                      />
+
+                      {/* PHASE 1 — Script */}
+                      {facecamPhase === "script" && (
+                        <div
+                          className={`space-y-4 transition-all duration-300 ease-out ${
+                            facecamTransitioning ? "opacity-0 max-h-0 overflow-hidden" : "opacity-100 max-h-[800px]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">Préparez votre script</p>
+                            <ScriptGenerator
+                              onScriptGenerated={(generatedScript) => setFacecamScript(generatedScript)}
+                              senderName={`${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Votre nom"}
+                              senderTitle={profile?.title || "Votre titre"}
+                              defaultCompany={prospectCompany}
+                              defaultContact={contacts[0]?.firstName || ""}
+                              defaultPurpose={getPurposeFromStage(dealStage)}
+                            />
+                          </div>
+
+                          <div className="flex gap-2">
+                            {[
+                              { key: "intro", label: "Intro" },
+                              { key: "relance", label: "Relance" },
+                              { key: "reponse", label: "Réponse" },
+                            ].map((v) => (
+                              <Button
+                                key={v.key}
+                                size="sm"
+                                variant={facecamVariant === v.key ? "default" : "outline"}
+                                onClick={() => switchFacecamVariant(v.key)}
+                                className="text-xs"
+                              >
+                                {v.label}
+                              </Button>
+                            ))}
+                          </div>
+
+                          <Textarea
+                            value={facecamScript}
+                            onChange={(e) => setFacecamScript(e.target.value)}
+                            rows={5}
+                            className="text-sm min-h-[120px]"
+                            placeholder="Écrivez votre script ici..."
+                          />
+
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              onClick={() => transitionToRecording(true)}
+                              className="w-full min-h-12 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+                            >
+                              Valider ce script <ArrowRight className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              onClick={() => transitionToRecording(false)}
+                              className="w-full text-muted-foreground text-sm"
+                            >
+                              Enregistrer sans script →
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PHASE 2 — Recording */}
+                      {facecamPhase === "recording" && (
+                        <div className="animate-fade-in">
+                          <FacecamRecorder
+                            company={prospectCompany}
+                            contactName={contacts[0]?.firstName || ""}
+                            onRecorded={(blob) => setFacecamBlob(blob)}
+                            onClear={() => setFacecamBlob(null)}
+                            recordedBlob={facecamBlob}
+                            externalScript={facecamWithTeleprompter ? facecamScript : ""}
+                            showTeleprompter={facecamWithTeleprompter}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* IDENTITY PATH */}
+                  {/* ──── IDENTITY PATH ──── */}
                   {assetType === "video" && videoMode === "identity" && (
                     <div className="space-y-4">
                       <Button
@@ -710,7 +929,7 @@ export default function NewCampaign() {
                     </div>
                   )}
 
-                  {/* IMPORT PATH */}
+                  {/* ──── IMPORT PATH ──── */}
                   {assetType === "video" && videoMode === "import" && (
                     <div className="space-y-4">
                       <Button
@@ -730,160 +949,44 @@ export default function NewCampaign() {
                   )}
                 </div>
 
-                {/* Sticky footer */}
-                <div className="flex gap-3 pt-4 border-t flex-shrink-0">
-                  <Button variant="outline" onClick={() => { setCurrentStep(1); setAssetType(""); setVideoMode(""); }}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Retour
-                  </Button>
-                  <Button
-                    onClick={() => setCurrentStep(3)}
-                    disabled={!canProceedStep2}
-                    className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90"
-                  >
-                    Continuer <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP 3 — Competitor (optional) */}
-          {currentStep === 3 && (
-            <Card className="animate-fade-in rounded-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Swords className="h-5 w-5" />
-                  Contexte concurrent
-                </CardTitle>
-                <CardDescription>Optionnel — aide à calibrer les actions prioritaires.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label>Y a-t-il un concurrent ou outil en place ?</Label>
-                  <RadioGroup value={hasIncumbent} onValueChange={(v) => setHasIncumbent(v as "yes" | "no" | "unknown")} className="space-y-2">
-                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                      <RadioGroupItem value="yes" id="inc-yes" />
-                      <Label htmlFor="inc-yes" className="cursor-pointer flex-1">Oui</Label>
+                {/* Sticky footer with submit */}
+                <div className="flex flex-col gap-3 pt-4 border-t flex-shrink-0">
+                  {/* Approval info for identity video */}
+                  {assetType === "video" && videoMode === "identity" && requiresApproval() && (
+                    <div className="p-3 bg-warning/10 rounded-lg border border-warning/20 flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-warning text-sm">Validation requise</p>
+                        <p className="text-xs text-muted-foreground">
+                          {!isSelfIdentity ? "Le propriétaire de l'identité devra approuver ce script." : "Un administrateur devra approuver ce script."}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                      <RadioGroupItem value="no" id="inc-no" />
-                      <Label htmlFor="inc-no" className="cursor-pointer flex-1">Non</Label>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                      <RadioGroupItem value="unknown" id="inc-unknown" />
-                      <Label htmlFor="inc-unknown" className="cursor-pointer flex-1">Je ne sais pas</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                  )}
 
-                {hasIncumbent === "yes" && (
-                  <div className="space-y-3">
-                    <Label>Type</Label>
-                    <RadioGroup value={incumbentType} onValueChange={setIncumbentType} className="space-y-2">
-                      {INCUMBENT_TYPES.map((it) => (
-                        <div key={it.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                          <RadioGroupItem value={it.value} id={`inc-type-${it.value}`} />
-                          <Label htmlFor={`inc-type-${it.value}`} className="cursor-pointer flex-1">{it.label}</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Retour
-                  </Button>
-                  <Button onClick={() => setCurrentStep(4)} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                    Continuer <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP 4 — Contacts (optional) */}
-          {currentStep === 4 && (
-            <Card className="animate-fade-in rounded-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5" />
-                  Contacts connus
-                </CardTitle>
-                <CardDescription>Optionnel — vous pourrez ajouter les contacts plus tard.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="flex items-center gap-2">
-                      <Users className="h-4 w-4" /> Contacts
-                    </Label>
-                    <Button type="button" variant="ghost" size="sm" onClick={addContact}>
-                      <Plus className="h-3 w-3 mr-1" /> Ajouter
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => { setCurrentStep(3); setAssetType(""); setVideoMode(""); }}>
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Retour
+                    </Button>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={isSubmitting || !canProceedAsset}
+                      className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      {isSubmitting ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</>
+                      ) : assetType === "video" && videoMode === "identity" && !requiresApproval() ? (
+                        <><CheckCircle2 className="mr-2 h-4 w-4" />Créer et générer la vidéo</>
+                      ) : assetType === "video" && videoMode === "identity" && requiresApproval() ? (
+                        <><Send className="mr-2 h-4 w-4" />Créer et envoyer en validation</>
+                      ) : assetType === "video" && (videoMode === "facecam" || videoMode === "import") ? (
+                        <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal et uploader la vidéo</>
+                      ) : (
+                        <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal</>
+                      )}
                     </Button>
                   </div>
-                  {contacts.map((c, idx) => (
-                    <div key={idx} className="p-3 bg-muted rounded-lg space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">Contact {idx + 1}</span>
-                        {contacts.length > 1 && (
-                          <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => removeContact(idx)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                      <Input type="email" value={c.email} onChange={(e) => updateContact(idx, "email", e.target.value)} placeholder="contact@entreprise.com" />
-                      <div className="grid grid-cols-3 gap-2">
-                        <Input value={c.firstName} onChange={(e) => updateContact(idx, "firstName", e.target.value)} placeholder="Prénom" />
-                        <Input value={c.lastName} onChange={(e) => updateContact(idx, "lastName", e.target.value)} placeholder="Nom" />
-                        <Input value={c.title} onChange={(e) => updateContact(idx, "title", e.target.value)} placeholder="Titre / Fonction" />
-                      </div>
-                    </div>
-                  ))}
                 </div>
-
-                {/* Approval info for identity video */}
-                {assetType === "video" && videoMode === "identity" && requiresApproval() && (
-                  <div className="p-3 bg-warning/10 rounded-lg border border-warning/20 flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-warning text-sm">Validation requise</p>
-                      <p className="text-xs text-muted-foreground">
-                        {!isSelfIdentity ? "Le propriétaire de l'identité devra approuver ce script." : "Un administrateur devra approuver ce script."}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(3)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Retour
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90"
-                  >
-                    {isSubmitting ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</>
-                    ) : assetType === "video" && videoMode === "identity" && !requiresApproval() ? (
-                      <><CheckCircle2 className="mr-2 h-4 w-4" />Créer et générer la vidéo</>
-                    ) : assetType === "video" && videoMode === "identity" && requiresApproval() ? (
-                      <><Send className="mr-2 h-4 w-4" />Créer et envoyer en validation</>
-                    ) : assetType === "video" && (videoMode === "facecam" || videoMode === "import") ? (
-                      <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal et uploader la vidéo</>
-                    ) : (
-                      <><CheckCircle2 className="mr-2 h-4 w-4" />Créer le deal</>
-                    )}
-                  </Button>
-                </div>
-
-                <Button variant="ghost" onClick={handleSubmit} disabled={isSubmitting} className="w-full text-muted-foreground text-sm">
-                  Passer — j'ajouterai les contacts plus tard
-                </Button>
               </CardContent>
             </Card>
           )}
