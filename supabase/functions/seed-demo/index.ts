@@ -47,9 +47,19 @@ async function deleteUserAndData(admin: any, email: string) {
       await admin.from("deal_signals").delete().in("campaign_id", campaignIds);
       await admin.from("recommendation_outcomes").delete().in("campaign_id", campaignIds);
       await admin.from("agent_conversations").delete().in("campaign_id", campaignIds);
+      await admin.from("agent_context").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_contact_roles").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_triggers").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_permissions").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_rooms").delete().in("campaign_id", campaignIds);
+      await admin.from("deal_assets").delete().in("campaign_id", campaignIds);
+      await admin.from("asset_deliveries").delete().in("campaign_id", campaignIds);
+      await admin.from("asset_page_events").delete().in("campaign_id", campaignIds);
+      await admin.from("timeline_events").delete().in("campaign_id", campaignIds);
       await admin.from("script_versions").delete().in("campaign_id", campaignIds);
     }
     await admin.from("campaigns").delete().eq("org_id", orgId);
+    await admin.from("accounts").delete().eq("org_id", orgId);
     await admin.from("identities").delete().eq("org_id", orgId);
     await admin.from("providers").delete().eq("org_id", orgId);
     await admin.from("policies").delete().eq("org_id", orgId);
