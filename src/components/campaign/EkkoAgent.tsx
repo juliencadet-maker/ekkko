@@ -10,6 +10,7 @@ import {
   TrendingUp, TrendingDown, Users, Zap, Shield, Eye,
   ChevronRight, X,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 interface EkkoAgentProps {
   campaignId: string;
