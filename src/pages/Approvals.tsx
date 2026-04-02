@@ -113,9 +113,32 @@ export default function Approvals() {
     }
   };
 
-  const openReviewDialog = (approval: ApprovalRequest) => {
+  const openReviewDialog = async (approval: ApprovalRequest) => {
+    const c = (approval as any).campaigns;
+    const execOwnerId = c?.identities?.owner_user_id;
+
+    // Guardrail: if exec is identified and different from current user, check if exec has validated
+    if (execOwnerId && execOwnerId !== user.id) {
+      // Check if exec has their own approval request and has decided
+      const { data: execApproval } = await supabase
+        .from("approval_requests")
+        .select("decided_at")
+        .eq("campaign_id", approval.campaign_id)
+        .eq("assigned_to_user_id", execOwnerId)
+        .maybeSingle();
+
+      if (execApproval && !execApproval.decided_at) {
+        setExecGuardrailMessage(`L'exec (${c?.identities?.display_name}) n'a pas encore validé ce script.`);
+        setSelectedApproval(approval);
+        setIsDialogOpen(true);
+        setDialogMode("review");
+        return;
+      }
+    }
+
+    setExecGuardrailMessage(null);
     setSelectedApproval(approval);
-    setEditedScript(approval.script_snapshot || (approval as any).campaigns?.script || "");
+    setEditedScript(approval.script_snapshot || c?.script || "");
     setComment("");
     setDialogMode("review");
     setIsDialogOpen(true);
