@@ -848,7 +848,7 @@ export default function CampaignDetail() {
                         id="campaign-video"
                         src={url}
                         className="w-full h-full object-cover"
-                        poster="/placeholder.svg"
+                        preload="metadata"
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
                         onEnded={() => setIsPlaying(false)}
@@ -1172,7 +1172,7 @@ export default function CampaignDetail() {
                           src={url}
                           className="w-full h-full"
                           controls
-                          poster="/placeholder.svg"
+                          preload="metadata"
                         />
                       </div>
                       <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
