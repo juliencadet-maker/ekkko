@@ -417,7 +417,7 @@ export default function Onboarding() {
               {canSkip && (
                 <Button variant="ghost" size="sm" onClick={handleSkipOnboarding} disabled={isLoading} className="text-xs text-muted-foreground hover:text-foreground">
                   {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                  Skip Onboarding →
+                  Passer cette étape →
                 </Button>
               )}
               <span className="text-sm font-medium text-muted-foreground">{Math.round(progress)}%</span>

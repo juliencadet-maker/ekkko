@@ -53,7 +53,7 @@ export function computeLeadScore(params: {
 
 function getScoreStyle(score: number): { label: string; color: string; bgColor: string; borderColor: string } {
   if (score >= 75) {
-    return { label: "Engagé 🔥", color: "text-emerald-700", bgColor: "bg-orange-500/15", borderColor: "border-orange-500/30" };
+    return { label: "Engagé", color: "text-emerald-700", bgColor: "bg-orange-500/15", borderColor: "border-orange-500/30" };
   }
   if (score >= 50) {
     return { label: "Actif", color: "text-amber-700", bgColor: "bg-amber-500/15", borderColor: "border-amber-500/30" };

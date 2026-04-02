@@ -85,7 +85,7 @@ export default function Index() {
               <div className="bg-sidebar-accent rounded-lg p-3 mb-2 border-l-4 border-destructive flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-primary-foreground truncate">TotalEnergies — RFP Q2</p>
-                  <p className="text-[11px] text-primary-foreground/40">CFO · 12j sans signal · 1 rôle clé manquant</p>
+                  <p className="text-[11px] text-primary-foreground/40">CFO · 12j sans signal · 1 contact à qualifier</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">À traiter</span>
@@ -255,7 +255,7 @@ export default function Index() {
                 </div>
                 <div className="p-4 space-y-3">
                   {[
-                    { name: 'TotalEnergies — RFP Q2', meta: 'CFO · 12j sans signal · 1 rôle clé manquant', badge: 'À traiter', score: '54', border: 'border-destructive', tc: 'text-destructive', bg: 'bg-destructive/10' },
+                    { name: 'TotalEnergies — RFP Q2', meta: 'CFO · 12j sans signal · 1 contact à qualifier', badge: 'À traiter', score: '54', border: 'border-destructive', tc: 'text-destructive', bg: 'bg-destructive/10' },
                     { name: 'Schneider Electric — ERP', meta: '3 nouveaux contacts détectés cette semaine', badge: 'À surveiller', score: '71', border: 'border-warning', tc: 'text-warning', bg: 'bg-warning/10' },
                     { name: 'Airbus — Transformation SI', meta: '2 sponsors actifs · Momentum en hausse', badge: 'Sain', score: '87', border: 'border-accent', tc: 'text-accent', bg: 'bg-accent/10' },
                   ].map(d => (
@@ -337,7 +337,7 @@ export default function Index() {
               { num: "1", icon: FileText, title: "Vous ciblez un deal", text: "L'AE crée le deal. Script personnalisé pour le bon décideur en 30 secondes.", highlight: false },
               { num: "2", icon: CheckSquare, title: "Votre exec intervient", text: "L'exec approuve en un clic via email, Slack ou WhatsApp. Sans login.", highlight: false },
               { num: "3", icon: Send, title: "Ekko observe", text: "Vos assets sont partagés, lus, transmis. Ekko capte chaque signal.", highlight: false },
-              { num: "4", icon: Eye, title: "La lecture politique", text: "Qui soutient, qui hésite, qui bloque.\nLa carte politique de votre deal en temps réel.", highlight: true },
+              { num: "4", icon: Eye, title: "La lecture politique", text: "Qui avance, qui hésite, qui manque à l'appel.\nLa carte politique de votre deal en temps réel.", highlight: true },
             ].map((step, i) => (
               <FadeIn key={step.num} delay={i * 0.1}>
                 <div className={`rounded-xl p-7 text-center h-full ${step.highlight ? "bg-accent/5 border-2 border-accent" : "bg-card border"}`}>
@@ -394,7 +394,7 @@ export default function Index() {
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-wider mb-4">Exec clone</p>
               <h3 className="text-xl font-semibold text-primary-foreground mb-6">Dirigeants & Executives</h3>
               <ul className="space-y-3">
-                {["Être présent sur chaque deal sans bloquer l'agenda", "Garder le contrôle total sur son image", "Comprendre l'impact réel de chaque intervention"].map((t, i) => (
+                {["Être présent sur chaque deal sans mobiliser l'agenda", "Garder le contrôle total sur son image", "Comprendre l'impact réel de chaque intervention"].map((t, i) => (
                   <li key={i} className="flex gap-2 text-sm text-primary-foreground/80">
                     <CheckCircle2 className="h-4 w-4 text-primary-foreground/40 shrink-0 mt-0.5" />{t}
                   </li>

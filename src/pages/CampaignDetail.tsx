@@ -479,7 +479,7 @@ export default function CampaignDetail() {
           <p className="text-muted-foreground">Campagne non trouvée</p>
           <Button variant="outline" onClick={() => navigate("/app/campaigns")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour aux comptes
+            ← Deals
           </Button>
         </div>
       </AppLayout>
