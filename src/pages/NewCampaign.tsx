@@ -666,8 +666,8 @@ export default function NewCampaign() {
             </Card>
           )}
 
-          {/* STEP 5 — Contacts (optional) */}
-          {currentStep === 5 && (
+          {/* STEP 4 — Contacts (optional) */}
+          {currentStep === 4 && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
