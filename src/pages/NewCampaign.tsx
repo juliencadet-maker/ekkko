@@ -42,18 +42,8 @@ const DEAL_STAGES = [
   { value: "close", label: "Close" },
 ];
 
-const MOTION_TYPES = [
-  { value: "greenfield", label: "Nouveau besoin (greenfield)" },
-  { value: "replacement", label: "Remplacement d'un outil" },
-  { value: "rfp", label: "RFP" },
-  { value: "expansion", label: "Expansion" },
-];
 
-const DECISION_STRUCTURES = [
-  { value: "single", label: "1 personne" },
-  { value: "small_committee", label: "Petit comité (2-5)" },
-  { value: "large_committee", label: "Grand comité (6+)" },
-];
+
 
 const INCUMBENT_TYPES = [
   { value: "internal", label: "Outil interne" },
