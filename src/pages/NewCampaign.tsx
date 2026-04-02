@@ -497,7 +497,7 @@ export default function NewCampaign() {
                   <FileVideo className="h-5 w-5" />
                   Asset de démarrage
                 </CardTitle>
-                <CardDescription>Par quoi démarrer ?</CardDescription>
+                <CardDescription>Que voulez-vous envoyer ?</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <RadioGroup value={assetType} onValueChange={(v) => setAssetType(v as "video" | "document")} className="space-y-2">
@@ -505,14 +505,16 @@ export default function NewCampaign() {
                     <RadioGroupItem value="video" id="asset-video" />
                     <FileVideo className="h-5 w-5 text-muted-foreground" />
                     <Label htmlFor="asset-video" className="cursor-pointer flex-1">
-                      Envoyer une vidéo exec
+                      <span className="block">Envoyer une vidéo</span>
+                      <span className="block text-xs font-normal text-muted-foreground">Facecam, exec ou démo produit</span>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer">
                     <RadioGroupItem value="document" id="asset-document" />
                     <FileText className="h-5 w-5 text-muted-foreground" />
                     <Label htmlFor="asset-document" className="cursor-pointer flex-1">
-                      Partager un document (PDF, deck)
+                      <span className="block">Partager un document</span>
+                      <span className="block text-xs font-normal text-muted-foreground">PDF, présentation, pricing</span>
                     </Label>
                   </div>
                 </RadioGroup>
