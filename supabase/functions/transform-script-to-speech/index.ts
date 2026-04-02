@@ -302,10 +302,15 @@ serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const scriptOral = aiData.choices?.[0]?.message?.content?.trim();
+    let scriptOral = aiData.choices?.[0]?.message?.content?.trim();
 
     if (!scriptOral) {
       throw new Error("AI n'a pas retourné de script transformé");
+    }
+
+    // --- Restore original variables from placeholders ---
+    for (const [placeholder, original] of varMap.entries()) {
+      scriptOral = scriptOral.replaceAll(placeholder, original);
     }
 
     // Save to database
