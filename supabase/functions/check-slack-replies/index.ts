@@ -76,28 +76,53 @@ serve(async (req) => {
     }
 
     const processed: string[] = [];
-
+    const debugLog: string[] = [];
     for (const approval of (pendingApprovals || [])) {
       const meta = approval.slack_metadata as any;
-      if (!meta?.channel_id || !meta?.message_ts) continue;
+      if (!meta?.channel_id || !meta?.message_ts) {
+        debugLog.push(`${approval.id}: skipped (no channel_id/message_ts), meta=${JSON.stringify(meta)}`);
+        continue;
+      }
 
-      // Fetch thread replies
+      // Fetch thread replies AND recent channel messages (in case user replied outside thread)
       try {
-        const repliesRes = await fetch(
-          `${SLACK_GATEWAY_URL}/conversations.replies?channel=${meta.channel_id}&ts=${meta.message_ts}`,
-          { headers: slackHeaders },
-        );
+        // Strategy 1: Thread replies
+        const repliesUrl = `${SLACK_GATEWAY_URL}/conversations.replies?channel=${meta.channel_id}&ts=${meta.message_ts}`;
+        const repliesRes = await fetch(repliesUrl, { headers: slackHeaders });
         const repliesData = await repliesRes.json();
+        
+        let allCandidateReplies: any[] = [];
 
-        if (!repliesData.ok || !repliesData.messages) continue;
+        if (repliesData.ok && repliesData.messages) {
+          const threadReplies = repliesData.messages.filter((m: any) => m.ts !== meta.message_ts);
+          allCandidateReplies.push(...threadReplies);
+          debugLog.push(`${approval.id}: thread_replies=${threadReplies.length}`);
+        } else {
+          debugLog.push(`${approval.id}: thread_error=${repliesData.error || 'no messages'}`);
+        }
 
-        // Skip first message (it's the original post), look at replies
-        const replies = repliesData.messages.filter((m: any) => m.ts !== meta.message_ts);
-        if (replies.length === 0) continue;
+        // Strategy 2: Recent channel messages after the approval request (fallback for non-threaded replies)
+        if (allCandidateReplies.length === 0) {
+          const historyUrl = `${SLACK_GATEWAY_URL}/conversations.history?channel=${meta.channel_id}&oldest=${meta.message_ts}&limit=20`;
+          const historyRes = await fetch(historyUrl, { headers: slackHeaders });
+          const historyData = await historyRes.json();
+
+          if (historyData.ok && historyData.messages) {
+            // Exclude the original message and bot messages
+            const channelReplies = historyData.messages.filter(
+              (m: any) => m.ts !== meta.message_ts && !m.bot_id && !m.subtype
+            );
+            allCandidateReplies.push(...channelReplies);
+            debugLog.push(`${approval.id}: channel_replies=${channelReplies.length}, texts=${JSON.stringify(channelReplies.map((r: any) => r.text?.substring(0, 50)))}`);
+          }
+        }
+
+        if (allCandidateReplies.length === 0) continue;
 
         // Check already-processed replies
         const lastProcessedTs = meta.last_checked_ts || "0";
-        const newReplies = replies.filter((m: any) => m.ts > lastProcessedTs);
+        const newReplies = allCandidateReplies.filter((m: any) => m.ts > lastProcessedTs);
+        debugLog.push(`${approval.id}: new_candidates=${newReplies.length} (since ${lastProcessedTs})`);
         if (newReplies.length === 0) continue;
 
         // Check the latest reply for a decision
@@ -177,7 +202,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, checked: pendingApprovals?.length || 0, processed }),
+      JSON.stringify({ success: true, checked: pendingApprovals?.length || 0, processed, debug: debugLog }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
