@@ -321,8 +321,29 @@ export default function NewCampaign() {
         newValues: { name: campaignName, assetType, dealStage },
       });
 
-      // 6. Handle video pipeline if asset = video
-      if (assetType === "video" && selectedIdentity) {
+      // 6. Handle video upload or exec pipeline
+      if (assetType === "video" && (videoMode === "facecam" || videoMode === "import")) {
+        const fileToUpload = videoMode === "facecam" ? facecamBlob! : importedFile!;
+        const ext = videoMode === "facecam" ? "webm" : (importedFile?.name.split(".").pop() || "mp4");
+        const filePath = `${membership!.org_id}/${campaign.id}/video-${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("deal-videos")
+          .upload(filePath, fileToUpload, {
+            contentType: videoMode === "facecam" ? "video/webm" : importedFile?.type || "video/mp4",
+          });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from("deal-videos").getPublicUrl(filePath);
+          await supabase.from("deal_assets").insert({
+            campaign_id: campaign.id,
+            asset_type: "video",
+            asset_purpose: "intro",
+            file_url: urlData.publicUrl,
+          });
+        }
+        toast({ title: "Deal créé", description: "La vidéo a été uploadée avec succès." });
+      } else if (isExecVideo && selectedIdentity) {
         const assignedTo = !isSelfIdentity ? selectedIdentity.owner_user_id : user.id;
         const { data: approvalData } = await supabase
           .from("approval_requests")
