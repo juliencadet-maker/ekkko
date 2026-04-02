@@ -992,14 +992,13 @@ export default function NewCampaign() {
                   {/* ──── IMPORT PATH ──── */}
                   {assetType === "video" && videoMode === "import" && (
                     <div className="space-y-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => { setVideoMode(""); setImportedFile(null); }}
-                        className="text-muted-foreground -mt-2"
+                        className="link-action text-sm flex items-center gap-1 -mt-2"
                       >
-                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
-                      </Button>
+                        <ArrowLeft className="h-3 w-3" /> Changer de méthode
+                      </button>
                       <VideoImportUpload
                         onFileSelected={(file) => setImportedFile(file)}
                         onClear={() => setImportedFile(null)}
