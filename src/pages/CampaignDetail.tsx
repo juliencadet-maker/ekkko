@@ -670,7 +670,7 @@ export default function CampaignDetail() {
 
   // ─── Computed values ──────────────────────────────────────────────
   const dealValue = (campaign.metadata as any)?.deal_value;
-  const isSnoozed = campaign.deal_status === "snoozed" && campaign.snoozed_until;
+  const isSnoozed = (campaign as any).deal_status === "snoozed" && (campaign as any).snoozed_until;
   const lastUpdate = campaign.updated_at
     ? (() => {
         const mins = Math.floor((Date.now() - new Date(campaign.updated_at).getTime()) / 60000);
