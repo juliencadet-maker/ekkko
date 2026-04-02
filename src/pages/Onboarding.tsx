@@ -41,12 +41,11 @@ function generateCombinedScript(firstName: string, lastName: string, company: st
 
 ${companyLine}
 
-Je fais cet enregistrement pour être présent sur nos deals stratégiques sans mobiliser mon agenda.
+Je fais cet enregistrement pour être présent sur nos deals stratégiques.
 Chacune de mes apparitions vidéo est approuvée par moi avant envoi.
 
 Je confirme que j'autorise la création d'un clone numérique de mon apparence et de ma voix,
 exclusivement pour des communications professionnelles via la plateforme Ekko.
-Mon code de vérification est ${code}.
 
 Merci.`,
   };
@@ -323,7 +322,7 @@ export default function Onboarding() {
     }
   };
 
-  const canSkip = isDemoAccount || isExecAccount;
+  const canSkip = true; // All users can skip
 
   const handleSkipOnboarding = async () => {
     setIsLoading(true);
@@ -567,6 +566,14 @@ export default function Onboarding() {
                     {/* Sub-step: Recording */}
                     {identitySubStep === "record" && (
                       <div className="space-y-4">
+                        {/* Verification code displayed separately */}
+                        {scriptData?.code && (
+                          <div className="p-4 bg-accent/10 border border-accent/30 rounded-lg text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Votre code de vérification</p>
+                            <p className="text-3xl font-bold tracking-widest text-accent">{scriptData.code}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Prononcez ce code à la fin de votre enregistrement</p>
+                          </div>
+                        )}
                         <VideoRecorder
                           onVideoReady={handleVideoReady}
                           onAudioReady={handleAudioReady}

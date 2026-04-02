@@ -28,19 +28,13 @@ export const VIDEO_CONSTRAINTS = {
 // Tavus consent statement
 export const TAVUS_CONSENT_SCRIPT_EN = `I, [YOUR FULL NAME], am currently speaking and give consent to Tavus to create an AI clone of me by using the audio and video samples I provide. I understand that this AI clone can be used to create videos that look and sound like me.`;
 
-export const TAVUS_SPEAKING_SCRIPT_FR = `Bonjour, je m'appelle [votre prénom] [votre nom].
+export const TAVUS_SPEAKING_SCRIPT_FR = `Bonjour, je m'appelle [prénom] [nom].
 
-Je travaille chez [votre entreprise] en tant que [votre fonction].
+Je travaille chez [entreprise] en tant que [titre].
 
-Je fais cet enregistrement car bientôt je serai en mesure de créer plus de confiance sur le cycle de vente, tout en gagnant du temps.
+Je fais cet enregistrement pour être présent sur nos deals stratégiques.
 
-Je pourrai également être présent sur tous les deals sans avoir à bloquer mon agenda.
-
-Cela me permettra d'impliquer des personnes plus facilement, afin de créer plus de confiance et d'engagement avec mes clients et partenaires.
-
-Avec Ekko, je vais pouvoir personnaliser mes messages vidéo pour chaque prospect, et ainsi augmenter significativement mes taux de conversion.
-
-Merci de votre attention !`;
+Chaque vidéo que vous recevrez de ma part est validée par moi avant envoi. Merci.`;
 
 export const SUGGESTED_SCRIPT = `Bonjour, je suis [votre prénom] [votre nom].
 

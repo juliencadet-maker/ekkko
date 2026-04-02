@@ -29,6 +29,7 @@ import {
   FileText,
   Pencil,
   User,
+  AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -43,6 +44,7 @@ export default function Approvals() {
   const [comment, setComment] = useState("");
   const [editedScript, setEditedScript] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [execGuardrailMessage, setExecGuardrailMessage] = useState<string | null>(null);
 
   const { user, membership } = useAuthContext();
   
@@ -112,9 +114,32 @@ export default function Approvals() {
     }
   };
 
-  const openReviewDialog = (approval: ApprovalRequest) => {
+  const openReviewDialog = async (approval: ApprovalRequest) => {
+    const c = (approval as any).campaigns;
+    const execOwnerId = c?.identities?.owner_user_id;
+
+    // Guardrail: if exec is identified and different from current user, check if exec has validated
+    if (execOwnerId && execOwnerId !== user.id) {
+      // Check if exec has their own approval request and has decided
+      const { data: execApproval } = await supabase
+        .from("approval_requests")
+        .select("decided_at")
+        .eq("campaign_id", approval.campaign_id)
+        .eq("assigned_to_user_id", execOwnerId)
+        .maybeSingle();
+
+      if (execApproval && !execApproval.decided_at) {
+        setExecGuardrailMessage(`L'exec (${c?.identities?.display_name}) n'a pas encore validé ce script.`);
+        setSelectedApproval(approval);
+        setIsDialogOpen(true);
+        setDialogMode("review");
+        return;
+      }
+    }
+
+    setExecGuardrailMessage(null);
     setSelectedApproval(approval);
-    setEditedScript(approval.script_snapshot || (approval as any).campaigns?.script || "");
+    setEditedScript(approval.script_snapshot || c?.script || "");
     setComment("");
     setDialogMode("review");
     setIsDialogOpen(true);
@@ -275,42 +300,68 @@ export default function Approvals() {
             </DialogDescription>
           </DialogHeader>
 
-          {dialogMode === "review" ? (
+          {execGuardrailMessage ? (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Script (modifiable)</Label>
-                <Textarea
-                  value={editedScript}
-                  onChange={(e) => setEditedScript(e.target.value)}
-                  rows={10}
-                  className="font-mono text-sm bg-ivory"
-                />
+              <div className="p-4 bg-warning/10 rounded-lg border border-warning/20 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-warning text-sm">{execGuardrailMessage}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Vous ne pouvez pas approuver tant que l'exec n'a pas validé.</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Commentaire (optionnel)</Label>
-                <Textarea placeholder="Ajoutez un commentaire..." value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />
-              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Fermer</Button>
+                <Button variant="outline" onClick={() => {
+                  if ((selectedApproval as any)?.approval_token) {
+                    const link = `${window.location.origin}/approve/${(selectedApproval as any).approval_token}`;
+                    navigator.clipboard.writeText(link);
+                    toast({ title: "Lien copié", description: "Le lien de validation exec a été copié." });
+                  }
+                }}>
+                  Renvoyer le lien
+                </Button>
+              </DialogFooter>
             </div>
           ) : (
-            <Textarea placeholder="Commentaire (optionnel)" value={comment} onChange={(e) => setComment(e.target.value)} rows={4} />
-          )}
+            <>
+              {dialogMode === "review" ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Script (modifiable)</Label>
+                    <Textarea
+                      value={editedScript}
+                      onChange={(e) => setEditedScript(e.target.value)}
+                      rows={10}
+                      className="font-mono text-sm bg-ivory"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Commentaire (optionnel)</Label>
+                    <Textarea placeholder="Ajoutez un commentaire..." value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />
+                  </div>
+                </div>
+              ) : (
+                <Textarea placeholder="Commentaire (optionnel)" value={comment} onChange={(e) => setComment(e.target.value)} rows={4} />
+              )}
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-            {dialogMode === "review" ? (
-              <Button 
-                onClick={() => handleApprovalAction("approve")}
-                disabled={isSubmitting || !editedScript.trim()}
-                className="bg-accent text-accent-foreground hover:bg-accent/90"
-              >
-                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Approuver</>}
-              </Button>
-            ) : (
-              <Button variant="destructive" onClick={() => handleApprovalAction("reject")} disabled={isSubmitting}>
-                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</> : <>Refuser</>}
-              </Button>
-            )}
-          </DialogFooter>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
+                {dialogMode === "review" ? (
+                  <Button 
+                    onClick={() => handleApprovalAction("approve")}
+                    disabled={isSubmitting || !editedScript.trim()}
+                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                  >
+                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Approuver</>}
+                  </Button>
+                ) : (
+                  <Button variant="destructive" onClick={() => handleApprovalAction("reject")} disabled={isSubmitting}>
+                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</> : <>Refuser</>}
+                  </Button>
+                )}
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </AppLayout>
