@@ -116,7 +116,7 @@ export default function AuthDemo() {
 
         {isLoading && (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+            <EkkoLoader mode="once" size={24} className="mr-2" />
             <span className="text-sm text-muted-foreground">Connexion en cours...</span>
           </div>
         )}
