@@ -171,6 +171,8 @@ export default function CampaignDetail() {
   const [showDealClose, setShowDealClose] = useState(false);
   const [dealScore, setDealScore] = useState<any>(null);
   const [viewers, setViewers] = useState<any[]>([]);
+  const [agentContext, setAgentContext] = useState<any>(null);
+  const [snoozeDate, setSnoozeDate] = useState<Date | undefined>();
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
