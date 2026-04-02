@@ -1,0 +1,1 @@
+UPDATE public.identities SET clone_status = 'ready' WHERE id = '4bed1a59-8221-4897-92c5-03a5783a7104';
