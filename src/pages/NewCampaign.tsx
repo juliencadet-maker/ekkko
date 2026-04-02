@@ -26,7 +26,7 @@ import {
   Trash2,
   Users,
   Building2,
-  Target,
+  
   FileVideo,
   FileText,
   Swords,
@@ -42,18 +42,8 @@ const DEAL_STAGES = [
   { value: "close", label: "Close" },
 ];
 
-const MOTION_TYPES = [
-  { value: "greenfield", label: "Nouveau besoin (greenfield)" },
-  { value: "replacement", label: "Remplacement d'un outil" },
-  { value: "rfp", label: "RFP" },
-  { value: "expansion", label: "Expansion" },
-];
 
-const DECISION_STRUCTURES = [
-  { value: "single", label: "1 personne" },
-  { value: "small_committee", label: "Petit comité (2-5)" },
-  { value: "large_committee", label: "Grand comité (6+)" },
-];
+
 
 const INCUMBENT_TYPES = [
   { value: "internal", label: "Outil interne" },
@@ -61,7 +51,7 @@ const INCUMBENT_TYPES = [
   { value: "unknown", label: "Inconnu" },
 ];
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4;
 
 interface Contact {
   email: string;
@@ -83,20 +73,16 @@ export default function NewCampaign() {
   const [existingAccount, setExistingAccount] = useState<{ id: string; name: string } | null>(null);
   const [accountSuggestion, setAccountSuggestion] = useState<{ id: string; name: string } | null>(null);
 
-  // Step 2 — Calibration
-  const [motionType, setMotionType] = useState("");
-  const [decisionStructure, setDecisionStructure] = useState("");
-
-  // Step 3 — Starting asset
+  // Step 2 — Starting asset
   const [assetType, setAssetType] = useState<"video" | "document" | "">("");
   const [selectedIdentityId, setSelectedIdentityId] = useState("");
   const [selectedIdentity, setSelectedIdentity] = useState<Identity | null>(null);
 
-  // Step 4 — Competitor
+  // Step 3 — Competitor
   const [hasIncumbent, setHasIncumbent] = useState<"yes" | "no" | "unknown" | "">("");
   const [incumbentType, setIncumbentType] = useState("");
 
-  // Step 5 — Contacts
+  // Step 4 — Contacts
   const [contacts, setContacts] = useState<Contact[]>([{ email: "", firstName: "", lastName: "", title: "" }]);
 
   // Script (generated later in campaign detail)
@@ -292,8 +278,6 @@ export default function NewCampaign() {
       // 4. Create agent_context
       await supabase.from("agent_context").insert({
         campaign_id: campaign.id,
-        motion_type: motionType || null,
-        decision_structure: decisionStructure || null,
         stage: dealStage || null,
         incumbent_present: hasIncumbent === "yes",
         incumbent_type: hasIncumbent === "yes" ? (incumbentType || "unknown") : null,
@@ -369,15 +353,13 @@ export default function NewCampaign() {
 
   const STEPS = [
     { num: 1, label: "Contexte", icon: Building2 },
-    { num: 2, label: "Calibration", icon: Target },
-    { num: 3, label: "Asset", icon: FileVideo },
-    { num: 4, label: "Concurrent", icon: Swords },
-    { num: 5, label: "Contacts", icon: UserPlus },
+    { num: 2, label: "Asset", icon: FileVideo },
+    { num: 3, label: "Concurrent", icon: Swords },
+    { num: 4, label: "Contacts", icon: UserPlus },
   ];
 
   const canProceedStep1 = campaignName.trim() && prospectCompany.trim();
-  const canProceedStep2 = motionType && decisionStructure;
-  const canProceedStep3 = assetType && (assetType === "document" || selectedIdentityId);
+  const canProceedStep2 = assetType && (assetType === "document" || selectedIdentityId);
 
   return (
     <AppLayout>
@@ -507,60 +489,8 @@ export default function NewCampaign() {
             </Card>
           )}
 
-          {/* STEP 2 — Calibration */}
+          {/* STEP 2 — Starting Asset */}
           {currentStep === 2 && (
-            <Card className="animate-fade-in rounded-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Calibration
-                </CardTitle>
-                <CardDescription>Ces informations permettent de calibrer les signaux attendus.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label>Quel est le contexte ? *</Label>
-                  <RadioGroup value={motionType} onValueChange={setMotionType} className="space-y-2">
-                    {MOTION_TYPES.map((mt) => (
-                      <div key={mt.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                        <RadioGroupItem value={mt.value} id={`motion-${mt.value}`} />
-                        <Label htmlFor={`motion-${mt.value}`} className="cursor-pointer flex-1">
-                          {mt.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Comment se prend la décision ? *</Label>
-                  <RadioGroup value={decisionStructure} onValueChange={setDecisionStructure} className="space-y-2">
-                    {DECISION_STRUCTURES.map((ds) => (
-                      <div key={ds.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                        <RadioGroupItem value={ds.value} id={`decision-${ds.value}`} />
-                        <Label htmlFor={`decision-${ds.value}`} className="cursor-pointer flex-1">
-                          {ds.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Retour
-                  </Button>
-                  <Button onClick={() => setCurrentStep(3)} disabled={!canProceedStep2} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                    Continuer <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* STEP 3 — Starting Asset */}
-          {currentStep === 3 && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -658,11 +588,11 @@ export default function NewCampaign() {
                 )}
 
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(2)}>
+                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Retour
                   </Button>
-                  <Button onClick={() => setCurrentStep(4)} disabled={!canProceedStep3} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button onClick={() => setCurrentStep(3)} disabled={!canProceedStep2} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
                     Continuer <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
@@ -670,8 +600,8 @@ export default function NewCampaign() {
             </Card>
           )}
 
-          {/* STEP 4 — Competitor (optional) */}
-          {currentStep === 4 && (
+          {/* STEP 3 — Competitor (optional) */}
+          {currentStep === 3 && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -714,11 +644,11 @@ export default function NewCampaign() {
                 )}
 
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(3)}>
+                  <Button variant="outline" onClick={() => setCurrentStep(2)}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Retour
                   </Button>
-                  <Button onClick={() => setCurrentStep(5)} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button onClick={() => setCurrentStep(4)} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
                     Continuer <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
@@ -726,8 +656,8 @@ export default function NewCampaign() {
             </Card>
           )}
 
-          {/* STEP 5 — Contacts (optional) */}
-          {currentStep === 5 && (
+          {/* STEP 4 — Contacts (optional) */}
+          {currentStep === 4 && (
             <Card className="animate-fade-in rounded-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -780,7 +710,7 @@ export default function NewCampaign() {
                 )}
 
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(4)}>
+                  <Button variant="outline" onClick={() => setCurrentStep(3)}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Retour
                   </Button>
