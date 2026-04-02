@@ -17,11 +17,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
 import { EkkoAgent } from "@/components/campaign/EkkoAgent";
 import { DealCloseModal } from "@/components/campaign/DealCloseModal";
 import { PowerMap } from "@/components/campaign/PowerMap";
+import { NBACard } from "@/components/campaign/NBACard";
+import { InsightCard } from "@/components/campaign/InsightCard";
+import { DealTimeline } from "@/components/campaign/DealTimeline";
+import { WhatHappenedWidget } from "@/components/campaign/WhatHappenedWidget";
+import { LayerCoverage } from "@/components/campaign/LayerCoverage";
 import {
   ArrowLeft,
   Play,
@@ -49,11 +56,12 @@ import {
   FileText,
   MessageSquare,
   GitCompareArrows,
-  
   Globe,
   RefreshCw,
   Zap,
   Sparkles,
+  CalendarIcon,
+  PauseCircle,
 } from "lucide-react";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
@@ -163,6 +171,8 @@ export default function CampaignDetail() {
   const [showDealClose, setShowDealClose] = useState(false);
   const [dealScore, setDealScore] = useState<any>(null);
   const [viewers, setViewers] = useState<any[]>([]);
+  const [agentContext, setAgentContext] = useState<any>(null);
+  const [snoozeDate, setSnoozeDate] = useState<Date | undefined>();
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
@@ -302,13 +312,17 @@ export default function CampaignDetail() {
           .order("version_number", { ascending: false });
         setScriptVersions(versionsData || []);
 
-        // Fetch deal score + viewers for agent
-        const [dealScoreRes, viewersRes] = await Promise.all([
+        // Fetch deal score + viewers + agent_context
+        const [dealScoreRes, viewersRes, agentCtxRes] = await Promise.all([
           supabase.from("deal_scores").select("*").eq("campaign_id", id).order("scored_at", { ascending: false }).limit(1),
           supabase.from("viewers").select("*").eq("campaign_id", id).order("contact_score", { ascending: false, nullsFirst: false }),
+          supabase.from("agent_context").select("*").eq("campaign_id", id).maybeSingle(),
         ]);
         if (dealScoreRes.data?.[0]) setDealScore(dealScoreRes.data[0]);
         if (viewersRes.data) setViewers(viewersRes.data);
+        if (agentCtxRes.data) setAgentContext(agentCtxRes.data);
+        // Initialize snooze date from campaign
+        if (campaignData.snoozed_until) setSnoozeDate(new Date(campaignData.snoozed_until));
       } catch {
         console.error("Fetch campaign failed");
         toast.error("Erreur lors du chargement de la campagne");
@@ -627,9 +641,101 @@ export default function CampaignDetail() {
     );
   }
 
+  // ─── Helper: snooze deal ────────────────────────────────────────────
+  const handleSnooze = async (date: Date) => {
+    if (!campaign) return;
+    try {
+      await supabase.from("campaigns").update({
+        deal_status: "snoozed",
+        snoozed_until: date.toISOString(),
+      }).eq("id", campaign.id);
+      setCampaign(prev => prev ? { ...prev, deal_status: "snoozed", snoozed_until: date.toISOString() } : null);
+      setSnoozeDate(date);
+      toast.success("Deal mis en veille");
+    } catch { toast.error("Erreur"); }
+  };
+
+  const handleReactivate = async () => {
+    if (!campaign) return;
+    try {
+      await supabase.from("campaigns").update({
+        deal_status: "active",
+        snoozed_until: null,
+      }).eq("id", campaign.id);
+      setCampaign(prev => prev ? { ...prev, deal_status: "active", snoozed_until: null } : null);
+      setSnoozeDate(undefined);
+      toast.success("Deal réactivé");
+    } catch { toast.error("Erreur"); }
+  };
+
+  // ─── Computed values ──────────────────────────────────────────────
+  const dealValue = (campaign.metadata as any)?.deal_value;
+  const isSnoozed = (campaign as any).deal_status === "snoozed" && (campaign as any).snoozed_until;
+  const lastUpdate = campaign.updated_at
+    ? (() => {
+        const mins = Math.floor((Date.now() - new Date(campaign.updated_at).getTime()) / 60000);
+        if (mins < 1) return "à l'instant";
+        if (mins < 60) return `il y a ${mins} min`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `il y a ${hrs}h`;
+        return `il y a ${Math.floor(hrs / 24)}j`;
+      })()
+    : "";
+
+  const desValue = dealScore?.des;
+  const desClass = desValue == null ? "bg-muted text-muted-foreground"
+    : desValue >= 70 ? "bg-accent/15 text-accent"
+    : desValue >= 40 ? "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))]"
+    : "bg-destructive/15 text-destructive";
+
+  // Mock timeline events
+  const mockTimelineEvents = [
+    { id: "1", type: "view", label: "Claire Martin a ouvert le deck pricing", detail: "se.com · desktop · 3 min", time: "il y a 2h" },
+    { id: "2", type: "share", label: "Claire Martin a partagé le lien", detail: "1 nouveau viewer détecté", time: "il y a 1j" },
+    { id: "3", type: "cta_click", label: "Lucas Perrin a cliqué le CTA", detail: "Réserver une démo", time: "il y a 3j" },
+    { id: "4", type: "view", label: "Nathalie Roy a ouvert la vidéo exec", detail: "se.com · mobile · 45s", time: "il y a 5j" },
+    { id: "5", type: "declared", label: "Call positif enregistré", detail: "Déclaré par l'AE", time: "il y a 7j" },
+  ];
+
+  // Mock layer coverage
+  const mockLayers = [
+    { layer: "COMEX", current: 0, estimated: 3 },
+    { layer: "Finance", current: 1, estimated: 2 },
+    { layer: "Technique", current: 2, estimated: 5 },
+  ];
+
+  // Contact badge helper
+  const getContactBadge = (status: string) => {
+    switch (status) {
+      case "sponsor_actif": return <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px]">Sponsor actif</Badge>;
+      case "à_réactiver": case "neutre": return <Badge className="bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30 text-[10px]">À réactiver</Badge>;
+      case "bloqueur_potentiel": return <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px]">À confirmer</Badge>;
+      case "peu_engagé": return <Badge className="bg-[hsl(var(--info))]/15 text-[hsl(var(--info))] border-[hsl(var(--info))]/30 text-[10px]">Nouveau</Badge>;
+      default: return <Badge variant="outline" className="text-[10px]">Inconnu</Badge>;
+    }
+  };
+
+  // NBA mock data
+  const nbaFact = `${viewers.length === 0 ? "0 ouverture" : `${viewers.length} contacts`} · ${dealScore?.days_since_last_signal ?? "?"}j sans signal · ${dealValue ? `${(dealValue / 1000).toFixed(0)}k€` : "—"}`;
+  const nbaContext = `Contexte AE : ${agentContext?.stage || "—"} · ${agentContext?.decision_window ? `décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : "—"}`;
+
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
   return (
     <AppLayout>
+      {/* Snoozed banner */}
+      {isSnoozed && (
+        <div className="mb-4 p-3 rounded-lg bg-[hsl(var(--warning))]/10 border border-[hsl(var(--warning))]/20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <PauseCircle className="h-4 w-4 text-[hsl(var(--warning))]" />
+            <span className="text-sm">
+              Deal en veille jusqu'au{" "}
+              <span className="font-medium">{format(new Date((campaign as any).snoozed_until!), "d MMMM yyyy", { locale: fr })}</span>
+            </span>
+          </div>
+          <button className="link-action text-sm" onClick={handleReactivate}>Réactiver</button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6">
         <button
@@ -643,76 +749,52 @@ export default function CampaignDetail() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">{campaign.name}</h1>
-              <StatusBadge status={campaign.status} />
+              {dealValue && <span className="text-lg font-semibold text-muted-foreground">{(dealValue / 1000).toFixed(0)}k€</span>}
+              {agentContext?.stage && (
+                <Badge variant="outline" className="text-xs capitalize">{agentContext.stage}</Badge>
+              )}
+              <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold", desClass)}>
+                DES {desValue ?? "—"}
+              </span>
             </div>
-            <p className="mt-1 text-muted-foreground">
-              {(campaign as any).identities?.display_name || "Identité"} • Créée le{" "}
-              {format(new Date(campaign.created_at), "d MMMM yyyy", { locale: fr })}
+            <p className="mt-1 text-sm text-muted-foreground">
+              Dernière mise à jour : {lastUpdate}
             </p>
           </div>
-           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowAgent(!showAgent)}>
-              <MessageSquare className="mr-2 h-4 w-4" />
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate(`/app/campaigns/${id}/quick`)}>
+              Vue rapide →
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                  Mettre en veille
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={snoozeDate}
+                  onSelect={(d) => d && handleSnooze(d)}
+                  disabled={(d) => d < new Date()}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button variant="outline" size="sm" onClick={() => setShowAgent(!showAgent)}>
+              <MessageSquare className="mr-2 h-3.5 w-3.5" />
               Agent Ekko
             </Button>
-            <Button variant="outline" onClick={() => setShowDealClose(true)}>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={() => setShowDealClose(true)}>
+              <CheckCircle2 className="mr-2 h-3.5 w-3.5" />
               Clôturer
             </Button>
-            <Button variant="outline" onClick={() => setShowLandingPageEditor(true)}>
-              <Globe className="mr-2 h-4 w-4" />
-              Landing page
-            </Button>
-            <Button onClick={() => { copyShareLink(shareLink); }}>
-              <Share2 className="mr-2 h-4 w-4" />
-              Copier le lien
-            </Button>
           </div>
         </div>
-
-        {/* Deal Progress Bar */}
-        {(() => {
-          const statusSteps = ["draft", "pending_approval", "approved", "generating", "completed"];
-          const statusLabels: Record<string, string> = { draft: "Brouillon", pending_approval: "Validation", approved: "Approuvé", generating: "Génération", completed: "Vidéo prête" };
-          const currentIdx = statusSteps.indexOf(campaign.status);
-          const progressPct = currentIdx >= 0 ? ((currentIdx + 1) / statusSteps.length) * 100 : 0;
-          return (
-            <div className="mt-4">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                {statusSteps.map((s, i) => (
-                  <span key={s} className={cn("font-medium", i <= currentIdx ? "text-primary" : "")}>
-                    {statusLabels[s]}
-                  </span>
-                ))}
-              </div>
-              <Progress value={progressPct} className="h-2" />
-            </div>
-          );
-        })()}
       </div>
 
-      {/* Next Best Action */}
-      {dealScore?.recommended_action && (
-        <div className="border-l-4 border-signal rounded-lg p-4 bg-signal/5 mb-4 flex items-center gap-4">
-          <div className="p-2.5 rounded-lg bg-signal/10">
-            <Zap className="h-5 w-5 text-signal" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Next Best Action</p>
-            <p className="text-sm font-medium text-foreground">{(dealScore.recommended_action as any).label}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Coût d'exécution : {(dealScore.recommended_action as any).cost}</p>
-          </div>
-          <Button
-            size="sm"
-            variant={(dealScore.recommended_action as any).priority === "high" ? "default" : "outline"}
-            onClick={() => { setShowAgent(true); }}
-          >
-            <MessageSquare className="mr-2 h-3.5 w-3.5" />
-            Demander à l'agent
-          </Button>
-        </div>
-      )}
-
+      {/* Video generation alert */}
       {(hasActiveJobs || (jobsTotal > 0 && ["generating", "approved"].includes(campaign.status))) && (
         <Alert className="mb-6 border-primary/30 bg-primary/5">
           <div className="flex items-center gap-3">
@@ -723,24 +805,17 @@ export default function CampaignDetail() {
             )}
             <div className="flex-1">
               <AlertTitle className="font-semibold text-foreground">
-                {hasActiveJobs
-                  ? "Génération vidéo en cours..."
-                  : jobsFailed > 0
-                    ? "Génération terminée avec des erreurs"
-                    : "Génération terminée ✓"}
+                {hasActiveJobs ? "Génération vidéo en cours..." : jobsFailed > 0 ? "Génération terminée avec des erreurs" : "Génération terminée"}
               </AlertTitle>
               <AlertDescription className="mt-1">
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-muted-foreground">
                     {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} terminée{jobsCompleted > 1 ? "s" : ""}
-                    {jobsFailed > 0 && (
-                      <span className="text-destructive ml-1">• {jobsFailed} erreur{jobsFailed > 1 ? "s" : ""}</span>
-                    )}
+                    {jobsFailed > 0 && <span className="text-destructive ml-1">· {jobsFailed} erreur{jobsFailed > 1 ? "s" : ""}</span>}
                   </span>
                   {isVideoPolling && (
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <RefreshCw className="h-3 w-3 animate-spin" />
-                      Actualisation auto
+                      <RefreshCw className="h-3 w-3 animate-spin" /> Actualisation auto
                     </span>
                   )}
                 </div>
@@ -760,50 +835,30 @@ export default function CampaignDetail() {
             <p className="text-sm italic mb-3">« {rejectionComment} »</p>
             {!isEditingScript ? (
               <Button
-                size="sm"
-                variant="outline"
+                size="sm" variant="outline"
                 className="border-destructive/30 text-destructive hover:bg-destructive/10"
-                onClick={() => {
-                  setEditedScript(campaign.script);
-                  setIsEditingScript(true);
-                }}
+                onClick={() => { setEditedScript(campaign.script); setIsEditingScript(true); }}
               >
-                <Pencil className="mr-2 h-3.5 w-3.5" />
-                Modifier le script
+                <Pencil className="mr-2 h-3.5 w-3.5" /> Modifier le script
               </Button>
             ) : (
               <div className="space-y-3">
-                <Textarea
-                  value={editedScript}
-                  onChange={(e) => setEditedScript(e.target.value)}
-                  className="min-h-[120px] bg-background"
-                  placeholder="Modifiez votre script ici..."
-                />
+                <Textarea value={editedScript} onChange={(e) => setEditedScript(e.target.value)} className="min-h-[120px] bg-background" />
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleSaveScript} disabled={isSavingScript}>
-                    <Save className="mr-2 h-3.5 w-3.5" />
-                    {isSavingScript ? "Enregistrement..." : "Enregistrer"}
+                    <Save className="mr-2 h-3.5 w-3.5" /> {isSavingScript ? "Enregistrement..." : "Enregistrer"}
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setIsEditingScript(false)}>
-                    Annuler
-                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditingScript(false)}>Annuler</Button>
                 </div>
               </div>
             )}
             {scriptSaved && !isEditingScript && (
               <div className="flex items-center gap-3 mt-3">
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                  Script modifié
+                  <CheckCircle2 className="h-3.5 w-3.5 text-accent" /> Script modifié
                 </div>
-                <Button
-                  size="sm"
-                  onClick={handleResubmit}
-                  disabled={isResubmitting}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  <Send className="mr-2 h-3.5 w-3.5" />
-                  {isResubmitting ? "Resoumission..." : "Resoumettre pour approbation"}
+                <Button size="sm" onClick={handleResubmit} disabled={isResubmitting} className="bg-primary hover:bg-primary/90">
+                  <Send className="mr-2 h-3.5 w-3.5" /> {isResubmitting ? "Resoumission..." : "Resoumettre pour approbation"}
                 </Button>
               </div>
             )}
@@ -811,278 +866,135 @@ export default function CampaignDetail() {
         </Alert>
       )}
 
+      {/* ═══ TABS ═══ */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="overview">Vue ensemble</TabsTrigger>
           <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
-          <TabsTrigger value="video">Vidéo</TabsTrigger>
+          <TabsTrigger value="assets">Assets</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
+        {/* ─── Tab 1: Vue ensemble ─── */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-             <MetricCard icon={Eye} value={kpis.totalViews.toLocaleString()} label="Ouvertures" />
-             <MetricCard icon={Users} value={kpis.uniqueViewers.toLocaleString()} label="Contacts identifiés" />
-             <MetricCard icon={Clock} value={`${kpis.avgWatchTime}s`} label="Attention moyenne" />
-             <MetricCard icon={TrendingUp} value={`${kpis.completionRate}%`} label="Taux de complétion" />
+          {/* NBA Card — first visible element */}
+          <NBACard
+            factLine={nbaFact}
+            contextLine={nbaContext}
+            confidenceLabel="Confiance modérée"
+            ctaLabel={dealScore?.recommended_action?.label || "Voir les actions"}
+            onCtaClick={() => setShowAgent(true)}
+          />
+
+          {/* Insights */}
+          <div className="space-y-2">
+            <InsightCard
+              type="fact"
+              title={`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${dealScore?.days_since_last_signal ?? "?"}j depuis le dernier signal`}
+              body="Le nombre de contacts identifiés est inférieur à la taille estimée du comité d'achat. L'engagement récent est faible."
+              defaultExpanded
+            />
+            <InsightCard
+              type="inference"
+              title="Profil acheteur : remplacement d'un outil existant"
+              body={`L'incumbent est ${agentContext?.incumbent_type === "competitor_named" ? "un concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "un outil interne" : "inconnu"}. Situation compétitive : ${agentContext?.competitive_situation || "—"}.`}
+            />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Video Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Video className="h-5 w-5" />
-                  Aperçu vidéo
-                </CardTitle>
-                <CardDescription>Vidéo générée pour cette campagne</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
-                {(() => {
-                  const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
-                  return url ? (
-                    <>
-                      <video
-                        id="campaign-video"
-                        src={url}
-                        className="w-full h-full object-cover"
-                        preload="metadata"
-                        controls
-                      />
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full gap-3">
-                      <Video className="h-10 w-10 text-muted-foreground/50" />
-                      <p className="text-sm font-medium text-muted-foreground">Vidéo en cours de préparation</p>
-                    </div>
-                  );
-                })()}
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="flex-1">
-                    <Input value={shareLink} readOnly className="font-mono text-sm" />
-                  </div>
-                  <Button variant="outline" size="icon" onClick={() => copyShareLink(shareLink)}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => window.open(shareLink, "_blank")}>
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Timeline */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DealTimeline events={mockTimelineEvents} />
+            </CardContent>
+          </Card>
 
-            {/* Script */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Script de la campagne</CardTitle>
-                <CardDescription>Le texte utilisé pour générer la vidéo</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-muted/50 rounded-lg p-4 min-h-[200px]">
-                  <p className="text-sm whitespace-pre-wrap">{campaign.script || "Aucun script défini"}</p>
-                </div>
-                {campaign.description && (
-                  <>
-                    <Separator className="my-4" />
-                    <div>
-                      <p className="text-sm font-medium mb-2">Description</p>
-                      <p className="text-sm text-muted-foreground">{campaign.description}</p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Script Version History */}
-          {scriptVersions.length > 0 && (
-            <Card>
-              <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <History className="h-5 w-5" />
-                    Historique des versions du script
-                  </CardTitle>
-                  <CardDescription className="mt-1.5">
-                    {scriptVersions.length} version{scriptVersions.length > 1 ? "s" : ""} enregistrée{scriptVersions.length > 1 ? "s" : ""}
-                  </CardDescription>
-                </div>
-                {scriptVersions.length >= 2 && (
-                  <Button variant="outline" size="sm" onClick={() => setShowDiffDialog(true)}>
-                    <GitCompareArrows className="mr-2 h-4 w-4" />
-                    Comparer
-                  </Button>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="relative">
-                  {/* Timeline line */}
-                  <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
-                  
-                  <div className="space-y-6">
-                    {scriptVersions.map((version, idx) => {
-                      const isLatest = idx === 0;
-                      const isRejectionRevision = version.change_reason === "rejection_revision";
-                      return (
-                        <div key={version.id} className="relative pl-10">
-                          {/* Timeline dot */}
-                          <div className={cn(
-                            "absolute left-[8px] top-1 h-[15px] w-[15px] rounded-full border-2",
-                            isLatest
-                              ? "bg-primary border-primary"
-                              : isRejectionRevision
-                                ? "bg-destructive/20 border-destructive/50"
-                                : "bg-muted border-muted-foreground/30"
-                          )} />
-                          
-                          <div className={cn(
-                            "rounded-lg border p-4",
-                            isLatest && "border-primary/30 bg-primary/5"
-                          )}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <Badge variant={isLatest ? "default" : "secondary"} className="text-xs">
-                                  v{version.version_number}
-                                </Badge>
-                                {isLatest && (
-                                  <span className="text-xs font-medium text-primary">Version actuelle</span>
-                                )}
-                                {isRejectionRevision && (
-                                  <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
-                                    <MessageSquare className="mr-1 h-3 w-3" />
-                                    Révision après rejet
-                                  </Badge>
-                                )}
-                              </div>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(version.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
-                              </span>
-                            </div>
-                            
-                            {/* Rejection comment */}
-                            {version.rejection_comment && (
-                              <div className="mb-3 p-2.5 rounded-md bg-destructive/5 border border-destructive/15">
-                                <p className="text-xs font-medium text-destructive mb-0.5">Commentaire de l'exécutif :</p>
-                                <p className="text-sm italic text-destructive/80">« {version.rejection_comment} »</p>
-                              </div>
-                            )}
-                            
-                            {/* Script preview */}
-                            <div className="bg-muted/50 rounded-md p-3">
-                              <div className="flex items-center gap-1.5 mb-1.5">
-                                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span className="text-xs font-medium text-muted-foreground">Script</span>
-                              </div>
-                              <p className="text-sm whitespace-pre-wrap line-clamp-4">{version.script}</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* What happened */}
+          <WhatHappenedWidget campaignId={campaign.id} />
         </TabsContent>
 
-        {/* Deal Intelligence Tab */}
+        {/* ─── Tab 2: Deal Intelligence ─── */}
         <TabsContent value="intelligence" className="space-y-6">
-          {/* DES + Momentum + Cold Start */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-             <MetricCard icon={Zap} value={dealScore?.des ?? "—"} label="Deal Engagement Score" />
-             <MetricCard icon={Users} value={viewers.length.toString()} label="Contacts identifiés" />
-             <MetricCard icon={TrendingUp} value={dealScore?.sponsor_count ?? 0} label="Contacts sponsors" />
-             <MetricCard icon={AlertTriangle} value={dealScore?.blocker_count ?? 0} label="Bloqueurs potentiels" />
-             <MetricCard icon={Eye} value={`${Math.round((dealScore?.avg_watch_depth ?? 0) * 100) / 100}%`} label="Profondeur d'engagement" />
+          {/* Power Map — first element */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Share2 className="h-5 w-5" /> Power Map
+              </CardTitle>
+              <CardDescription>
+                {viewers.length === 0
+                  ? "Ajoutez des contacts pour visualiser le comité d'achat"
+                  : viewers.length < 3
+                    ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${agentContext?.committee_size_declared || 8} estimés`
+                    : "Cartographie du buying committee"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {viewers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour démarrer</p>
+                  <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                    <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
+                  </Button>
+                </div>
+              ) : (
+                <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Layer Coverage */}
+          <div>
+            <p className="text-sm font-semibold mb-2">Couverture du comité</p>
+            <LayerCoverage layers={mockLayers} />
           </div>
 
-          {/* Momentum + Cold Start */}
-          <div className="grid gap-4 md:grid-cols-2">
-            {dealScore?.momentum && (
-              <Card>
-                <CardContent className="pt-6 flex items-center gap-4">
-                  {dealScore.momentum === "rising" ? <TrendingUp className="h-8 w-8 text-emerald-600" /> :
-                   dealScore.momentum === "declining" ? <TrendingUp className="h-8 w-8 text-red-600 rotate-180" /> :
-                   <TrendingUp className="h-8 w-8 text-amber-600" />}
-                  <div>
-                    <p className="font-semibold text-foreground">Momentum : {dealScore.momentum === "rising" ? "En hausse ↑" : dealScore.momentum === "declining" ? "En baisse ↓" : "Stable →"}</p>
-                    <p className="text-sm text-muted-foreground">Velocity : {dealScore.event_velocity ?? 0} events/jour • Multi-threading : {dealScore.multi_threading_score ?? 0}/100</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {dealScore?.cold_start_regime && (
-              <Card>
-                <CardContent className="pt-6 flex items-center gap-4">
-                  <Sparkles className="h-8 w-8 text-amber-600" />
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      Régime : {dealScore.cold_start_regime === "cold_global" ? "Cold Global" :
-                        dealScore.cold_start_regime === "cold_account" ? "Cold Account" :
-                        dealScore.cold_start_regime === "warm_account" ? "Warm Account" : "Mature"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {dealScore.cold_start_regime === "cold_global" ? "Heuristiques génériques — fiabilité limitée" :
-                        dealScore.cold_start_regime === "cold_account" ? "Benchmarks industrie" :
-                        dealScore.cold_start_regime === "warm_account" ? "Patterns compte activés" : "Insights complets"}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Alerts */}
-          {dealScore?.alerts && Array.isArray(dealScore.alerts) && (dealScore.alerts as any[]).length > 0 && (
+          {/* Contact list */}
+          {viewers.length > 0 && (
             <Card>
-              <CardHeader><CardTitle>Alertes</CardTitle></CardHeader>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">Contacts identifiés</CardTitle>
+              </CardHeader>
               <CardContent className="space-y-2">
-                {(dealScore.alerts as any[]).map((a: any, i: number) => (
-                  <div key={i} className={`p-3 rounded-lg border text-sm ${
-                    a.type === "danger" ? "bg-red-500/10 border-red-500/20 text-red-700" :
-                    a.type === "warning" ? "bg-amber-500/10 border-amber-500/20 text-amber-700" :
-                    "bg-blue-500/10 border-blue-500/20 text-blue-700"
-                  }`}>
-                    {a.text}
+                {viewers.map((v: any) => (
+                  <div key={v.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary">{(v.name || "?")[0].toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{v.name || "Inconnu"}</p>
+                        <p className="text-xs text-muted-foreground">{v.title || ""} {v.company ? `· ${v.company}` : ""}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getContactBadge(v.status || "inconnu")}
+                      <span className="text-xs text-muted-foreground font-mono">{v.contact_score ?? "—"}</span>
+                    </div>
                   </div>
                 ))}
               </CardContent>
             </Card>
           )}
 
-          {/* Power Map */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" />
-                Power Map
-              </CardTitle>
-              <CardDescription>Cartographie des interactions et de l'influence du buying committee</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
-            </CardContent>
-          </Card>
-
           {/* No data state */}
           {!dealScore && viewers.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <Zap className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">Aucune donnée de deal intelligence disponible</p>
+                <p className="text-muted-foreground">Aucune donnée disponible</p>
                 <p className="text-sm text-muted-foreground mt-1">Partagez la landing page pour commencer à collecter des signaux</p>
               </CardContent>
             </Card>
           )}
-
         </TabsContent>
 
-        {/* Video Tab */}
-        <TabsContent value="video" className="space-y-6">
-          {/* Job Status List */}
+        {/* ─── Tab 3: Assets ─── */}
+        <TabsContent value="assets" className="space-y-6">
+          {/* Video generation jobs */}
           {videoJobs.length > 0 && (
             <Card>
               <CardHeader>
@@ -1108,20 +1020,11 @@ export default function CampaignDetail() {
                       <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
                         <div className={cfg.color}>{cfg.icon}</div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            Destinataire #{job.recipient_id.slice(0, 8)}
-                          </p>
+                          <p className="text-sm font-medium truncate">Destinataire #{job.recipient_id.slice(0, 8)}</p>
                           <p className={cn("text-xs", cfg.color)}>{cfg.label}</p>
                         </div>
                         {job.error_message && (
-                          <p className="text-xs text-destructive max-w-[200px] truncate" title={job.error_message}>
-                            {job.error_message}
-                          </p>
-                        )}
-                        {job.started_at && (
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(job.started_at), "HH:mm", { locale: fr })}
-                          </span>
+                          <p className="text-xs text-destructive max-w-[200px] truncate" title={job.error_message}>{job.error_message}</p>
                         )}
                       </div>
                     );
@@ -1131,63 +1034,72 @@ export default function CampaignDetail() {
             </Card>
           )}
 
+          {/* Video asset */}
           <Card>
             <CardHeader>
-              <CardTitle>Vidéo de la campagne</CardTitle>
-              <CardDescription>Vidéo personnalisée générée par IA</CardDescription>
+              <div className="flex items-center justify-between">
+                <CardTitle>Assets du deal</CardTitle>
+                <Button size="sm" variant="outline">
+                  <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un asset
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="max-w-3xl mx-auto">
-                {(() => {
-                  const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
-                  if (!url) {
-                    return (
-                      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                        <Video className="h-12 w-12 text-muted-foreground/40" />
-                        <p className="font-medium text-foreground">
-                          {campaign.status === 'generating' ? 'Génération en cours...' :
-                           campaign.status === 'pending_approval' ? "En attente d'approbation" :
-                           'Vidéo en cours de préparation'}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {campaign.status === 'generating' ?
-                            'La vidéo apparaîtra ici automatiquement dès qu\'elle est prête.' :
-                            'La vidéo sera générée dès que le script sera approuvé.'}
-                        </p>
-                      </div>
-                    );
-                  }
+              {(() => {
+                const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                if (!url && videos.length === 0) {
                   return (
-                    <>
-                      <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
-                        <video
-                          src={url}
-                          className="w-full h-full"
-                          controls
-                          preload="metadata"
-                        />
-                      </div>
-                      <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
-                        <div className="flex-1 max-w-md">
-                          <label className="text-sm font-medium mb-2 block">Lien de partage</label>
-                          <div className="flex gap-2">
-                            <Input value={shareLink} readOnly className="font-mono text-sm" />
-                            <Button variant="outline" onClick={() => copyShareLink(shareLink)}>
-                              <Copy className="mr-2 h-4 w-4" />
-                              Copier
-                            </Button>
+                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                      <Video className="h-12 w-12 text-muted-foreground/40" />
+                      <p className="font-medium text-foreground">
+                        {campaign.status === 'generating' ? 'Génération en cours...' :
+                         campaign.status === 'pending_approval' ? "En attente d'approbation" :
+                         'Aucun asset pour le moment'}
+                      </p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    {url && (
+                      <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+                        <div className="flex items-center gap-3">
+                          <Video className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">Vidéo personnalisée</p>
+                            <p className="text-xs text-muted-foreground">Vidéo · Ouvert</p>
                           </div>
                         </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => copyShareLink(shareLink)}>
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                    </>
-                  );
-                })()}
-              </div>
+                    )}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
+
+          {/* Script */}
+          {campaign.script && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Script du deal</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-muted/50 rounded-lg p-4 min-h-[100px]">
+                  <p className="text-sm whitespace-pre-wrap">{campaign.script}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
-
-
       </Tabs>
 
       {/* Ekko Agent Panel */}
