@@ -674,7 +674,7 @@ export default function Onboarding() {
               </CardHeader>
               <CardContent className="pt-6 space-y-3">
                 <Alert>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <EkkoLoader mode="loop" size={16} />
                   <AlertDescription>Clone en cours de création… Cela prend généralement quelques minutes.</AlertDescription>
                 </Alert>
                 <Button onClick={goToDashboard} className="w-full" size="lg">
