@@ -88,7 +88,7 @@ export default function Index() {
                   <p className="text-[11px] text-primary-foreground/40">CFO · 12j sans signal · 1 rôle clé manquant</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">En danger</span>
+                  <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">À traiter</span>
                   <span className="text-xs font-bold text-destructive">54</span>
                 </div>
               </div>
