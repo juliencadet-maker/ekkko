@@ -849,15 +849,8 @@ export default function CampaignDetail() {
                         src={url}
                         className="w-full h-full object-cover"
                         preload="metadata"
-                        onPlay={() => setIsPlaying(true)}
-                        onPause={() => setIsPlaying(false)}
-                        onEnded={() => setIsPlaying(false)}
+                        controls
                       />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
-                        <Button size="lg" variant="secondary" className="rounded-full h-16 w-16" onClick={handleVideoToggle}>
-                          {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
-                        </Button>
-                      </div>
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full gap-3">
