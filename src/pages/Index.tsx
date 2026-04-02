@@ -394,7 +394,7 @@ export default function Index() {
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-wider mb-4">Exec clone</p>
               <h3 className="text-xl font-semibold text-primary-foreground mb-6">Dirigeants & Executives</h3>
               <ul className="space-y-3">
-                {["Être présent sur chaque deal sans bloquer l'agenda", "Garder le contrôle total sur son image", "Comprendre l'impact réel de chaque intervention"].map((t, i) => (
+                {["Être présent sur chaque deal sans mobiliser l'agenda", "Garder le contrôle total sur son image", "Comprendre l'impact réel de chaque intervention"].map((t, i) => (
                   <li key={i} className="flex gap-2 text-sm text-primary-foreground/80">
                     <CheckCircle2 className="h-4 w-4 text-primary-foreground/40 shrink-0 mt-0.5" />{t}
                   </li>
