@@ -154,7 +154,7 @@ export default function UserApprovals() {
                         </p>
                       </div>
                       <Button size="sm" onClick={() => approveUser(u.id)} disabled={processingIds.has(u.id)}>
-                        {processingIds.has(u.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                        {processingIds.has(u.id) ? <EkkoLoader mode="once" size={14} /> : <Check className="h-3.5 w-3.5 mr-1" />}
                         Approuver
                       </Button>
                     </div>
