@@ -684,13 +684,13 @@ export default function NewCampaign() {
                   </Button>
                 </div>
 
-                <Button
-                  variant="outline"
+                <button
+                  type="button"
                   onClick={() => setCurrentStep(4)}
-                  className="w-full min-h-12 border-[#0D1B2A] text-[#0D1B2A] bg-transparent hover:bg-[#0D1B2A]/5"
+                  className="link-action w-full text-center text-sm py-3"
                 >
                   Passer — j'ajouterai les contacts plus tard
-                </Button>
+                </button>
               </CardContent>
             </Card>
           )}
@@ -739,14 +739,13 @@ export default function NewCampaign() {
                   {/* Video sub-flow: choose mode */}
                   {assetType === "video" && !videoMode && (
                     <div className="space-y-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => setAssetType("")}
-                        className="text-muted-foreground -mt-2"
+                        className="link-action text-sm flex items-center gap-1 -mt-2"
                       >
-                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer le type d'asset
-                      </Button>
+                        <ArrowLeft className="h-3 w-3" /> Changer le type d'asset
+                      </button>
                       <p className="text-sm font-medium">Comment voulez-vous créer cette vidéo ?</p>
                       <div className="space-y-2">
                         {[
@@ -781,9 +780,8 @@ export default function NewCampaign() {
                   {/* ──── FACECAM PATH ──── */}
                   {assetType === "video" && videoMode === "facecam" && (
                     <div className="space-y-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => {
                           setVideoMode("");
                           setFacecamBlob(null);
@@ -793,10 +791,10 @@ export default function NewCampaign() {
                           setFacecamWithTeleprompter(false);
                           setShowOriginalScript(false);
                         }}
-                        className="text-muted-foreground -mt-2"
+                        className="link-action text-sm flex items-center gap-1 -mt-2"
                       >
-                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
-                      </Button>
+                        <ArrowLeft className="h-3 w-3" /> Changer de méthode
+                      </button>
 
                       {/* PHASE 1 — Script */}
                       {facecamPhase === "script" && (
@@ -834,13 +832,13 @@ export default function NewCampaign() {
                             >
                               Valider ce script <ArrowRight className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
+                            <button
+                              type="button"
                               onClick={() => transitionToRecording(false)}
-                              className="w-full text-muted-foreground text-sm"
+                              className="link-action w-full text-center text-sm py-2"
                             >
                               Enregistrer sans script →
-                            </Button>
+                            </button>
                           </div>
                         </div>
                       )}
@@ -863,7 +861,7 @@ export default function NewCampaign() {
                             <button
                               type="button"
                               onClick={() => setShowOriginalScript(!showOriginalScript)}
-                              className="text-xs text-muted-foreground underline mt-1 hover:text-foreground transition-colors"
+                              className="link-action text-xs mt-1"
                             >
                               {showOriginalScript ? "Masquer le script original" : "Voir le script original"}
                             </button>
@@ -911,14 +909,13 @@ export default function NewCampaign() {
                   {/* ──── IDENTITY PATH ──── */}
                   {assetType === "video" && videoMode === "identity" && (
                     <div className="space-y-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => { setVideoMode(""); setSelectedIdentityId(""); setSelectedIdentity(null); setScript(""); }}
-                        className="text-muted-foreground -mt-2"
+                        className="link-action text-sm flex items-center gap-1 -mt-2"
                       >
-                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
-                      </Button>
+                        <ArrowLeft className="h-3 w-3" /> Changer de méthode
+                      </button>
 
                       <div className="space-y-3">
                         <Label>Qui apparaît dans la vidéo ? *</Label>
@@ -994,14 +991,13 @@ export default function NewCampaign() {
                   {/* ──── IMPORT PATH ──── */}
                   {assetType === "video" && videoMode === "import" && (
                     <div className="space-y-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => { setVideoMode(""); setImportedFile(null); }}
-                        className="text-muted-foreground -mt-2"
+                        className="link-action text-sm flex items-center gap-1 -mt-2"
                       >
-                        <ArrowLeft className="mr-1 h-3 w-3" /> Changer de méthode
-                      </Button>
+                        <ArrowLeft className="h-3 w-3" /> Changer de méthode
+                      </button>
                       <VideoImportUpload
                         onFileSelected={(file) => setImportedFile(file)}
                         onClear={() => setImportedFile(null)}

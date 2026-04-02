@@ -3,6 +3,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .link-action {
+    @apply text-[hsl(210,48%,11%)] underline decoration-[hsl(210,48%,11%)]/60 underline-offset-2 decoration-1 cursor-pointer transition-all duration-150;
+  }
+  .link-action:hover {
+    @apply decoration-[hsl(210,48%,11%)]/100;
+  }
+}
+
 /* Mirror webcam preview */
 video.mirror {
   transform: scaleX(-1);
