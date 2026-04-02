@@ -14,7 +14,6 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Loader2, 
   CheckCircle2, 
   Video, 
   User, 
@@ -23,6 +22,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { ONBOARDING_STEPS, VIDEO_CONSTRAINTS, IDENTITY_TYPES } from "@/lib/constants";
 import { VideoRecorder } from "@/components/identity/VideoRecorder";
 import { RecordingGuide } from "@/components/identity/RecordingGuide";
