@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { ScriptGenerator } from "@/components/campaign/ScriptGenerator";
+import { FacecamRecorder } from "@/components/campaign/FacecamRecorder";
+import { VideoImportUpload } from "@/components/campaign/VideoImportUpload";
 import {
   ArrowLeft,
   ArrowRight,
@@ -26,11 +28,13 @@ import {
   Trash2,
   Users,
   Building2,
-  
   FileVideo,
   FileText,
   Swords,
   UserPlus,
+  Camera,
+  Upload,
+  Bot,
 } from "lucide-react";
 import type { Identity, Policy } from "@/types/database";
 
