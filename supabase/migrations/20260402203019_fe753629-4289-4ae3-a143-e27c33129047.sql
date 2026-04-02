@@ -1,0 +1,1 @@
+UPDATE public.profiles SET notification_channels = ARRAY['email','slack'] WHERE user_id = 'b2f639a0-9750-4daf-a955-b91ea2e11445';
