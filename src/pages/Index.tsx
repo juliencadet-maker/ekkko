@@ -285,7 +285,7 @@ export default function Index() {
                     <p className="text-sm font-semibold text-primary-foreground">TotalEnergies — RFP Q2</p>
                     <p className="text-xs text-primary-foreground/30 mt-0.5">Buying committee · 5 contacts</p>
                   </div>
-                  <span className="text-xs font-bold bg-destructive/10 text-destructive px-3 py-1 rounded-lg">En danger</span>
+                  <span className="text-xs font-bold bg-destructive/10 text-destructive px-3 py-1 rounded-lg">À traiter</span>
                 </div>
                 <div className="px-5 py-3 bg-destructive/5 border-b border-destructive/10 flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-destructive flex-shrink-0"></div>
