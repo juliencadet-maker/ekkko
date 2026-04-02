@@ -686,6 +686,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_demo_org: boolean | null
           logo_url: string | null
           name: string
           settings: Json | null
@@ -695,6 +696,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_demo_org?: boolean | null
           logo_url?: string | null
           name: string
           settings?: Json | null
@@ -704,6 +706,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_demo_org?: boolean | null
           logo_url?: string | null
           name?: string
           settings?: Json | null
