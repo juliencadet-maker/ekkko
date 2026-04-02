@@ -73,14 +73,17 @@ function isDemoUrl(url: string): boolean {
 function getVideoUrl(video?: VideoType | null): string | null {
   if (!video) return null;
   const metadata = video.metadata as Record<string, unknown> | null;
+  // Prioritize direct video files (MP4) over hosted pages or HLS streams
   const candidates = [
-    metadata?.hosted_url as string | undefined,
-    metadata?.stream_url as string | undefined,
     metadata?.download_url as string | undefined,
     video.storage_path?.startsWith("http") ? video.storage_path : undefined,
+    metadata?.stream_url as string | undefined,
+    metadata?.hosted_url as string | undefined,
   ];
   const url = candidates.find(Boolean) ?? null;
   if (url && isDemoUrl(url)) return null;
+  // Filter out non-embeddable URLs (Tavus hosted pages)
+  if (url && url.includes("tavus.video/")) return null;
   return url;
 }
 
