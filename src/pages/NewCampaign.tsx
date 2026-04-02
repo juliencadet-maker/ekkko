@@ -260,8 +260,9 @@ export default function NewCampaign() {
       }
 
       // 2. Determine approval
-      const needsApproval = assetType === "video" ? requiresApproval() : false;
-      const initialStatus = needsApproval ? "pending_approval" : (assetType === "video" ? "approved" : "draft");
+      const isExecVideo = assetType === "video" && videoMode === "identity";
+      const needsApproval = isExecVideo ? requiresApproval() : false;
+      const initialStatus = needsApproval ? "pending_approval" : (isExecVideo ? "approved" : "draft");
 
       // 3. Create campaign
       const { data: campaign, error: campaignError } = await supabase
