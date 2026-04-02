@@ -32,8 +32,8 @@ import {
   Video,
   Target,
   Upload,
-  Loader2,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { LeadScoreBreakdown } from "./leadScoring";
