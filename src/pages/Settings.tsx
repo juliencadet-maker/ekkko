@@ -245,7 +245,7 @@ export default function Settings() {
                     />
                   </div>
                   <Button onClick={saveSlackChannel} disabled={isSavingSlack || !slackChannelId.trim()}>
-                    {isSavingSlack ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
+                    {isSavingSlack ? <EkkoLoader mode="once" size={16} /> : <Link2 className="h-4 w-4 mr-1" />}
                     Sauvegarder
                   </Button>
                 </div>
