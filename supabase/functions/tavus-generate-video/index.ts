@@ -155,7 +155,7 @@ serve(async (req) => {
       );
     }
 
-    // Fetch campaign with identity
+    // Fetch campaign with identity (include script_oral)
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
       .select("*, identities(id, provider_identity_id, display_name, metadata, reference_video_path)")
