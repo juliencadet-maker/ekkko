@@ -337,7 +337,7 @@ export default function Index() {
               { num: "1", icon: FileText, title: "Vous ciblez un deal", text: "L'AE crée le deal. Script personnalisé pour le bon décideur en 30 secondes.", highlight: false },
               { num: "2", icon: CheckSquare, title: "Votre exec intervient", text: "L'exec approuve en un clic via email, Slack ou WhatsApp. Sans login.", highlight: false },
               { num: "3", icon: Send, title: "Ekko observe", text: "Vos assets sont partagés, lus, transmis. Ekko capte chaque signal.", highlight: false },
-              { num: "4", icon: Eye, title: "La lecture politique", text: "Qui soutient, qui hésite, qui bloque.\nLa carte politique de votre deal en temps réel.", highlight: true },
+              { num: "4", icon: Eye, title: "La lecture politique", text: "Qui avance, qui hésite, qui manque à l'appel.\nLa carte politique de votre deal en temps réel.", highlight: true },
             ].map((step, i) => (
               <FadeIn key={step.num} delay={i * 0.1}>
                 <div className={`rounded-xl p-7 text-center h-full ${step.highlight ? "bg-accent/5 border-2 border-accent" : "bg-card border"}`}>
