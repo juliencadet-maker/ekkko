@@ -1087,7 +1087,7 @@ export default function CampaignDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Loader2 className={cn("h-5 w-5", hasActiveJobs && "animate-spin text-primary")} />
+                  {hasActiveJobs ? <EkkoLoader mode="loop" size={20} /> : <Video className="h-5 w-5" />}
                   Statut de génération
                 </CardTitle>
                 <CardDescription>
