@@ -654,11 +654,11 @@ export default function NewCampaign() {
                 )}
 
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(3)}>
+                  <Button variant="outline" onClick={() => setCurrentStep(2)}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Retour
                   </Button>
-                  <Button onClick={() => setCurrentStep(5)} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button onClick={() => setCurrentStep(4)} className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
                     Continuer <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
