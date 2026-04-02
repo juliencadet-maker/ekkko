@@ -5,7 +5,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, ArrowRight } from "lucide-react";
+import { User, Building2, ArrowRight } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
 
 export default function AuthDemo() {
