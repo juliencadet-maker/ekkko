@@ -3,9 +3,9 @@ import {
   Clock, 
   CheckCircle2, 
   XCircle, 
-  Loader2, 
   FileEdit,
-  AlertCircle
+  AlertCircle,
+  Zap,
 } from "lucide-react";
 
 type StatusType = 
@@ -62,7 +62,7 @@ const statusConfig: Record<StatusType, {
   generating: {
     label: "Génération...",
     className: "status-badge-generating",
-    icon: Loader2,
+    icon: Zap,
   },
   completed: {
     label: "Terminé",
@@ -82,7 +82,7 @@ const statusConfig: Record<StatusType, {
   processing: {
     label: "En cours",
     className: "status-badge-generating",
-    icon: Loader2,
+    icon: Zap,
   },
   failed: {
     label: "Échoué",
@@ -111,7 +111,7 @@ export function StatusBadge({ status, className, showIcon = true }: StatusBadgeP
   return (
     <span className={cn("status-badge", config.className, className)}>
       {showIcon && (
-        <Icon className={cn("w-3.5 h-3.5", isAnimated && "animate-spin")} />
+        <Icon className={cn("w-3.5 h-3.5", isAnimated && "animate-pulse")} />
       )}
       {config.label}
     </span>

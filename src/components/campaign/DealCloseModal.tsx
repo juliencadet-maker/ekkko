@@ -12,7 +12,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 interface DealCloseModalProps {
   open: boolean;
@@ -155,7 +156,7 @@ export function DealCloseModal({ open, onOpenChange, campaignId, campaignName }:
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
           <Button onClick={handleSubmit} disabled={!selectedOutcome || isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting && <EkkoLoader mode="once" size={16} className="mr-2" />}
             Clôturer le deal
           </Button>
         </DialogFooter>

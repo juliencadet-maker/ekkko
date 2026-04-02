@@ -7,7 +7,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download, Loader2, ShieldOff } from "lucide-react";
+import { FileText, Download, ShieldOff } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { AuditLog } from "@/types/database";
@@ -55,7 +56,7 @@ export default function Audit() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+            <div className="flex items-center justify-center h-64"><EkkoLoader mode="once" size={40} /></div>
           ) : (
             <Table>
               <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Événement</TableHead><TableHead>Type</TableHead></TableRow></TableHeader>

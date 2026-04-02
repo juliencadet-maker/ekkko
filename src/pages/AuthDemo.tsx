@@ -5,7 +5,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, ArrowRight } from "lucide-react";
+import { User, Building2, ArrowRight } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
 
 export default function AuthDemo() {
@@ -115,7 +116,7 @@ export default function AuthDemo() {
 
         {isLoading && (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+            <EkkoLoader mode="once" size={24} className="mr-2" />
             <span className="text-sm text-muted-foreground">Connexion en cours...</span>
           </div>
         )}

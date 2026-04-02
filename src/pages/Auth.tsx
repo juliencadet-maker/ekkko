@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { z } from "zod";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
 import { WaitlistDialog } from "@/components/WaitlistDialog";
@@ -161,7 +162,7 @@ export default function Auth() {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <EkkoLoader mode="once" size={16} className="mr-2" />
                     Connexion...
                   </>
                 ) : (

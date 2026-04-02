@@ -1,8 +1,9 @@
 import { ReactNode, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { Loader2, Clock, LogOut } from "lucide-react";
+import { Clock, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -41,7 +42,7 @@ export function AuthGuard({ children, requireOnboarding = true }: AuthGuardProps
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <EkkoLoader mode="once" size={40} className="mx-auto mb-4" />
           <p className="text-muted-foreground">Chargement...</p>
         </div>
       </div>

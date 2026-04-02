@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Check, X, Loader2, UserCheck, Clock, ShieldOff } from "lucide-react";
+import { Check, X, UserCheck, Clock, ShieldOff } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -123,7 +124,7 @@ export default function UserApprovals() {
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <EkkoLoader mode="once" size={32} />
         </div>
       ) : (
         <div className="space-y-6">
@@ -153,7 +154,7 @@ export default function UserApprovals() {
                         </p>
                       </div>
                       <Button size="sm" onClick={() => approveUser(u.id)} disabled={processingIds.has(u.id)}>
-                        {processingIds.has(u.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                        {processingIds.has(u.id) ? <EkkoLoader mode="once" size={14} /> : <Check className="h-3.5 w-3.5 mr-1" />}
                         Approuver
                       </Button>
                     </div>
@@ -189,7 +190,7 @@ export default function UserApprovals() {
                           Actif
                         </Badge>
                         <Button variant="ghost" size="sm" className="text-destructive h-7 text-xs" onClick={() => revokeUser(u.id)} disabled={processingIds.has(u.id)}>
-                          {processingIds.has(u.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3 mr-1" />}
+                          {processingIds.has(u.id) ? <EkkoLoader mode="once" size={12} /> : <X className="h-3 w-3 mr-1" />}
                           Révoquer
                         </Button>
                       </div>

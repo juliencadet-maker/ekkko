@@ -22,7 +22,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Loader2, Plus, Star, MoreVertical, Trash2, Share2 } from "lucide-react";
+import { Users, Plus, Star, MoreVertical, Trash2, Share2 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { useToast } from "@/hooks/use-toast";
 import type { Identity } from "@/types/database";
 import { CreateIdentityDialog } from "@/components/identity/CreateIdentityDialog";
@@ -161,7 +162,7 @@ export default function Identities() {
       />
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+        <div className="flex items-center justify-center h-64"><EkkoLoader mode="once" size={40} /></div>
       ) : identities.length === 0 ? (
         <EmptyState 
           icon={Users} 
@@ -251,7 +252,7 @@ export default function Identities() {
               onClick={() => confirmDeleteIdentity && handleDelete(confirmDeleteIdentity)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deletingId ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deletingId ? <EkkoLoader mode="once" size={16} className="mr-2" /> : null}
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>

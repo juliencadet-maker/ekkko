@@ -10,7 +10,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { canManageOrg } from "@/lib/roles";
 import { toast } from "sonner";
-import { Check, Loader2, ExternalLink, Link2, Link2Off, MessageSquare, Hash, ShieldOff } from "lucide-react";
+import { Check, ExternalLink, Link2, Link2Off, MessageSquare, Hash, ShieldOff } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 export default function Settings() {
   const { profile, org, membership } = useAuthContext();
@@ -244,14 +245,14 @@ export default function Settings() {
                     />
                   </div>
                   <Button onClick={saveSlackChannel} disabled={isSavingSlack || !slackChannelId.trim()}>
-                    {isSavingSlack ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
+                    {isSavingSlack ? <EkkoLoader mode="once" size={16} /> : <Link2 className="h-4 w-4 mr-1" />}
                     Sauvegarder
                   </Button>
                 </div>
                 {(slackStatus === "connected" || slackStatus === "testing") && (
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={testSlack} disabled={slackStatus === "testing"}>
-                      {slackStatus === "testing" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                      {slackStatus === "testing" ? <EkkoLoader mode="once" size={14} className="mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
                       Envoyer un message test
                     </Button>
                     <Button variant="ghost" size="sm" className="text-destructive" onClick={disconnectSlack}>
@@ -312,13 +313,13 @@ export default function Settings() {
                     className="font-mono text-sm"
                   />
                   <Button onClick={saveHubspotKey} disabled={isSaving || !hubspotKey || hubspotKey.startsWith("••••")}>
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
+                    {isSaving ? <EkkoLoader mode="once" size={16} /> : <Link2 className="h-4 w-4 mr-1" />}
                     Sauvegarder
                   </Button>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={testConnection} disabled={isTestingConnection || connectionStatus === "unknown"}>
-                    {isTestingConnection ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                    {isTestingConnection ? <EkkoLoader mode="once" size={14} className="mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
                     Tester la connexion
                   </Button>
                   {connectionStatus === "connected" && (

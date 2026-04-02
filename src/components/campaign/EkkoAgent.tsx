@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
-  MessageSquare, Send, Bot, User, Loader2, Sparkles,
+  MessageSquare, Send, Bot, User, Sparkles,
   TrendingUp, TrendingDown, Users, Zap, Shield, Eye,
   ChevronRight, X,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 interface EkkoAgentProps {
   campaignId: string;
@@ -248,8 +249,8 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                       <Bot className="h-3.5 w-3.5 text-primary-foreground" />
                     </div>
                     <div className="bg-muted rounded-xl px-4 py-3 flex items-center gap-1.5">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Analyse en cours...</span>
+                      <EkkoLoader mode="loop" size={14} />
+                      <span className="text-xs text-muted-foreground ml-1.5">Analyse en cours...</span>
                     </div>
                   </div>
                 )}

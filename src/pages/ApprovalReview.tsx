@@ -8,7 +8,6 @@ import { EkkoLogo } from "@/components/ui/EkkoLogo";
 import {
   CheckCircle2,
   XCircle,
-  Loader2,
   ShieldCheck,
   AlertTriangle,
   Edit3,
@@ -16,6 +15,7 @@ import {
   Building2,
   User,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 type ReviewState = "loading" | "ready" | "done" | "error";
 
@@ -124,7 +124,7 @@ export default function ApprovalReview() {
   if (state === "loading") {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <EkkoLoader mode="once" size={40} />
       </div>
     );
   }
@@ -266,7 +266,7 @@ export default function ApprovalReview() {
             disabled={isSubmitting || !editedScript.trim()}
           >
             {isSubmitting ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <EkkoLoader mode="once" size={24} />
             ) : (
               <>
                 <CheckCircle2 className="mr-2 h-5 w-5" />

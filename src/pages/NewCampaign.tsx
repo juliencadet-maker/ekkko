@@ -20,7 +20,7 @@ import { VideoImportUpload } from "@/components/campaign/VideoImportUpload";
 import {
   ArrowLeft,
   ArrowRight,
-  Loader2,
+  
   Send,
   CheckCircle2,
   AlertCircle,
@@ -36,6 +36,7 @@ import {
   Upload,
   Bot,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import type { Identity, Policy } from "@/types/database";
 
 const DEAL_STAGES = [
@@ -448,7 +449,7 @@ export default function NewCampaign() {
 
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <EkkoLoader mode="once" size={40} />
         </div>
       ) : (
         <div className="max-w-2xl mx-auto">
@@ -973,7 +974,7 @@ export default function NewCampaign() {
                       className="flex-1 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90"
                     >
                       {isSubmitting ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</>
+                        <><EkkoLoader mode="once" size={16} className="mr-2" />Création...</>
                       ) : assetType === "video" && videoMode === "identity" && !requiresApproval() ? (
                         <><CheckCircle2 className="mr-2 h-4 w-4" />Créer et générer la vidéo</>
                       ) : assetType === "video" && videoMode === "identity" && requiresApproval() ? (

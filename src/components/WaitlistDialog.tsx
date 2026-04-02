@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 interface WaitlistDialogProps {
   open: boolean;
@@ -182,7 +183,7 @@ export function WaitlistDialog({ open, onOpenChange, source = "landing" }: Waitl
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <EkkoLoader mode="once" size={16} className="mr-2" />
                   Envoi en cours...
                 </>
               ) : (

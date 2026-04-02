@@ -9,8 +9,9 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp, TrendingDown, Target, Eye, Clock, Users,
-  ArrowUpRight, Zap, Loader2,
+  ArrowUpRight, Zap,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, Area, AreaChart, Legend,
@@ -163,7 +164,7 @@ export default function DealIntelligence() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <EkkoLoader mode="once" size={40} />
         </div>
       </AppLayout>
     );

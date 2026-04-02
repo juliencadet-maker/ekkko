@@ -49,12 +49,13 @@ import {
   FileText,
   MessageSquare,
   GitCompareArrows,
-  Loader2,
+  
   Globe,
   RefreshCw,
   Zap,
   Sparkles,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -716,7 +717,7 @@ export default function CampaignDetail() {
         <Alert className="mb-6 border-primary/30 bg-primary/5">
           <div className="flex items-center gap-3">
             {hasActiveJobs ? (
-              <Loader2 className="h-5 w-5 text-primary animate-spin" />
+              <EkkoLoader mode="loop" size={24} />
             ) : (
               <CheckCircle2 className="h-5 w-5 text-primary" />
             )}
@@ -1086,7 +1087,7 @@ export default function CampaignDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Loader2 className={cn("h-5 w-5", hasActiveJobs && "animate-spin text-primary")} />
+                  {hasActiveJobs ? <EkkoLoader mode="loop" size={20} /> : <Video className="h-5 w-5" />}
                   Statut de génération
                 </CardTitle>
                 <CardDescription>
@@ -1098,7 +1099,7 @@ export default function CampaignDetail() {
                   {videoJobs.map((job) => {
                     const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
                       queued: { label: "En file d'attente", color: "text-muted-foreground", icon: <Clock className="h-4 w-4" /> },
-                      processing: { label: "En cours", color: "text-primary", icon: <Loader2 className="h-4 w-4 animate-spin" /> },
+                      processing: { label: "En cours", color: "text-primary", icon: <EkkoLoader mode="loop" size={16} /> },
                       completed: { label: "Terminée", color: "text-primary", icon: <CheckCircle2 className="h-4 w-4" /> },
                       failed: { label: "Échouée", color: "text-destructive", icon: <AlertTriangle className="h-4 w-4" /> },
                     };

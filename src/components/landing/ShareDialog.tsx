@@ -9,7 +9,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Share2, Plus, Trash2, Send, Loader2 } from "lucide-react";
+import { Share2, Plus, Trash2, Send } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { toast } from "sonner";
 
 interface Collaborator {
@@ -223,7 +224,7 @@ export function ShareDialog({
             disabled={!isValid || isSending}
           >
             {isSending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <EkkoLoader mode="once" size={16} />
             ) : (
               <Send className="h-4 w-4" />
             )}

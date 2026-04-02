@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Loader2, 
   Play, 
   Square, 
   RotateCcw, 
@@ -21,6 +20,7 @@ import {
   MessageSquare,
   EarOff
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { VIDEO_CONSTRAINTS, TAVUS_CONSENT_SCRIPT_EN, TAVUS_SPEAKING_SCRIPT_FR } from "@/lib/constants";
 import { WavRecorder } from "@/lib/wavRecorder";
 
@@ -520,7 +520,7 @@ export function VideoRecorder({ onVideoReady, onAudioReady, consentGiven, onCons
             <Camera className="h-12 w-12 mb-4" />
             {isInitializingCamera ? (
               <>
-                <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                <EkkoLoader mode="loop" size={24} className="mb-2" />
                 <p className="text-sm">Initialisation de la caméra (1080p)...</p>
               </>
             ) : cameraError ? (

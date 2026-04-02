@@ -14,7 +14,6 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Loader2, 
   CheckCircle2, 
   Video, 
   User, 
@@ -23,6 +22,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { ONBOARDING_STEPS, VIDEO_CONSTRAINTS, IDENTITY_TYPES } from "@/lib/constants";
 import { VideoRecorder } from "@/components/identity/VideoRecorder";
 import { RecordingGuide } from "@/components/identity/RecordingGuide";
@@ -415,7 +415,7 @@ export default function Onboarding() {
             <div className="flex items-center gap-3">
               {canSkip && (
                 <Button variant="ghost" size="sm" onClick={handleSkipOnboarding} disabled={isLoading} className="text-xs text-muted-foreground hover:text-foreground">
-                  {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  {isLoading ? <EkkoLoader mode="once" size={12} className="mr-1" /> : null}
                   Passer cette étape →
                 </Button>
               )}
@@ -496,7 +496,7 @@ export default function Onboarding() {
                   <Input id="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Europe/Paris" />
                 </div>
                 <Button onClick={handleProfileSubmit} className="w-full" disabled={isLoading}>
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</> : <>Continuer<ArrowRight className="ml-2 h-4 w-4" /></>}
+                  {isLoading ? <><EkkoLoader mode="once" size={16} className="mr-2" />Enregistrement...</> : <>Continuer<ArrowRight className="ml-2 h-4 w-4" /></>}
                 </Button>
               </CardContent>
             </>
@@ -553,7 +553,7 @@ export default function Onboarding() {
                     </div>
 
                     <Button onClick={handleComplete} className="w-full" size="lg" disabled={isLoading || !consentGiven}>
-                      {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création en cours...</> : <>Créer mon identité démo<ArrowRight className="ml-2 h-4 w-4" /></>}
+                      {isLoading ? <><EkkoLoader mode="loop" size={16} className="mr-2" />Création en cours...</> : <>Créer mon identité démo<ArrowRight className="ml-2 h-4 w-4" /></>}
                     </Button>
                   </>
                 ) : (
@@ -628,13 +628,13 @@ export default function Onboarding() {
                         {/* Status Messages */}
                         {cloneStatus === "uploading" && (
                           <Alert>
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <EkkoLoader mode="loop" size={16} />
                             <AlertDescription>Upload de la vidéo en cours...</AlertDescription>
                           </Alert>
                         )}
                         {cloneStatus === "creating" && (
                           <Alert>
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <EkkoLoader mode="loop" size={16} />
                             <AlertDescription>Création des clones visuel et vocal en cours...</AlertDescription>
                           </Alert>
                         )}
@@ -646,7 +646,7 @@ export default function Onboarding() {
                           </Button>
                           <Button onClick={handleComplete} size="lg" disabled={isLoading || !consentGiven}>
                             {isLoading ? (
-                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création en cours...</>
+                              <><EkkoLoader mode="loop" size={16} className="mr-2" />Création en cours...</>
                             ) : (
                               <>Créer mon clone<ArrowRight className="ml-2 h-4 w-4" /></>
                             )}
@@ -674,7 +674,7 @@ export default function Onboarding() {
               </CardHeader>
               <CardContent className="pt-6 space-y-3">
                 <Alert>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <EkkoLoader mode="loop" size={16} />
                   <AlertDescription>Clone en cours de création… Cela prend généralement quelques minutes.</AlertDescription>
                 </Alert>
                 <Button onClick={goToDashboard} className="w-full" size="lg">

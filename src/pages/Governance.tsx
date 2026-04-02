@@ -5,7 +5,8 @@ import { MetricCard } from "@/components/ui/MetricCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Shield, Video, Eye, CheckSquare, Loader2, ShieldOff } from "lucide-react";
+import { Shield, Video, Eye, CheckSquare, ShieldOff } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { canManageOrg } from "@/lib/roles";
@@ -102,7 +103,7 @@ export default function Governance() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <EkkoLoader mode="once" size={32} />
         </div>
       </AppLayout>
     );

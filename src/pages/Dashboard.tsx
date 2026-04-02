@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { 
   AlertTriangle, 
   Plus,
@@ -166,7 +167,7 @@ export default function Dashboard() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-muted-foreground">Chargement...</div>
+          <EkkoLoader mode="once" size={40} />
         </div>
       </AppLayout>
     );

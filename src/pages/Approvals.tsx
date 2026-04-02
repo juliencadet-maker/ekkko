@@ -24,13 +24,13 @@ import {
   CheckSquare, 
   CheckCircle2, 
   XCircle, 
-  Loader2,
   Clock,
   FileText,
   Pencil,
   User,
   AlertCircle,
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { ApprovalRequest } from "@/types/database";
@@ -159,7 +159,7 @@ export default function Approvals() {
 
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <EkkoLoader mode="once" size={40} />
         </div>
       ) : (
         <div className="space-y-8">
@@ -352,11 +352,11 @@ export default function Approvals() {
                     disabled={isSubmitting || !editedScript.trim()}
                     className="bg-accent text-accent-foreground hover:bg-accent/90"
                   >
-                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Approuver</>}
+                    {isSubmitting ? <><EkkoLoader mode="once" size={16} className="mr-2" />Traitement...</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Approuver</>}
                   </Button>
                 ) : (
                   <Button variant="destructive" onClick={() => handleApprovalAction("reject")} disabled={isSubmitting}>
-                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Traitement...</> : <>Refuser</>}
+                    {isSubmitting ? <><EkkoLoader mode="once" size={16} className="mr-2" />Traitement...</> : <>Refuser</>}
                   </Button>
                 )}
               </DialogFooter>
