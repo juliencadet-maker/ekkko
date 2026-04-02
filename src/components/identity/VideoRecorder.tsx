@@ -21,6 +21,7 @@ import {
   MessageSquare,
   EarOff
 } from "lucide-react";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { VIDEO_CONSTRAINTS, TAVUS_CONSENT_SCRIPT_EN, TAVUS_SPEAKING_SCRIPT_FR } from "@/lib/constants";
 import { WavRecorder } from "@/lib/wavRecorder";
 
