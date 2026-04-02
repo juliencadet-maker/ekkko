@@ -111,7 +111,7 @@ export function StatusBadge({ status, className, showIcon = true }: StatusBadgeP
   return (
     <span className={cn("status-badge", config.className, className)}>
       {showIcon && (
-        <Icon className={cn("w-3.5 h-3.5", isAnimated && "animate-spin")} />
+        <Icon className={cn("w-3.5 h-3.5", isAnimated && "animate-pulse")} />
       )}
       {config.label}
     </span>
