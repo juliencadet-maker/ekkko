@@ -1229,9 +1229,6 @@ export default function CampaignDetail() {
                                 <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
                               </Button>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                              Vidéo, document, présentation — tout asset partagé devient un capteur.
-                            </p>
                           </>
                         )}
                       </div>
