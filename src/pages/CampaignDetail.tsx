@@ -728,31 +728,44 @@ export default function CampaignDetail() {
     }
   };
 
-  // ─── HOOKS THAT MUST BE BEFORE EARLY RETURNS ──────────────────────
-  const LAYER_MAP_REF: Record<string, { label: string; estimated: number }> = {
-    executive: { label: "COMEX", estimated: 3 },
-    financial: { label: "Finance", estimated: 2 },
-    technical: { label: "Technique", estimated: 5 },
+  // ─── Layer detection utility (C1b) ─────────────────────────────────
+  function detectLayer(title: string | null, layers: any[]): string | null {
+    if (!title || !layers?.length) return null;
+    for (const l of layers) {
+      const keywords: string[] = l.typical_titles || [];
+      for (const kw of keywords) {
+        if (title.toLowerCase().includes(kw.toLowerCase())) return l.layer;
+      }
+    }
+    return null;
+  }
+
+  const LAYER_LABELS: Record<string, string> = {
+    executive: "Direction", financial: "Finance", legal: "Juridique",
+    procurement: "Achats", technical: "Technique", operational: "Opérationnel",
   };
+  const LAYER_ESTIMATED: Record<string, number> = {
+    executive: 3, financial: 2, legal: 1, procurement: 2, technical: 5, operational: 3,
+  };
+  const LAYER_ORDER = ["executive", "financial", "legal", "procurement", "technical", "operational"];
 
   const computedLayers = useMemo(() => {
-    return Object.entries(LAYER_MAP_REF).map(([key, cfg]) => {
-      const matchingViewers = viewers.filter((v: any) => {
-        const role = (v.inferred_role || "").toLowerCase();
-        const contactType = (v.contact_type || "").toLowerCase();
-        return role.includes(key) || contactType.includes(key);
-      });
-      const hasConfirmed = matchingViewers.some(
+    if (committeeLayers.length === 0) return [];
+    return LAYER_ORDER.map((layerKey) => {
+      const matching = viewers.filter((v: any) =>
+        detectLayer(v.title, committeeLayers) === layerKey
+      );
+      const hasConfirmed = matching.some(
         (v: any) => v.identity_confidence === "high" || v.identity_confidence === "verified"
       );
       return {
-        layer: cfg.label,
-        current: matchingViewers.length,
-        estimated: cfg.estimated,
-        confirmed: matchingViewers.length > 0 && hasConfirmed,
+        layer: LAYER_LABELS[layerKey],
+        current: matching.length,
+        estimated: LAYER_ESTIMATED[layerKey],
+        confirmed: matching.length > 0 && hasConfirmed,
       };
     });
-  }, [viewers]);
+  }, [viewers, committeeLayers]);
 
   const ghostLayerContacts = useMemo(() => {
     return computedLayers.filter((l) => l.current > 0 && !l.confirmed);
