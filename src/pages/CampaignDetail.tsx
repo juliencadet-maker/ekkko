@@ -325,7 +325,7 @@ export default function CampaignDetail() {
         if (campaignData.snoozed_until) setSnoozeDate(new Date(campaignData.snoozed_until));
       } catch {
         console.error("Fetch campaign failed");
-        toast.error("Erreur lors du chargement de la campagne");
+        toast.error("Erreur lors du chargement du deal");
       } finally {
         setIsLoading(false);
       }
