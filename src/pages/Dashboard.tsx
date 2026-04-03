@@ -235,7 +235,7 @@ export default function Dashboard() {
     <AppLayout>
       <PageHeader 
         title={`Bonjour, ${profile?.first_name || "utilisateur"}`}
-        description={canManageOrg(userRole) ? "Pipeline de votre équipe et signaux en temps réel." : "Vos deals actifs et signaux des dernières 24h."}
+        description="Vue d'ensemble — retrouvez vos deals dans la liste des deals."
         actions={
           <Button onClick={() => navigate("/app/campaigns/new")} className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="mr-2 h-4 w-4" />

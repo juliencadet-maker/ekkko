@@ -163,7 +163,9 @@ export default function Campaigns() {
   };
 
   const getTimeSinceSignal = (campaign: Campaign) => {
-    const days = Math.floor((Date.now() - new Date(campaign.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+    const d = new Date(campaign.updated_at);
+    if (isNaN(d.getTime())) return "—";
+    const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
     if (days === 0) return "Aujourd'hui";
     return `il y a ${days}j`;
   };
@@ -228,12 +230,24 @@ export default function Campaigns() {
 
             return (
               <div key={campaign.id}>
-                {/* First action spotlight banner */}
-                {!(campaign as any).first_action_completed_at && (
-                  <div className="mb-1 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-t-lg border border-b-0 border-accent/20">
-                    Signal détecté — 1 action disponible maintenant
-                  </div>
-                )}
+                {/* First action spotlight banner — strict 48h condition */}
+                {(() => {
+                  const c = campaign as any;
+                  if (c.first_action_completed_at) return null;
+                  if (!c.first_signal_at) return null;
+                  const signalDate = new Date(c.first_signal_at);
+                  if (isNaN(signalDate.getTime())) return null;
+                  const signalAge = Date.now() - signalDate.getTime();
+                  const updatedDate = new Date(c.updated_at);
+                  const lastEventAge = !isNaN(updatedDate.getTime()) ? Date.now() - updatedDate.getTime() : Infinity;
+                  const within48h = 48 * 60 * 60 * 1000;
+                  if (signalAge > within48h && lastEventAge > within48h) return null;
+                  return (
+                    <div className="mb-1 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-t-lg border border-b-0 border-accent/20">
+                      Signal détecté — 1 action disponible maintenant
+                    </div>
+                  );
+                })()}
                 <div
                   className={cn(
                     "group flex items-center gap-4 rounded-card shadow-card cursor-pointer hover:shadow-lg transition-all",

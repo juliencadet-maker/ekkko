@@ -389,7 +389,7 @@ export default function Onboarding() {
 
       toast({ title: "Onboarding skippé ✓", description: "Identité démo créée." });
       await refreshUser();
-      navigate("/app/dashboard", { replace: true });
+      navigate("/app/campaigns", { replace: true });
     } catch (error) {
       console.error("Skip onboarding error:", error);
       toast({ title: "Erreur", description: "Impossible de skipper l'onboarding", variant: "destructive" });
@@ -400,7 +400,7 @@ export default function Onboarding() {
 
   const goToDashboard = async () => {
     await refreshUser();
-    navigate("/app/dashboard", { replace: true });
+    navigate("/app/campaigns", { replace: true });
   };
 
   return (

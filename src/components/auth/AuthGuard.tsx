@@ -32,9 +32,9 @@ export function AuthGuard({ children, requireOnboarding = true }: AuthGuardProps
       return;
     }
 
-    // If on onboarding but already completed, redirect to dashboard
+    // If on onboarding but already completed, redirect to deals list
     if (location.pathname.startsWith("/app/onboarding") && !needsOnboarding) {
-      navigate("/app/dashboard", { replace: true });
+      navigate("/app/campaigns", { replace: true });
     }
   }, [isLoading, isAuthenticated, needsOnboarding, isPendingApproval, requireOnboarding, navigate, location.pathname]);
 
