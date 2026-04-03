@@ -295,7 +295,7 @@ export default function Campaigns() {
                     text-muted-foreground hover:text-foreground border rounded-md px-2 py-1'
                   onClick={(e) => { e.stopPropagation(); navigate('/app/agent?deal=' + campaign.id); }}
                 >
-                  Analyser ↗
+                  Voir ↗
                 </button>
               </div>
               </div>

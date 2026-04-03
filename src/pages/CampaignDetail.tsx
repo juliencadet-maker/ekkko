@@ -325,7 +325,7 @@ export default function CampaignDetail() {
         if (campaignData.snoozed_until) setSnoozeDate(new Date(campaignData.snoozed_until));
       } catch {
         console.error("Fetch campaign failed");
-        toast.error("Erreur lors du chargement de la campagne");
+        toast.error("Erreur lors du chargement du deal");
       } finally {
         setIsLoading(false);
       }
@@ -449,7 +449,7 @@ export default function CampaignDetail() {
       setCampaign((prev) => (prev ? { ...prev, status: "pending_approval" } : null));
       setRejectionComment(null);
       setScriptSaved(false);
-      toast.success("Campagne resoumise pour approbation");
+      toast.success("Deal resoumis pour approbation");
     } catch {
       console.error("Resubmit failed");
       toast.error("Erreur lors de la resoumission");
@@ -492,7 +492,7 @@ export default function CampaignDetail() {
     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <p className="text-muted-foreground">Campagne non trouvée</p>
+          <p className="text-muted-foreground">Deal non trouvé</p>
           <Button variant="outline" onClick={() => navigate("/app/campaigns")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             ← Deals
@@ -527,7 +527,7 @@ export default function CampaignDetail() {
                   <h1 className="text-2xl font-bold text-foreground">{campaign.name}</h1>
                   <Badge variant="outline" className="text-xs">
                     <Layers className="mr-1 h-3 w-3" />
-                    {subCampaigns.length} sous-campagne{subCampaigns.length > 1 ? "s" : ""}
+                    {subCampaigns.length} sous-deal{subCampaigns.length > 1 ? "s" : ""}
                   </Badge>
                 </div>
                 <p className="mt-1 text-muted-foreground">
@@ -566,7 +566,7 @@ export default function CampaignDetail() {
             {/* Sub-campaigns grid */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Sous-campagnes</h2>
+                <h2 className="text-lg font-semibold text-foreground">Sous-deals</h2>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 {subCampaigns.map((sub) => {

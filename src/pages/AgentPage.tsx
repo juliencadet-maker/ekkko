@@ -67,11 +67,11 @@ export default function AgentPage() {
     <AppLayout>
       <PageHeader
         title="Agent Ekko"
-        description="Analysez n'importe quel deal. L'agent a accès à tous les signaux."
+        description="Posez vos questions sur n'importe quel deal. L'agent a accès à tous les signaux."
         actions={
           <Select value={selectedId || ""} onValueChange={handleSelect}>
             <SelectTrigger className="w-[280px]">
-              <SelectValue placeholder="Analyser quel deal ?" />
+              <SelectValue placeholder="Choisir un deal" />
             </SelectTrigger>
             <SelectContent>
               {campaigns.map((c) => (
@@ -94,7 +94,7 @@ export default function AgentPage() {
       ) : (
         <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
           <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
-          <p className="font-semibold text-foreground">Choisissez un deal pour commencer l'analyse</p>
+          <p className="font-semibold text-foreground">Choisissez un deal pour commencer</p>
           <p className="text-sm text-muted-foreground">Commencez par le deal avec le plus d'alertes actives</p>
         </div>
       )}
