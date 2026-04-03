@@ -454,6 +454,135 @@ export default function CampaignDetail() {
 
   const kpis = useMemo(() => computeKpis(viewEvents, watchProgress), [viewEvents, watchProgress]);
 
+  // ─── B3 — getSignalFreshness ──────────────────────────────────────
+  function getSignalFreshness(isoDate: string): "recent" | "old" | null {
+    const diffHours = (Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60);
+    if (diffHours < 72) return "recent";
+    if (diffHours > 168) return "old";
+    return null;
+  }
+
+  // ─── B3 — MAPPING_TABLE ───────────────────────────────────────────
+  const MAPPING_TABLE: Record<string, string> = {
+    "video_opened": "Vidéo ouverte",
+    "video_started": "Vidéo démarrée",
+    "watch_progress": "Progression vidéo",
+    "video_completed": "Vidéo regardée en entier",
+    "segment_replayed": "Segment rejoué",
+    "cta_clicked": "CTA cliqué",
+    "page_shared": "Contenu partagé",
+    "doc_opened": "Document ouvert",
+    "doc_page_viewed": "Page consultée",
+    "doc_downloaded": "Document téléchargé",
+    "doc_return_visit": "Retour sur le document",
+    "ae_action_done": "Action effectuée par l'AE",
+    "offline_signal": "Signal offline enregistré",
+  };
+
+  const displayEvents = useMemo(() => {
+    return timelineEvents.map(row => ({
+      id: row.id,
+      type: row.event_type,
+      label: (typeof row.event_data?.summary_fr === "string" && (row.event_data.summary_fr as string).trim())
+        ? (row.event_data.summary_fr as string).trim()
+        : (MAPPING_TABLE[row.event_type] ?? row.event_type),
+      time: (() => {
+        const d = safeDate(row.created_at);
+        if (!d) return "—";
+        try { return formatDistanceToNow(d, { locale: fr, addSuffix: true }); } catch { return "—"; }
+      })(),
+      event_layer: row.event_layer ?? undefined,
+      freshness: getSignalFreshness(row.created_at),
+    }));
+  }, [timelineEvents]);
+
+  // ─── B3 — Q1: Qui regarde ? ──────────────────────────────────────
+  const q1Text = useMemo(() => {
+    if (viewers.length === 0) return "Aucun contact identifié — partagez un asset pour générer les premiers signaux.";
+    return viewers
+      .map((v: any) => v.name ? (v.title ? `${v.name} (${v.title})` : v.name) : "Contact identifié partiellement")
+      .join(" · ");
+  }, [viewers]);
+
+  // ─── B3 — Q2: Qui ne regarde pas ? ───────────────────────────────
+  const LAYER_KEYWORDS: Record<string, string[]> = {
+    executive: ["CEO","CFO","COO","DG","PDG","Directeur Général","Directeur Financier"],
+    financial: ["DAF","Contrôleur","Finance","Trésorier"],
+    legal: ["Juridique","DPO","Legal","Juriste"],
+    procurement: ["Achats","Procurement","Acheteur"],
+    technical: ["DSI","CTO","Architecte","Responsable SI","IT"],
+    operational: ["Chef projet","Manager","Responsable","Directeur de projet"],
+  };
+
+  const q2Text = useMemo(() => {
+    if (viewers.length === 0) return "Impossible à déterminer — aucun contact identifié.";
+    const viewerTitles = viewers.map((v: any) => ((v.title as string) ?? "").toLowerCase());
+    const missingCritical: string[] = [];
+    const missingOther: string[] = [];
+    Object.entries(LAYER_KEYWORDS).forEach(([layer, keywords]) => {
+      const covered = keywords.some(kw => viewerTitles.some(t => t.includes(kw.toLowerCase())));
+      if (!covered) {
+        if (["executive", "financial"].includes(layer)) missingCritical.push(layer);
+        else missingOther.push(layer);
+      }
+    });
+    if (missingCritical.length === 0 && missingOther.length === 0) return "Couverture complète identifiée.";
+    const parts = [
+      ...missingCritical.map(l => `${l} : non couvert`),
+      ...missingOther.map(l => `${l} : non couvert`),
+    ];
+    return parts.join(" · ");
+  }, [viewers]);
+
+  // ─── B3 — Q3: Qui a lu ce qui compte ? ───────────────────────────
+  const q3Result = useMemo(() => {
+    const critPurposes = ["pricing", "closing", "technical"];
+    const openedDocAssetIds = new Set(q3DocEvents.map(e => e.asset_id));
+
+    const docLines = dealAssets
+      .filter(a => a.asset_type === "document" && critPurposes.includes(a.asset_purpose))
+      .map(a => `${a.asset_purpose} (document) : ${openedDocAssetIds.has(a.id) ? "ouvert" : "non ouvert"}`);
+
+    const videoLines = [...new Set(
+      dealAssets
+        .filter(a => a.asset_type === "video" && critPurposes.includes(a.asset_purpose))
+        .map(a => a.asset_purpose)
+    )].map(purpose => `${purpose} (vidéo) : granularité asset indisponible`);
+
+    const hasVideoAssets = videoLines.length > 0;
+    const videoActivity = hasVideoAssets
+      ? (q3VideoHasEvents ? "Activité vidéo détectée sur ce deal." : "Aucune activité vidéo détectée sur ce deal.")
+      : null;
+
+    if (docLines.length === 0 && videoLines.length === 0)
+      return { lines: [] as string[], videoActivity: null as string | null, hasVideoAssets: false };
+
+    return { lines: [...docLines, ...videoLines], videoActivity, hasVideoAssets };
+  }, [dealAssets, q3DocEvents, q3VideoHasEvents]);
+
+  // ─── B3 — Q4: Qui vient d'apparaître ? ───────────────────────────
+  const q4Text = useMemo(() => {
+    const now48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const recent = viewers.filter((v: any) => v.first_seen_at && new Date(v.first_seen_at) >= now48h);
+    if (recent.length === 0) return "Aucun nouveau contact dans les 48h.";
+    return recent
+      .map((v: any) => {
+        const d = safeDate(v.first_seen_at);
+        const ago = d ? (() => { try { return formatDistanceToNow(d, { locale: fr, addSuffix: true }); } catch { return "—"; } })() : "—";
+        return `${v.name ?? "Contact"} — détecté ${ago}`;
+      })
+      .join(", ");
+  }, [viewers]);
+
+  // ─── B3 — signalFreshness for NBACard ─────────────────────────────
+  const signalFreshness = useMemo(() =>
+    dealScore?.last_signal_at
+      ? getSignalFreshness(dealScore.last_signal_at)
+      : (campaign as any)?.first_signal_at
+        ? getSignalFreshness((campaign as any).first_signal_at)
+        : null,
+  [dealScore, campaign]);
+
   const handleSaveLandingPageConfig = async (config: Record<string, unknown>) => {
     if (!campaign || !membership?.org_id) return;
     try {
