@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, Component, ErrorInfo, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useVideoJobPolling } from "@/hooks/useVideoJobPolling";
 import { useParams, useNavigate } from "react-router-dom";
@@ -63,12 +63,36 @@ import {
   Sparkles,
   CalendarIcon,
   PauseCircle,
+  Info,
 } from "lucide-react";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Campaign, Video as VideoType, Recipient } from "@/types/database";
+
+// ─── Section Error Boundary ─────────────────────────────────────────
+interface SectionGuardProps { children: ReactNode; name?: string; }
+interface SectionGuardState { hasError: boolean; }
+
+class SectionGuard extends Component<SectionGuardProps, SectionGuardState> {
+  state: SectionGuardState = { hasError: false };
+  static getDerivedStateFromError(): SectionGuardState { return { hasError: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error(`[SectionGuard] ${this.props.name || "section"} crashed:`, error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-lg border border-border bg-muted/20 p-6 text-center">
+          <Info className="h-5 w-5 mx-auto text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">Données indisponibles pour le moment.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const DEMO_VIDEO_PATTERNS = [
   "commondatastorage.googleapis.com",
@@ -753,8 +777,8 @@ export default function CampaignDetail() {
   };
 
   // NBA data
-  const daysSinceSignal = dealScore?.days_since_last_signal;
-  const recAction = dealScore?.recommended_action_v2 as Record<string, unknown> | null;
+  const daysSinceSignal = dealScore?.days_since_last_signal ?? undefined;
+  const recAction = (dealScore?.recommended_action_v2 as Record<string, unknown> | null) ?? null;
   const nbaActionLine = (recAction?.action as string) || (dealScore?.recommended_action as any)?.label || "Définir la prochaine action";
   const stageLabel = STAGE_LABELS[agentContext?.stage || ""] || agentContext?.stage || "—";
   const nbaWhyLine = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}${agentContext?.decision_window ? ` · décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : ""}`;
@@ -964,185 +988,213 @@ export default function CampaignDetail() {
         {/* ─── Tab 1: Résumé du deal ─── */}
         <TabsContent value="overview" className="space-y-3">
           {/* NBA Card — first visible element */}
-          <NBACard
-            actionLine={nbaActionLine}
-            whyLine={nbaWhyLine}
-            confidenceLabel="Confiance modérée"
-            ctaLabel={nbaCtaLabel}
-            riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
-            onCtaClick={() => setShowAgent(true)}
-          />
+          <SectionGuard name="NBACard">
+            <NBACard
+              actionLine={nbaActionLine}
+              whyLine={nbaWhyLine}
+              confidenceLabel="Confiance modérée"
+              ctaLabel={nbaCtaLabel}
+              riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
+              onCtaClick={() => setShowAgent(true)}
+            />
+          </SectionGuard>
 
           {/* Pourquoi — Insights compressés inline */}
-          <div className="rounded-lg border border-border p-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pourquoi</p>
-            <div className="space-y-1.5">
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
-                <p className="text-sm text-foreground leading-snug">{viewers.length === 0 ? "Aucun relais interne identifié — vigilance requise" : `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""}`}{daysSinceSignal !== undefined && daysSinceSignal > 7 ? ` · Deal qui refroidit — aucune activité depuis ${daysSinceSignal}j` : daysSinceSignal !== undefined && daysSinceSignal > 0 ? ` · aucune activité depuis ${daysSinceSignal}j` : ""} · {stageLabel}</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
-                <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${agentContext?.incumbent_type === "competitor_named" ? "concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${agentContext?.competitive_situation || "—"}`}</p>
+          <SectionGuard name="Insights">
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pourquoi</p>
+              <div className="space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
+                  <p className="text-sm text-foreground leading-snug">{viewers.length === 0 ? "Aucun relais interne identifié — vigilance requise" : `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""}`}{daysSinceSignal !== undefined && daysSinceSignal > 7 ? ` · Deal qui refroidit — aucune activité depuis ${daysSinceSignal}j` : daysSinceSignal !== undefined && daysSinceSignal > 0 ? ` · aucune activité depuis ${daysSinceSignal}j` : ""} · {stageLabel}</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
+                  <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${agentContext?.incumbent_type === "competitor_named" ? "concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${agentContext?.competitive_situation || "—"}`}</p>
+                </div>
               </div>
             </div>
-          </div>
+          </SectionGuard>
 
           {/* Dernier signal — always visible, one discreet line */}
-          {mockTimelineEvents.length > 0 && (
-            <p className="text-xs text-muted-foreground px-1">
-              Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
-            </p>
-          )}
+          <SectionGuard name="DernierSignal">
+            {mockTimelineEvents.length > 0 ? (
+              <p className="text-xs text-muted-foreground px-1">
+                Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground px-1">Aucun signal reçu pour le moment.</p>
+            )}
+          </SectionGuard>
 
           {/* Timeline — collapsed by default */}
-          <Card className="shadow-none">
-            <CardHeader className="pb-2 pt-3 px-3">
-              <button
-                className="flex items-center justify-between w-full text-left"
-                onClick={() => setTimelineOpen((v) => !v)}
-              >
-                <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
-                <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                  {timelineOpen ? "Replier" : `Voir (${mockTimelineEvents.length})`}
-                </span>
-              </button>
-            </CardHeader>
-            <div
-              className={cn(
-                "overflow-hidden transition-all duration-300 ease-out",
-                timelineOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+          <SectionGuard name="Timeline">
+            <Card className="shadow-none">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <button
+                  className="flex items-center justify-between w-full text-left"
+                  onClick={() => setTimelineOpen((v) => !v)}
+                >
+                  <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
+                  <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    {timelineOpen ? "Replier" : `Voir (${mockTimelineEvents.length})`}
+                  </span>
+                </button>
+              </CardHeader>
+              {mockTimelineEvents.length > 0 ? (
+                <div
+                  className={cn(
+                    "overflow-hidden transition-all duration-300 ease-out",
+                    timelineOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                  )}
+                >
+                  <CardContent className="pt-0 px-3">
+                    <DealTimeline events={mockTimelineEvents} />
+                  </CardContent>
+                </div>
+              ) : (
+                <CardContent className="pt-0 px-3">
+                  <p className="text-xs text-muted-foreground py-4 text-center">Aucun événement enregistré.</p>
+                </CardContent>
               )}
-            >
-              <CardContent className="pt-0 px-3">
-                <DealTimeline events={mockTimelineEvents} />
-              </CardContent>
-            </div>
-          </Card>
+            </Card>
+          </SectionGuard>
 
           {/* Signal offline — with inactivity hint */}
-          {daysSinceSignal !== undefined && daysSinceSignal > 5 && (
-            <p className="text-xs text-muted-foreground px-1">
-              Aucune activité récente.{" "}
-              <button className="underline hover:text-foreground" onClick={() => {
-                const el = document.getElementById("signal-offline-widget");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }}>
-                Que s'est-il passé en dehors d'Ekko ?
-              </button>
-            </p>
-          )}
-          <div id="signal-offline-widget">
-            <WhatHappenedWidget campaignId={campaign.id} />
-          </div>
+          <SectionGuard name="SignalOffline">
+            {daysSinceSignal !== undefined && daysSinceSignal > 5 && (
+              <p className="text-xs text-muted-foreground px-1">
+                Aucune activité récente.{" "}
+                <button className="underline hover:text-foreground" onClick={() => {
+                  const el = document.getElementById("signal-offline-widget");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}>
+                  Que s'est-il passé en dehors d'Ekko ?
+                </button>
+              </p>
+            )}
+            <div id="signal-offline-widget">
+              <WhatHappenedWidget campaignId={campaign.id} />
+            </div>
+          </SectionGuard>
         </TabsContent>
 
         {/* ─── Tab 2: Deal Intelligence ─── */}
         <TabsContent value="intelligence" className="space-y-6">
-          {/* Power Map — first element */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" /> Power Map
-              </CardTitle>
-              <CardDescription>
-                {viewers.length === 0
-                  ? "Ajoutez des contacts pour visualiser le comité d'achat"
-                  : viewers.length < 3
-                    ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${agentContext?.committee_size_declared || 8} estimés`
-                    : "Cartographie du buying committee"
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {viewers.length === 0 ? (
-                <div className="py-8">
-                  {/* Ghost structure */}
-                  <div className="flex justify-center gap-8 mb-6">
-                    {["Direction", "Finance", "Metier"].map((role) => (
-                      <div key={role} className="flex flex-col items-center gap-2">
-                        <div className="w-14 h-14 rounded-full bg-[#D5D2CB]/40 border-2 border-[#D5D2CB] flex items-center justify-center">
-                          <Users className="h-5 w-5 text-[#D5D2CB]" />
-                        </div>
-                        <span className="text-xs text-[#D5D2CB] font-medium">{role}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-center gap-4 mb-6">
-                    <div className="w-px h-6 bg-[#D5D2CB]/30" />
-                    <div className="w-20 h-px bg-[#D5D2CB]/30 self-center" />
-                    <div className="w-px h-6 bg-[#D5D2CB]/30" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-foreground mb-1">Aucun écho identifié sur ce deal.</p>
-                    <p className="text-xs text-muted-foreground mb-4">Envoyez un contenu pour générer les premiers signaux.</p>
-                    <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                      <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
-                    </Button>
-                    <div className="mt-6 text-left max-w-xs mx-auto">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Contacts suggérés à identifier :</p>
-                      <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                        <li>Un décideur Finance (CFO, DAF)</li>
-                        <li>Un sponsor métier</li>
-                        <li>Un contact technique si le deal le nécessite</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Layer Coverage */}
-          <div>
-            <p className="text-sm font-semibold mb-2">Couverture du comité</p>
-            <LayerCoverage layers={computedLayers} />
-          </div>
-
-          {/* Ghost cards for inferred contacts not yet visible in Power Map */}
-          {ghostLayerContacts.length > 0 && (
-            <div className="space-y-1.5">
-              {ghostLayerContacts.map((l) => (
-                <div key={l.layer} className="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-border bg-muted/20">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    ~{l.current} contact{l.current > 1 ? "s" : ""} {l.layer} identifié{l.current > 1 ? "s" : ""} (estimation)
-                  </span>
-                  <Badge variant="outline" className="text-[9px] ml-auto">confiance faible</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Contact list */}
-          {viewers.length > 0 && (
+          <SectionGuard name="PowerMap">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Contacts identifiés</CardTitle>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Share2 className="h-5 w-5" /> Power Map
+                </CardTitle>
+                <CardDescription>
+                  {viewers.length === 0
+                    ? "Ajoutez des contacts pour visualiser le comité d'achat"
+                    : viewers.length < 3
+                      ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${agentContext?.committee_size_declared || 8} estimés`
+                      : "Cartographie du buying committee"
+                  }
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {viewers.map((v: any) => (
-                  <div key={v.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-xs font-bold text-primary">{(v.name || "?")[0].toUpperCase()}</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{v.name || "Inconnu"}</p>
-                        <p className="text-xs text-muted-foreground">{v.title || ""} {v.company ? `· ${v.company}` : ""}</p>
-                      </div>
+              <CardContent>
+                {viewers.length === 0 ? (
+                  <div className="py-8">
+                    <div className="flex justify-center gap-8 mb-6">
+                      {["Direction", "Finance", "Metier"].map((role) => (
+                        <div key={role} className="flex flex-col items-center gap-2">
+                          <div className="w-14 h-14 rounded-full bg-[#D5D2CB]/40 border-2 border-[#D5D2CB] flex items-center justify-center">
+                            <Users className="h-5 w-5 text-[#D5D2CB]" />
+                          </div>
+                          <span className="text-xs text-[#D5D2CB] font-medium">{role}</span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {getContactBadge(v.status || "inconnu")}
-                      <span className="text-xs text-muted-foreground font-mono">{v.contact_score ?? "—"}</span>
+                    <div className="flex justify-center gap-4 mb-6">
+                      <div className="w-px h-6 bg-[#D5D2CB]/30" />
+                      <div className="w-20 h-px bg-[#D5D2CB]/30 self-center" />
+                      <div className="w-px h-6 bg-[#D5D2CB]/30" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground mb-1">Aucun écho identifié sur ce deal.</p>
+                      <p className="text-xs text-muted-foreground mb-4">Envoyez un contenu pour générer les premiers signaux.</p>
+                      <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                        <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
+                      </Button>
+                      <div className="mt-6 text-left max-w-xs mx-auto">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Contacts suggérés à identifier :</p>
+                        <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                          <li>Un décideur Finance (CFO, DAF)</li>
+                          <li>Un sponsor métier</li>
+                          <li>Un contact technique si le deal le nécessite</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
+                )}
               </CardContent>
             </Card>
-          )}
+          </SectionGuard>
+
+          {/* Layer Coverage */}
+          <SectionGuard name="LayerCoverage">
+            {computedLayers.length > 0 ? (
+              <div>
+                <p className="text-sm font-semibold mb-2">Couverture du comité</p>
+                <LayerCoverage layers={computedLayers} />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Couverture du comité : aucune donnée.</p>
+            )}
+          </SectionGuard>
+
+          {/* Ghost cards for inferred contacts not yet visible in Power Map */}
+          <SectionGuard name="GhostContacts">
+            {ghostLayerContacts.length > 0 && (
+              <div className="space-y-1.5">
+                {ghostLayerContacts.map((l) => (
+                  <div key={l.layer} className="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-border bg-muted/20">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      ~{l.current} contact{l.current > 1 ? "s" : ""} {l.layer} identifié{l.current > 1 ? "s" : ""} (estimation)
+                    </span>
+                    <Badge variant="outline" className="text-[9px] ml-auto">confiance faible</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionGuard>
+
+          {/* Contact list */}
+          <SectionGuard name="ContactList">
+            {viewers.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Contacts identifiés</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {viewers.map((v: any) => (
+                    <div key={v.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-xs font-bold text-primary">{(v.name || "?")[0].toUpperCase()}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{v.name || "Inconnu"}</p>
+                          <p className="text-xs text-muted-foreground">{v.title || ""} {v.company ? `· ${v.company}` : ""}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getContactBadge(v.status || "inconnu")}
+                        <span className="text-xs text-muted-foreground font-mono">{v.contact_score ?? "—"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </SectionGuard>
 
           {/* No data state */}
           {!dealScore && viewers.length === 0 && (
@@ -1158,108 +1210,110 @@ export default function CampaignDetail() {
 
         {/* ─── Tab 3: Assets ─── */}
         <TabsContent value="assets" className="space-y-6">
-          {/* Video generation jobs */}
-          {videoJobs.length > 0 && (
+          <SectionGuard name="AssetsTab">
+            {/* Video generation jobs */}
+            {videoJobs.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {hasActiveJobs ? <EkkoLoader mode="loop" size={20} /> : <Video className="h-5 w-5" />}
+                    Statut de génération
+                  </CardTitle>
+                  <CardDescription>
+                    {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} prête{jobsCompleted > 1 ? "s" : ""}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {videoJobs.map((job) => {
+                      const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+                        queued: { label: "En file d'attente", color: "text-muted-foreground", icon: <Clock className="h-4 w-4" /> },
+                        processing: { label: "En cours", color: "text-primary", icon: <EkkoLoader mode="loop" size={16} /> },
+                        completed: { label: "Terminée", color: "text-primary", icon: <CheckCircle2 className="h-4 w-4" /> },
+                        failed: { label: "Échouée", color: "text-destructive", icon: <AlertTriangle className="h-4 w-4" /> },
+                      };
+                      const cfg = statusConfig[job.status] || statusConfig.queued;
+                      return (
+                        <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                          <div className={cfg.color}>{cfg.icon}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">Destinataire #{job.recipient_id?.slice(0, 8) || "—"}</p>
+                            <p className={cn("text-xs", cfg.color)}>{cfg.label}</p>
+                          </div>
+                          {job.error_message && (
+                            <p className="text-xs text-destructive max-w-[200px] truncate" title={job.error_message}>{job.error_message}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Video asset */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {hasActiveJobs ? <EkkoLoader mode="loop" size={20} /> : <Video className="h-5 w-5" />}
-                  Statut de génération
-                </CardTitle>
-                <CardDescription>
-                  {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} prête{jobsCompleted > 1 ? "s" : ""}
-                </CardDescription>
+                <CardTitle>Contenus envoyés</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {videoJobs.map((job) => {
-                    const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-                      queued: { label: "En file d'attente", color: "text-muted-foreground", icon: <Clock className="h-4 w-4" /> },
-                      processing: { label: "En cours", color: "text-primary", icon: <EkkoLoader mode="loop" size={16} /> },
-                      completed: { label: "Terminée", color: "text-primary", icon: <CheckCircle2 className="h-4 w-4" /> },
-                      failed: { label: "Échouée", color: "text-destructive", icon: <AlertTriangle className="h-4 w-4" /> },
-                    };
-                    const cfg = statusConfig[job.status] || statusConfig.queued;
-                    return (
-                      <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                        <div className={cfg.color}>{cfg.icon}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">Destinataire #{job.recipient_id.slice(0, 8)}</p>
-                          <p className={cn("text-xs", cfg.color)}>{cfg.label}</p>
+                {(() => {
+                  const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                    if (!url && videos.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+                          <Video className="h-12 w-12 text-muted-foreground/40" />
+                          <p className="font-medium text-foreground">
+                            {campaign.status === 'generating' ? 'Génération en cours...' :
+                             campaign.status === 'pending_approval' ? "En attente d'approbation" :
+                             'Aucun écho pour le moment.'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Tout contenu partagé devient un capteur.</p>
+                          {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
+                            <>
+                              <div className="flex flex-wrap justify-center gap-2">
+                                <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                                  <Video className="mr-2 h-3.5 w-3.5" /> Envoyer une vidéo
+                                </Button>
+                                <Button size="sm" variant="outline" className="rounded-cta">
+                                  <FileText className="mr-2 h-3.5 w-3.5" /> Partager un document
+                                </Button>
+                                <Button size="sm" variant="outline" className="rounded-cta">
+                                  <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
+                                </Button>
+                              </div>
+                            </>
+                          )}
                         </div>
-                        {job.error_message && (
-                          <p className="text-xs text-destructive max-w-[200px] truncate" title={job.error_message}>{job.error_message}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Video asset */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contenus envoyés</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
-                  if (!url && videos.length === 0) {
-                    return (
-                      <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-                        <Video className="h-12 w-12 text-muted-foreground/40" />
-                        <p className="font-medium text-foreground">
-                          {campaign.status === 'generating' ? 'Génération en cours...' :
-                           campaign.status === 'pending_approval' ? "En attente d'approbation" :
-                           'Aucun écho pour le moment.'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Tout contenu partagé devient un capteur.</p>
-                        {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
-                          <>
-                            <div className="flex flex-wrap justify-center gap-2">
-                              <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                                <Video className="mr-2 h-3.5 w-3.5" /> Envoyer une vidéo
-                              </Button>
-                              <Button size="sm" variant="outline" className="rounded-cta">
-                                <FileText className="mr-2 h-3.5 w-3.5" /> Partager un document
-                              </Button>
-                              <Button size="sm" variant="outline" className="rounded-cta">
-                                <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
-                              </Button>
+                      );
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {url && (
+                        <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+                          <div className="flex items-center gap-3">
+                            <Video className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">Vidéo personnalisée</p>
+                              <p className="text-xs text-muted-foreground">Vidéo · Ouvert</p>
                             </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                }
-                return (
-                  <div className="space-y-3">
-                    {url && (
-                      <div className="flex items-center justify-between p-3 rounded-lg border border-border">
-                        <div className="flex items-center gap-3">
-                          <Video className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Vidéo personnalisée</p>
-                            <p className="text-xs text-muted-foreground">Vidéo · Ouvert</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}>
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => copyShareLink(shareLink)}>
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}>
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => copyShareLink(shareLink)}>
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
+                      )}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </SectionGuard>
 
         </TabsContent>
       </Tabs>
