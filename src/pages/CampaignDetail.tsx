@@ -958,7 +958,7 @@ export default function CampaignDetail() {
         <TabsList>
           <TabsTrigger value="overview">Résumé du deal</TabsTrigger>
           <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
-          <TabsTrigger value="assets">Assets</TabsTrigger>
+          <TabsTrigger value="assets">Contenus envoyés</TabsTrigger>
         </TabsList>
 
         {/* ─── Tab 1: Résumé du deal ─── */}
