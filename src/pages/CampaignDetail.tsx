@@ -952,10 +952,10 @@ export default function CampaignDetail() {
         <TabsContent value="overview" className="space-y-3">
           {/* NBA Card — first visible element */}
           <NBACard
-            factLine={nbaFact}
-            contextLine={nbaContext}
+            actionLine={nbaActionLine}
+            whyLine={nbaWhyLine}
             confidenceLabel="Confiance modérée"
-            ctaLabel={dealScore?.recommended_action?.label || "Voir les actions"}
+            ctaLabel={nbaCtaLabel}
             riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
             onCtaClick={() => setShowAgent(true)}
           />
