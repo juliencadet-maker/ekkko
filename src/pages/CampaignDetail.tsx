@@ -968,12 +968,29 @@ export default function CampaignDetail() {
             </CardHeader>
             <CardContent>
               {viewers.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour démarrer</p>
-                  <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
-                  </Button>
+                <div className="py-8">
+                  {/* Ghost structure */}
+                  <div className="flex justify-center gap-8 mb-6">
+                    {["Decideur", "Finance", "Metier"].map((role) => (
+                      <div key={role} className="flex flex-col items-center gap-2">
+                        <div className="w-14 h-14 rounded-full bg-[#D5D2CB]/40 border-2 border-[#D5D2CB] flex items-center justify-center">
+                          <Users className="h-5 w-5 text-[#D5D2CB]" />
+                        </div>
+                        <span className="text-xs text-[#D5D2CB] font-medium">{role}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-center gap-4 mb-6">
+                    <div className="w-px h-6 bg-[#D5D2CB]/30" />
+                    <div className="w-20 h-px bg-[#D5D2CB]/30 self-center" />
+                    <div className="w-px h-6 bg-[#D5D2CB]/30" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour reveler la carte politique reelle</p>
+                    <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                      <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
