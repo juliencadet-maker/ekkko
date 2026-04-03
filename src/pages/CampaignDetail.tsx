@@ -1007,8 +1007,21 @@ export default function CampaignDetail() {
             </div>
           </Card>
 
-          {/* Signal offline — collapsed */}
-          <WhatHappenedWidget campaignId={campaign.id} />
+          {/* Signal offline — with inactivity hint */}
+          {daysSinceSignal !== undefined && daysSinceSignal > 5 && (
+            <p className="text-xs text-muted-foreground px-1">
+              Aucune activité récente.{" "}
+              <button className="underline hover:text-foreground" onClick={() => {
+                const el = document.getElementById("signal-offline-widget");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}>
+                Que s'est-il passé en dehors d'Ekko ?
+              </button>
+            </p>
+          )}
+          <div id="signal-offline-widget">
+            <WhatHappenedWidget campaignId={campaign.id} />
+          </div>
         </TabsContent>
 
         {/* ─── Tab 2: Deal Intelligence ─── */}
@@ -1048,10 +1061,18 @@ export default function CampaignDetail() {
                     <div className="w-px h-6 bg-[#D5D2CB]/30" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-3"><p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour révéler la carte politique réelle</p></p>
+                    <p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour révéler la carte politique réelle</p>
                     <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
                       <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
                     </Button>
+                    <div className="mt-6 text-left max-w-xs mx-auto">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Contacts suggérés à identifier :</p>
+                      <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                        <li>Un décideur Finance (CFO, DAF)</li>
+                        <li>Un sponsor métier</li>
+                        <li>Un contact technique si le deal le nécessite</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -1166,30 +1187,33 @@ export default function CampaignDetail() {
           {/* Video asset */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Assets du deal</CardTitle>
-                <Button size="sm" variant="outline">
-                  <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un asset
-                </Button>
-              </div>
+              <CardTitle>Contenus envoyés</CardTitle>
             </CardHeader>
             <CardContent>
               {(() => {
                 const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
                   if (!url && videos.length === 0) {
                     return (
-                      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                      <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
                         <Video className="h-12 w-12 text-muted-foreground/40" />
                         <p className="font-medium text-foreground">
-                          {campaign.status === 'generating' ? 'Generation en cours...' :
+                          {campaign.status === 'generating' ? 'Génération en cours...' :
                            campaign.status === 'pending_approval' ? "En attente d'approbation" :
-                           'Ajoutez un asset pour commencer a capter des signaux sur ce deal.'}
+                           'Ajoutez un asset pour commencer à capter des signaux sur ce deal.'}
                         </p>
                         {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
                           <>
-                            <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                              <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un asset
-                            </Button>
+                            <div className="flex flex-wrap justify-center gap-2">
+                              <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                                <Video className="mr-2 h-3.5 w-3.5" /> Envoyer une vidéo
+                              </Button>
+                              <Button size="sm" variant="outline" className="rounded-cta">
+                                <FileText className="mr-2 h-3.5 w-3.5" /> Partager un document
+                              </Button>
+                              <Button size="sm" variant="outline" className="rounded-cta">
+                                <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
+                              </Button>
+                            </div>
                             <p className="text-xs text-muted-foreground mt-1 max-w-xs">
                               Vidéo, document, présentation — tout asset partagé devient un capteur.
                             </p>
