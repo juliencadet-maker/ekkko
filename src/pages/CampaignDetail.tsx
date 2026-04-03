@@ -26,7 +26,7 @@ import { EkkoAgent } from "@/components/campaign/EkkoAgent";
 import { DealCloseModal } from "@/components/campaign/DealCloseModal";
 import { PowerMap } from "@/components/campaign/PowerMap";
 import { NBACard } from "@/components/campaign/NBACard";
-import { InsightCard } from "@/components/campaign/InsightCard";
+
 import { DealTimeline } from "@/components/campaign/DealTimeline";
 import { WhatHappenedWidget } from "@/components/campaign/WhatHappenedWidget";
 import { LayerCoverage } from "@/components/campaign/LayerCoverage";
