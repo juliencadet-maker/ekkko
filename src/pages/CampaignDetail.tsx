@@ -982,7 +982,7 @@ export default function CampaignDetail() {
                 <div className="py-8">
                   {/* Ghost structure */}
                   <div className="flex justify-center gap-8 mb-6">
-                    {["Decideur", "Finance", "Metier"].map((role) => (
+                    {["Direction", "Finance", "Metier"].map((role) => (
                       <div key={role} className="flex flex-col items-center gap-2">
                         <div className="w-14 h-14 rounded-full bg-[#D5D2CB]/40 border-2 border-[#D5D2CB] flex items-center justify-center">
                           <Users className="h-5 w-5 text-[#D5D2CB]" />
