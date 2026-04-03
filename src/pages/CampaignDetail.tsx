@@ -380,17 +380,20 @@ export default function CampaignDetail() {
           .order("version_number", { ascending: false });
         setScriptVersions(versionsData || []);
 
-        // Fetch deal score + viewers + agent_context + timeline + deal_assets
-        const [dealScoreRes, viewersRes, agentCtxRes, timelineRes, dealAssetsRes] = await Promise.all([
+        // Fetch deal score + viewers + agent_context + timeline + deal_assets + committee_layers
+        const [dealScoreRes, viewersRes, agentCtxRes, timelineRes, dealAssetsRes, committeeLayersRes] = await Promise.all([
           supabase.from("deal_scores").select("*").eq("campaign_id", id).order("scored_at", { ascending: false }).limit(1),
           supabase.from("viewers").select("*").eq("campaign_id", id).order("contact_score", { ascending: false, nullsFirst: false }),
           supabase.from("agent_context").select("*").eq("campaign_id", id).maybeSingle(),
           supabase.from("timeline_events").select("id, event_type, event_layer, event_data, created_at").eq("campaign_id", id).order("created_at", { ascending: false }).limit(5),
           supabase.from("deal_assets").select("id, asset_type, asset_purpose, version_number").eq("campaign_id", id).eq("asset_status", "active"),
+          supabase.from("committee_layers").select("layer, expected_weight, typical_titles"),
         ]);
         if (dealScoreRes.data?.[0]) setDealScore(dealScoreRes.data[0]);
         if (viewersRes.data) setViewers(viewersRes.data);
         if (agentCtxRes.data) setAgentContext(agentCtxRes.data);
+        if (committeeLayersRes.error) console.error("[C1b][committee_layers][campaign_id=%s] %s", id, committeeLayersRes.error.message);
+        else setCommitteeLayers(committeeLayersRes.data || []);
 
         // B3 — timeline_events
         if (timelineRes.error) console.error("[B3][timeline_events][campaign_id=%s] %s", id, timelineRes.error.message);
