@@ -504,7 +504,45 @@ export default function CampaignDetail() {
     }
   };
 
-  if (isLoading) {
+  // ─── HOOKS THAT MUST BE BEFORE EARLY RETURNS ──────────────────────
+  const LAYER_MAP_REF: Record<string, { label: string; estimated: number }> = {
+    executive: { label: "COMEX", estimated: 3 },
+    financial: { label: "Finance", estimated: 2 },
+    technical: { label: "Technique", estimated: 5 },
+  };
+
+  const computedLayers = useMemo(() => {
+    return Object.entries(LAYER_MAP_REF).map(([key, cfg]) => {
+      const matchingViewers = viewers.filter((v: any) => {
+        const role = (v.inferred_role || "").toLowerCase();
+        const contactType = (v.contact_type || "").toLowerCase();
+        return role.includes(key) || contactType.includes(key);
+      });
+      const hasConfirmed = matchingViewers.some(
+        (v: any) => v.identity_confidence === "high" || v.identity_confidence === "verified"
+      );
+      return {
+        layer: cfg.label,
+        current: matchingViewers.length,
+        estimated: cfg.estimated,
+        confirmed: matchingViewers.length > 0 && hasConfirmed,
+      };
+    });
+  }, [viewers]);
+
+  const ghostLayerContacts = useMemo(() => {
+    return computedLayers.filter((l) => l.current > 0 && !l.confirmed);
+  }, [computedLayers]);
+
+  const showSignalBanner = useMemo(() => {
+    if (!campaign) return false;
+    const c = campaign as any;
+    if (c.first_action_completed_at) return false;
+    if (!c.first_signal_at) return false;
+    const signalAge = Date.now() - new Date(c.first_signal_at).getTime();
+    return signalAge <= 48 * 60 * 60 * 1000;
+  }, [campaign]);
+
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
