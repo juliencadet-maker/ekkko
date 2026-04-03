@@ -809,12 +809,10 @@ export default function CampaignDetail() {
   const safeAgentContext = agentContext ?? {};
   const stageLabel = STAGE_LABELS[safeAgentContext.stage || ""] || safeAgentContext.stage || "—";
   const nbaWhyLine = (() => {
-    let line = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}`;
-    if (agentContext?.decision_window) {
-      try {
-        const d = new Date(agentContext.decision_window);
-        if (!isNaN(d.getTime())) line += ` · décision ${format(d, "d MMMM", { locale: fr })}`;
-      } catch { /* ignore invalid date */ }
+    let line = `${(viewers ?? []).length} contact${(viewers ?? []).length !== 1 ? "s" : ""} · ${stageLabel}`;
+    if (safeAgentContext.decision_window) {
+      const formatted = safeFormatDate(safeAgentContext.decision_window, "d MMMM", { locale: fr });
+      if (formatted !== "—") line += ` · décision ${formatted}`;
     }
     return line;
   })();
