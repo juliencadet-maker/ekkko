@@ -722,6 +722,13 @@ export default function CampaignDetail() {
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
   return (
     <AppLayout>
+      {/* First action spotlight banner */}
+      {!(campaign as any).first_action_completed_at && (campaign as any).first_signal_at && (
+        <div className="mb-4 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-lg border border-accent/20">
+          Signal détecté — 1 action disponible maintenant
+        </div>
+      )}
+
       {/* Snoozed banner */}
       {isSnoozed && (
         <div className="mb-4 p-3 rounded-lg bg-[hsl(var(--warning))]/10 border border-[hsl(var(--warning))]/20 flex items-center justify-between">
