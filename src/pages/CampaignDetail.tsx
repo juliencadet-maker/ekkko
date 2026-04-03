@@ -1000,19 +1000,21 @@ export default function CampaignDetail() {
           </SectionGuard>
 
           {/* Pourquoi — Insights compressés inline */}
-          <div className="rounded-lg border border-border p-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pourquoi</p>
-            <div className="space-y-1.5">
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
-                <p className="text-sm text-foreground leading-snug">{viewers.length === 0 ? "Aucun relais interne identifié — vigilance requise" : `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""}`}{daysSinceSignal !== undefined && daysSinceSignal > 7 ? ` · Deal qui refroidit — aucune activité depuis ${daysSinceSignal}j` : daysSinceSignal !== undefined && daysSinceSignal > 0 ? ` · aucune activité depuis ${daysSinceSignal}j` : ""} · {stageLabel}</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
-                <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${agentContext?.incumbent_type === "competitor_named" ? "concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${agentContext?.competitive_situation || "—"}`}</p>
+          <SectionGuard name="Insights">
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pourquoi</p>
+              <div className="space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
+                  <p className="text-sm text-foreground leading-snug">{viewers.length === 0 ? "Aucun relais interne identifié — vigilance requise" : `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""}`}{daysSinceSignal !== undefined && daysSinceSignal > 7 ? ` · Deal qui refroidit — aucune activité depuis ${daysSinceSignal}j` : daysSinceSignal !== undefined && daysSinceSignal > 0 ? ` · aucune activité depuis ${daysSinceSignal}j` : ""} · {stageLabel}</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
+                  <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${agentContext?.incumbent_type === "competitor_named" ? "concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${agentContext?.competitive_situation || "—"}`}</p>
+                </div>
               </div>
             </div>
-          </div>
+          </SectionGuard>
 
           {/* Dernier signal — always visible, one discreet line */}
           {mockTimelineEvents.length > 0 && (
