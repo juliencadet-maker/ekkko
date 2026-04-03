@@ -171,6 +171,7 @@ export default function CampaignDetail() {
   const [showDealClose, setShowDealClose] = useState(false);
   const [dealScore, setDealScore] = useState<any>(null);
   const [viewers, setViewers] = useState<any[]>([]);
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const [agentContext, setAgentContext] = useState<any>(null);
   const [snoozeDate, setSnoozeDate] = useState<Date | undefined>();
   // Sub-campaign analytics (for parent view)
@@ -907,14 +908,36 @@ export default function CampaignDetail() {
             />
           </div>
 
-          {/* Timeline */}
+          {/* Timeline — collapsed by default */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
+              <button
+                className="flex items-center justify-between w-full text-left"
+                onClick={() => setTimelineOpen((v) => !v)}
+              >
+                <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
+                <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  {timelineOpen ? "Replier" : `Voir les événements (${mockTimelineEvents.length})`}
+                </span>
+              </button>
             </CardHeader>
-            <CardContent>
-              <DealTimeline events={mockTimelineEvents} />
-            </CardContent>
+            {/* Always show latest event */}
+            {!timelineOpen && mockTimelineEvents.length > 0 && (
+              <CardContent className="pt-0">
+                <DealTimeline events={[mockTimelineEvents[0]]} />
+              </CardContent>
+            )}
+            {/* Expanded list with animation */}
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-300 ease-out",
+                timelineOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+              )}
+            >
+              <CardContent className="pt-0">
+                <DealTimeline events={mockTimelineEvents} />
+              </CardContent>
+            </div>
           </Card>
 
           {/* What happened */}
