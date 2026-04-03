@@ -1475,7 +1475,7 @@ export default function CampaignDetail() {
                     </div>
                   </div>
                 ) : (
-                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
+                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} viewers={viewers} committeeLayers={committeeLayers} />
                 )}
               </CardContent>
             </Card>
