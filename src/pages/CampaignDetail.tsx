@@ -742,17 +742,37 @@ export default function CampaignDetail() {
     }
   };
 
-  // NBA mock data
+  // Stage label mapping — terrain language
+  const STAGE_LABELS: Record<string, string> = {
+    qualification: "Phase découverte",
+    rfp: "Appel d'offres en cours",
+    shortlist: "Phase finale",
+    negotiation: "Négociation active",
+    close: "Closing imminent",
+  };
+
+  // NBA data
   const daysSinceSignal = dealScore?.days_since_last_signal;
-  const activityLabel = daysSinceSignal === 0 ? "Aucune activité récente" : `Aucune activité depuis ${daysSinceSignal ?? "?"}j`;
-  const nbaFact = `${viewers.length === 0 ? "0 ouverture" : `${viewers.length} contacts`} · ${activityLabel} · ${dealValue ? `${(dealValue / 1000).toFixed(0)}k€` : "—"}`;
-  const nbaContext = `Contexte AE : ${agentContext?.stage || "—"} · ${agentContext?.decision_window ? `décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : "—"}`;
+  const recAction = dealScore?.recommended_action_v2 as Record<string, unknown> | null;
+  const nbaActionLine = (recAction?.action as string) || (dealScore?.recommended_action as any)?.label || "Définir la prochaine action";
+  const stageLabel = STAGE_LABELS[agentContext?.stage || ""] || agentContext?.stage || "—";
+  const nbaWhyLine = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}${agentContext?.decision_window ? ` · décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : ""}`;
+  const nbaCtaLabel = (recAction?.cta as string) || "Lancer l'action";
+
+  // Signal banner — strict 48h condition
+  const showSignalBanner = useMemo(() => {
+    const c = campaign as any;
+    if (c.first_action_completed_at) return false;
+    if (!c.first_signal_at) return false;
+    const signalAge = Date.now() - new Date(c.first_signal_at).getTime();
+    return signalAge <= 48 * 60 * 60 * 1000;
+  }, [campaign]);
 
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
   return (
     <AppLayout>
-      {/* First action spotlight banner */}
-      {!(campaign as any).first_action_completed_at && (campaign as any).first_signal_at && (
+      {/* First action spotlight banner — only if signal < 48h */}
+      {showSignalBanner && (
         <div className="mb-4 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-lg border border-accent/20">
           Signal détecté — 1 action disponible maintenant
         </div>
