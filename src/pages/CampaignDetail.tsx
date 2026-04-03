@@ -717,7 +717,9 @@ export default function CampaignDetail() {
   };
 
   // NBA mock data
-  const nbaFact = `${viewers.length === 0 ? "0 ouverture" : `${viewers.length} contacts`} · ${dealScore?.days_since_last_signal ?? "?"}j sans signal · ${dealValue ? `${(dealValue / 1000).toFixed(0)}k€` : "—"}`;
+  const daysSinceSignal = dealScore?.days_since_last_signal;
+  const activityLabel = daysSinceSignal === 0 ? "Aucune activité récente" : `Aucune activité depuis ${daysSinceSignal ?? "?"}j`;
+  const nbaFact = `${viewers.length === 0 ? "0 ouverture" : `${viewers.length} contacts`} · ${activityLabel} · ${dealValue ? `${(dealValue / 1000).toFixed(0)}k€` : "—"}`;
   const nbaContext = `Contexte AE : ${agentContext?.stage || "—"} · ${agentContext?.decision_window ? `décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : "—"}`;
 
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
