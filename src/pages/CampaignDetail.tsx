@@ -1210,108 +1210,110 @@ export default function CampaignDetail() {
 
         {/* ─── Tab 3: Assets ─── */}
         <TabsContent value="assets" className="space-y-6">
-          {/* Video generation jobs */}
-          {videoJobs.length > 0 && (
+          <SectionGuard name="AssetsTab">
+            {/* Video generation jobs */}
+            {videoJobs.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {hasActiveJobs ? <EkkoLoader mode="loop" size={20} /> : <Video className="h-5 w-5" />}
+                    Statut de génération
+                  </CardTitle>
+                  <CardDescription>
+                    {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} prête{jobsCompleted > 1 ? "s" : ""}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {videoJobs.map((job) => {
+                      const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+                        queued: { label: "En file d'attente", color: "text-muted-foreground", icon: <Clock className="h-4 w-4" /> },
+                        processing: { label: "En cours", color: "text-primary", icon: <EkkoLoader mode="loop" size={16} /> },
+                        completed: { label: "Terminée", color: "text-primary", icon: <CheckCircle2 className="h-4 w-4" /> },
+                        failed: { label: "Échouée", color: "text-destructive", icon: <AlertTriangle className="h-4 w-4" /> },
+                      };
+                      const cfg = statusConfig[job.status] || statusConfig.queued;
+                      return (
+                        <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                          <div className={cfg.color}>{cfg.icon}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">Destinataire #{job.recipient_id?.slice(0, 8) || "—"}</p>
+                            <p className={cn("text-xs", cfg.color)}>{cfg.label}</p>
+                          </div>
+                          {job.error_message && (
+                            <p className="text-xs text-destructive max-w-[200px] truncate" title={job.error_message}>{job.error_message}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Video asset */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {hasActiveJobs ? <EkkoLoader mode="loop" size={20} /> : <Video className="h-5 w-5" />}
-                  Statut de génération
-                </CardTitle>
-                <CardDescription>
-                  {jobsCompleted}/{jobsTotal} vidéo{jobsTotal > 1 ? "s" : ""} prête{jobsCompleted > 1 ? "s" : ""}
-                </CardDescription>
+                <CardTitle>Contenus envoyés</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {videoJobs.map((job) => {
-                    const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-                      queued: { label: "En file d'attente", color: "text-muted-foreground", icon: <Clock className="h-4 w-4" /> },
-                      processing: { label: "En cours", color: "text-primary", icon: <EkkoLoader mode="loop" size={16} /> },
-                      completed: { label: "Terminée", color: "text-primary", icon: <CheckCircle2 className="h-4 w-4" /> },
-                      failed: { label: "Échouée", color: "text-destructive", icon: <AlertTriangle className="h-4 w-4" /> },
-                    };
-                    const cfg = statusConfig[job.status] || statusConfig.queued;
-                    return (
-                      <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                        <div className={cfg.color}>{cfg.icon}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">Destinataire #{job.recipient_id.slice(0, 8)}</p>
-                          <p className={cn("text-xs", cfg.color)}>{cfg.label}</p>
+                {(() => {
+                  const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
+                    if (!url && videos.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+                          <Video className="h-12 w-12 text-muted-foreground/40" />
+                          <p className="font-medium text-foreground">
+                            {campaign.status === 'generating' ? 'Génération en cours...' :
+                             campaign.status === 'pending_approval' ? "En attente d'approbation" :
+                             'Aucun écho pour le moment.'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Tout contenu partagé devient un capteur.</p>
+                          {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
+                            <>
+                              <div className="flex flex-wrap justify-center gap-2">
+                                <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                                  <Video className="mr-2 h-3.5 w-3.5" /> Envoyer une vidéo
+                                </Button>
+                                <Button size="sm" variant="outline" className="rounded-cta">
+                                  <FileText className="mr-2 h-3.5 w-3.5" /> Partager un document
+                                </Button>
+                                <Button size="sm" variant="outline" className="rounded-cta">
+                                  <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
+                                </Button>
+                              </div>
+                            </>
+                          )}
                         </div>
-                        {job.error_message && (
-                          <p className="text-xs text-destructive max-w-[200px] truncate" title={job.error_message}>{job.error_message}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Video asset */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contenus envoyés</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
-                  if (!url && videos.length === 0) {
-                    return (
-                      <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-                        <Video className="h-12 w-12 text-muted-foreground/40" />
-                        <p className="font-medium text-foreground">
-                          {campaign.status === 'generating' ? 'Génération en cours...' :
-                           campaign.status === 'pending_approval' ? "En attente d'approbation" :
-                           'Aucun écho pour le moment.'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Tout contenu partagé devient un capteur.</p>
-                        {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
-                          <>
-                            <div className="flex flex-wrap justify-center gap-2">
-                              <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                                <Video className="mr-2 h-3.5 w-3.5" /> Envoyer une vidéo
-                              </Button>
-                              <Button size="sm" variant="outline" className="rounded-cta">
-                                <FileText className="mr-2 h-3.5 w-3.5" /> Partager un document
-                              </Button>
-                              <Button size="sm" variant="outline" className="rounded-cta">
-                                <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
-                              </Button>
+                      );
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {url && (
+                        <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+                          <div className="flex items-center gap-3">
+                            <Video className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">Vidéo personnalisée</p>
+                              <p className="text-xs text-muted-foreground">Vidéo · Ouvert</p>
                             </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                }
-                return (
-                  <div className="space-y-3">
-                    {url && (
-                      <div className="flex items-center justify-between p-3 rounded-lg border border-border">
-                        <div className="flex items-center gap-3">
-                          <Video className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Vidéo personnalisée</p>
-                            <p className="text-xs text-muted-foreground">Vidéo · Ouvert</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}>
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => copyShareLink(shareLink)}>
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}>
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => copyShareLink(shareLink)}>
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
+                      )}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </SectionGuard>
 
         </TabsContent>
       </Tabs>
