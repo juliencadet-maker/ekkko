@@ -835,7 +835,7 @@ export default function CampaignDetail() {
             <PauseCircle className="h-4 w-4 text-[hsl(var(--warning))]" />
             <span className="text-sm">
               Deal en veille jusqu'au{" "}
-              <span className="font-medium">{format(new Date((campaign as any).snoozed_until!), "d MMMM yyyy", { locale: fr })}</span>
+              <span className="font-medium">{safeFormatDate((campaign as any).snoozed_until, "d MMMM yyyy", { locale: fr })}</span>
             </span>
           </div>
           <button className="link-action text-sm" onClick={handleReactivate}>Réactiver</button>
