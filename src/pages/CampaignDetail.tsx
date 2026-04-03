@@ -1017,52 +1017,66 @@ export default function CampaignDetail() {
           </SectionGuard>
 
           {/* Dernier signal — always visible, one discreet line */}
-          {mockTimelineEvents.length > 0 && (
-            <p className="text-xs text-muted-foreground px-1">
-              Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
-            </p>
-          )}
+          <SectionGuard name="DernierSignal">
+            {mockTimelineEvents.length > 0 ? (
+              <p className="text-xs text-muted-foreground px-1">
+                Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground px-1">Aucun signal reçu pour le moment.</p>
+            )}
+          </SectionGuard>
 
           {/* Timeline — collapsed by default */}
-          <Card className="shadow-none">
-            <CardHeader className="pb-2 pt-3 px-3">
-              <button
-                className="flex items-center justify-between w-full text-left"
-                onClick={() => setTimelineOpen((v) => !v)}
-              >
-                <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
-                <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                  {timelineOpen ? "Replier" : `Voir (${mockTimelineEvents.length})`}
-                </span>
-              </button>
-            </CardHeader>
-            <div
-              className={cn(
-                "overflow-hidden transition-all duration-300 ease-out",
-                timelineOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+          <SectionGuard name="Timeline">
+            <Card className="shadow-none">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <button
+                  className="flex items-center justify-between w-full text-left"
+                  onClick={() => setTimelineOpen((v) => !v)}
+                >
+                  <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
+                  <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    {timelineOpen ? "Replier" : `Voir (${mockTimelineEvents.length})`}
+                  </span>
+                </button>
+              </CardHeader>
+              {mockTimelineEvents.length > 0 ? (
+                <div
+                  className={cn(
+                    "overflow-hidden transition-all duration-300 ease-out",
+                    timelineOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                  )}
+                >
+                  <CardContent className="pt-0 px-3">
+                    <DealTimeline events={mockTimelineEvents} />
+                  </CardContent>
+                </div>
+              ) : (
+                <CardContent className="pt-0 px-3">
+                  <p className="text-xs text-muted-foreground py-4 text-center">Aucun événement enregistré.</p>
+                </CardContent>
               )}
-            >
-              <CardContent className="pt-0 px-3">
-                <DealTimeline events={mockTimelineEvents} />
-              </CardContent>
-            </div>
-          </Card>
+            </Card>
+          </SectionGuard>
 
           {/* Signal offline — with inactivity hint */}
-          {daysSinceSignal !== undefined && daysSinceSignal > 5 && (
-            <p className="text-xs text-muted-foreground px-1">
-              Aucune activité récente.{" "}
-              <button className="underline hover:text-foreground" onClick={() => {
-                const el = document.getElementById("signal-offline-widget");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }}>
-                Que s'est-il passé en dehors d'Ekko ?
-              </button>
-            </p>
-          )}
-          <div id="signal-offline-widget">
-            <WhatHappenedWidget campaignId={campaign.id} />
-          </div>
+          <SectionGuard name="SignalOffline">
+            {daysSinceSignal !== undefined && daysSinceSignal > 5 && (
+              <p className="text-xs text-muted-foreground px-1">
+                Aucune activité récente.{" "}
+                <button className="underline hover:text-foreground" onClick={() => {
+                  const el = document.getElementById("signal-offline-widget");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}>
+                  Que s'est-il passé en dehors d'Ekko ?
+                </button>
+              </p>
+            )}
+            <div id="signal-offline-widget">
+              <WhatHappenedWidget campaignId={campaign.id} />
+            </div>
+          </SectionGuard>
         </TabsContent>
 
         {/* ─── Tab 2: Deal Intelligence ─── */}
