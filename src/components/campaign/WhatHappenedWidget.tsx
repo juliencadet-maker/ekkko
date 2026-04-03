@@ -70,12 +70,12 @@ ${text.trim()}`
         enrichedData.summary_fr = text.trim().slice(0, 80);
       }
 
-      await supabase.from("timeline_events").insert({
+      await supabase.from("timeline_events").insert([{
         campaign_id: campaignId,
         event_type: "offline_signal",
         event_layer: "declared",
-        event_data: enrichedData,
-      });
+        event_data: enrichedData as any,
+      }]);
 
       toast.success("Signal enregistre");
       setText("");
