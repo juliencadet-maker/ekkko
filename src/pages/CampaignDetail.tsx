@@ -379,15 +379,66 @@ export default function CampaignDetail() {
           .order("version_number", { ascending: false });
         setScriptVersions(versionsData || []);
 
-        // Fetch deal score + viewers + agent_context
-        const [dealScoreRes, viewersRes, agentCtxRes] = await Promise.all([
+        // Fetch deal score + viewers + agent_context + timeline + deal_assets
+        const [dealScoreRes, viewersRes, agentCtxRes, timelineRes, dealAssetsRes] = await Promise.all([
           supabase.from("deal_scores").select("*").eq("campaign_id", id).order("scored_at", { ascending: false }).limit(1),
           supabase.from("viewers").select("*").eq("campaign_id", id).order("contact_score", { ascending: false, nullsFirst: false }),
           supabase.from("agent_context").select("*").eq("campaign_id", id).maybeSingle(),
+          supabase.from("timeline_events").select("id, event_type, event_layer, event_data, created_at").eq("campaign_id", id).order("created_at", { ascending: false }).limit(5),
+          supabase.from("deal_assets").select("id, asset_type, asset_purpose, version_number").eq("campaign_id", id).eq("asset_status", "active"),
         ]);
         if (dealScoreRes.data?.[0]) setDealScore(dealScoreRes.data[0]);
         if (viewersRes.data) setViewers(viewersRes.data);
         if (agentCtxRes.data) setAgentContext(agentCtxRes.data);
+
+        // B3 — timeline_events
+        if (timelineRes.error) console.error("[B3][timeline_events][campaign_id=%s] %s", id, timelineRes.error.message);
+        else setTimelineEvents((timelineRes.data || []) as TimelineEventRow[]);
+        setTimelineLoading(false);
+
+        // B3 — deal_assets
+        if (dealAssetsRes.error) console.error("[B3][deal_assets][campaign_id=%s] %s", id, dealAssetsRes.error.message);
+        else setDealAssets((dealAssetsRes.data || []) as DealAssetRow[]);
+
+        // B3 — Q3 queries
+        const criticalPurposes = ["pricing", "closing", "technical"];
+        const dealAssetsData = (dealAssetsRes.data || []) as DealAssetRow[];
+
+        const documentAssetIds: string[] = [...new Set(
+          dealAssetsData
+            .filter((a: DealAssetRow) => a.asset_type === "document" && criticalPurposes.includes(a.asset_purpose))
+            .map((a: DealAssetRow) => a.id)
+        )];
+        const videoPurposes: string[] = [...new Set(
+          dealAssetsData
+            .filter((a: DealAssetRow) => a.asset_type === "video" && criticalPurposes.includes(a.asset_purpose))
+            .map((a: DealAssetRow) => a.asset_purpose)
+        )];
+
+        if (documentAssetIds.length === 0 && videoPurposes.length === 0) {
+          setQ3Loading(false);
+        } else {
+          const emptyDocResult = { data: [] as { asset_id: string }[], error: null } as const;
+          const emptyVidResult = { data: [] as { campaign_id: string }[], error: null } as const;
+
+          const [docEventsRes, videoEventsRes] = await Promise.all([
+            documentAssetIds.length > 0
+              ? supabase.from("asset_page_events").select("asset_id").in("asset_id", documentAssetIds).gt("time_spent_seconds", 5)
+              : Promise.resolve(emptyDocResult),
+            videoPurposes.length > 0
+              ? supabase.from("video_events").select("campaign_id").eq("campaign_id", id).limit(1)
+              : Promise.resolve(emptyVidResult),
+          ]);
+
+          if (docEventsRes.error) console.error("[B3][asset_page_events][campaign_id=%s] %s", id, docEventsRes.error.message);
+          else setQ3DocEvents((docEventsRes.data || []) as { asset_id: string }[]);
+
+          if (videoEventsRes.error) console.error("[B3][video_events][campaign_id=%s] %s", id, videoEventsRes.error.message);
+          else setQ3VideoHasEvents((videoEventsRes.data || []).length > 0);
+
+          setQ3Loading(false);
+        }
+
         // Initialize snooze date from campaign
         if (campaignData.snoozed_until) setSnoozeDate(new Date(campaignData.snoozed_until));
       } catch {
