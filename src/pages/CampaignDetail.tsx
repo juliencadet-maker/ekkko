@@ -246,6 +246,21 @@ export default function CampaignDetail() {
   const [timelineLoading, setTimelineLoading] = useState(true);
   const [q3Loading, setQ3Loading] = useState(true);
 
+  // C3 — Explainability: local states for alert feedback
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [pendingDismiss, setPendingDismiss] = useState<Set<string>>(new Set());
+  const [confirmedAlerts, setConfirmedAlerts] = useState<Set<string>>(new Set());
+  const [feedbackMessages, setFeedbackMessages] = useState<Record<string, "confirmed" | "rejected">>({});
+  const [processingAlerts, setProcessingAlerts] = useState<Set<string>>(new Set());
+  const dismissTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(dismissTimersRef.current).forEach(clearTimeout);
+    };
+  }, []);
+
   const isParent = campaign && !campaign.parent_campaign_id && subCampaigns.length > 0;
 
   // Video generation polling
@@ -1045,6 +1060,85 @@ export default function CampaignDetail() {
     } catch { toast.error("Erreur"); }
   };
 
+  // C3 — Handler correction AE ✗
+  const handleRejectInsight = async (contradictionId: string) => {
+    if (processingAlerts.has(contradictionId)) return;
+    setProcessingAlerts(prev => new Set([...prev, contradictionId]));
+
+    setPendingDismiss(prev => new Set([...prev, contradictionId]));
+    setFeedbackMessages(prev => ({ ...prev, [contradictionId]: "rejected" }));
+
+    const timer = setTimeout(() => {
+      setDismissedAlerts(prev => new Set([...prev, contradictionId]));
+      setPendingDismiss(prev => { const next = new Set(prev); next.delete(contradictionId); return next; });
+      setFeedbackMessages(prev => { const next = { ...prev }; delete next[contradictionId]; return next; });
+      setProcessingAlerts(prev => { const next = new Set(prev); next.delete(contradictionId); return next; });
+      delete dismissTimersRef.current[contradictionId];
+    }, 3000);
+    dismissTimersRef.current[contradictionId] = timer;
+
+    try {
+      if (!campaign?.id) return;
+      await supabase.from("system_failures").insert({
+        campaign_id: campaign.id,
+        failure_type: "inference_error",
+        severity: "low",
+        message: `AE a rejeté l'insight ${contradictionId}`,
+        reason: contradictionId,
+      });
+
+      const { count } = await supabase
+        .from("system_failures")
+        .select("id", { count: "exact" })
+        .eq("campaign_id", campaign.id)
+        .eq("failure_type", "inference_error")
+        .eq("reason", contradictionId);
+
+      if ((count ?? 0) >= 2) {
+        await supabase
+          .from("deal_contact_roles")
+          .update({ confidence: 0.3 })
+          .eq("campaign_id", campaign.id)
+          .neq("source", "declared");
+      }
+    } catch (err) {
+      console.error("[C3][handleRejectInsight]", err);
+    }
+  };
+
+  // C3 — Handler confirmation AE ✓
+  const handleConfirmInsight = async (contradictionId: string) => {
+    if (processingAlerts.has(contradictionId)) return;
+    setProcessingAlerts(prev => new Set([...prev, contradictionId]));
+
+    setConfirmedAlerts(prev => new Set([...prev, contradictionId]));
+    setFeedbackMessages(prev => ({ ...prev, [contradictionId]: "confirmed" }));
+
+    setTimeout(() => {
+      setFeedbackMessages(prev => { const next = { ...prev }; delete next[contradictionId]; return next; });
+      setProcessingAlerts(prev => { const next = new Set(prev); next.delete(contradictionId); return next; });
+    }, 2000);
+
+    try {
+      if (!campaign?.id) return;
+      const topViewer = viewers
+        .filter((v: any) => (v.contact_score ?? 0) > 0)
+        .sort((a: any, b: any) => (b.contact_score ?? 0) - (a.contact_score ?? 0))[0];
+
+      if (topViewer) {
+        await supabase.from("deal_contact_roles").upsert({
+          campaign_id: campaign.id,
+          viewer_id: topViewer.id,
+          source: "declared",
+          confidence: 0.95,
+          insight_reasons: JSON.stringify([`AE a confirmé l'insight ${contradictionId}`]),
+        }, { onConflict: "campaign_id,viewer_id" });
+      }
+    } catch (err) {
+      console.error("[C3][handleConfirmInsight]", err);
+    }
+  };
+
   // NBA secondary action detection
   const nbaSecondaryAction = (() => {
     const actionStr = ((recAction?.action as string) || "").toLowerCase();
@@ -1274,13 +1368,83 @@ export default function CampaignDetail() {
             <div className="rounded-lg border border-border p-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pourquoi</p>
               <div className="space-y-1.5">
-                {(dealScore?.alerts as any[] || []).length > 0
-                  ? (dealScore.alerts as any[]).slice(0, 2).map((alert: any, i: number) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 bg-[#F7F6F3] text-[#0D1B2A] border-[#D1D5DB] ${alert.type === "secondary" ? "opacity-70" : ""}`}>SIGNAL</Badge>
-                        <p className={`text-sm leading-snug ${alert.type === "secondary" ? "text-muted-foreground" : "text-foreground"}`}>{alert.message}</p>
-                      </div>
-                    ))
+                {(dealScore?.alerts as any[] || [])
+                  .filter((alert: any) => !dismissedAlerts.has(alert.contradiction_id))
+                  .slice(0, 2).length > 0
+                  ? (dealScore.alerts as any[])
+                      .filter((alert: any) => !dismissedAlerts.has(alert.contradiction_id))
+                      .slice(0, 2)
+                      .map((alert: any, i: number) => {
+                        const isConfirmed = confirmedAlerts.has(alert.contradiction_id);
+                        const isPending = pendingDismiss.has(alert.contradiction_id);
+                        const isProcessing = processingAlerts.has(alert.contradiction_id);
+                        const feedback = feedbackMessages[alert.contradiction_id];
+
+                        // insight_reasons : heuristique frontend V1
+                        // DOCTRINE C3 : placeholder — branchement deal_contact_roles.insight_reasons en D3
+                        const reasons: string[] = [];
+                        viewers.slice(0, 3).forEach((v: any) => {
+                          if (v.name) reasons.push(v.name);
+                          else if (v.title) reasons.push(v.title);
+                        });
+                        if (daysSinceSignal !== undefined && daysSinceSignal > 0)
+                          reasons.push(`${daysSinceSignal}j sans signal`);
+                        if ((campaign as any)?.deal_value)
+                          reasons.push(`${Math.round(((campaign as any).deal_value) / 1000)}k€`);
+                        const reasonsText = reasons.slice(0, 4).join(" · ");
+
+                        return (
+                          <div key={alert.contradiction_id} className="space-y-1">
+                            <div className="flex items-start gap-2">
+                              <Badge variant="outline" className={
+                                i === 0
+                                  ? "text-[10px] px-1.5 py-0 shrink-0 bg-[#F7F6F3] text-[#0D1B2A] border-[#D1D5DB]"
+                                  : "text-[10px] px-1.5 py-0 shrink-0 bg-[#F7F6F3] text-muted-foreground border-[#D1D5DB] opacity-70"
+                              }>
+                                SIGNAL
+                              </Badge>
+                              <p className="text-sm text-foreground leading-snug flex-1">{alert.message}</p>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {feedback === "rejected" && (
+                                  <span className="text-[10px] font-medium text-amber-600 italic">
+                                    Compris. Je m'ajuste.
+                                  </span>
+                                )}
+                                {feedback === "confirmed" && (
+                                  <span className="text-[10px] font-medium text-emerald-600">
+                                    Confirmé
+                                  </span>
+                                )}
+                                {!feedback && !isConfirmed && !isPending && (
+                                  <>
+                                    <button
+                                      onClick={() => handleConfirmInsight(alert.contradiction_id)}
+                                      disabled={isProcessing}
+                                      className="text-emerald-600 hover:text-emerald-700 text-xs px-1.5 py-0.5 rounded border border-emerald-200 hover:bg-emerald-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                      title="Confirmer cet insight"
+                                    >
+                                      ✓
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectInsight(alert.contradiction_id)}
+                                      disabled={isProcessing}
+                                      className="text-red-500 hover:text-red-600 text-xs px-1.5 py-0.5 rounded border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                      title="Corriger cet insight"
+                                    >
+                                      ✗
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            {reasonsText && (
+                              <p className="text-[11px] text-muted-foreground ml-8 leading-snug">
+                                {reasonsText}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })
                   : <>
                       {/* fallback hardcodé — FAIT/INFÉRENCE ≈ conservés car nature épistémique connue */}
                       <div className="flex items-start gap-2">
@@ -1713,6 +1877,7 @@ export default function CampaignDetail() {
         onOpenChange={setShowDealClose}
         campaignId={campaign.id}
         campaignName={campaign.name}
+        dealScore={dealScore}
       />
 
       {scriptVersions.length >= 2 && (
