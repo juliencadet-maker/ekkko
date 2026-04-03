@@ -400,7 +400,7 @@ export default function Onboarding() {
 
   const goToDashboard = async () => {
     await refreshUser();
-    navigate("/app/dashboard", { replace: true });
+    navigate("/app/campaigns", { replace: true });
   };
 
   return (

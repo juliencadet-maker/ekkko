@@ -20,7 +20,7 @@ export default function AuthDemo() {
       if (needsOnboarding) {
         navigate("/app/onboarding", { replace: true });
       } else {
-        navigate("/app/dashboard", { replace: true });
+        navigate("/app/campaigns", { replace: true });
       }
     }
   }, [isAuthenticated, needsOnboarding, navigate]);
