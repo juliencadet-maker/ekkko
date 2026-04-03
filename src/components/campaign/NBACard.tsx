@@ -16,7 +16,7 @@ interface NBACardProps {
 const riskStyles: Record<string, { bg: string; border: string }> = {
   high_risk: { bg: "bg-[#FCEBEB]", border: "border-l-[3px] border-l-[#E24B4A]" },
   watch: { bg: "bg-[#FAEEDA]", border: "border-l-[3px] border-l-[#E8A838]" },
-  healthy: { bg: "bg-[#D0FAE8]", border: "border-l-[3px] border-l-accent" },
+  healthy: { bg: "bg-[#D0FAE8]", border: "border-l-[3px] border-l-[#1AE08A]" },
 };
 
 export function NBACard({ factLine, contextLine, confidenceLabel, ctaLabel, riskLevel, onCtaClick }: NBACardProps) {
