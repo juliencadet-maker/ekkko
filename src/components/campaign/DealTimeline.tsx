@@ -40,7 +40,7 @@ export function DealTimeline({ events }: DealTimelineProps) {
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm text-foreground">{event.label}</p>
                 {isDeclared && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary bg-primary/5 font-medium">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-[#3B82F6]/30 text-[#3B82F6] bg-[#3B82F6]/5 font-medium">
                     CONTEXTE AE
                   </Badge>
                 )}
