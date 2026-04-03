@@ -1007,8 +1007,21 @@ export default function CampaignDetail() {
             </div>
           </Card>
 
-          {/* Signal offline — collapsed */}
-          <WhatHappenedWidget campaignId={campaign.id} />
+          {/* Signal offline — with inactivity hint */}
+          {daysSinceSignal !== undefined && daysSinceSignal > 5 && (
+            <p className="text-xs text-muted-foreground px-1">
+              Aucune activité récente.{" "}
+              <button className="underline hover:text-foreground" onClick={() => {
+                const el = document.getElementById("signal-offline-widget");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}>
+                Que s'est-il passé en dehors d'Ekko ?
+              </button>
+            </p>
+          )}
+          <div id="signal-offline-widget">
+            <WhatHappenedWidget campaignId={campaign.id} />
+          </div>
         </TabsContent>
 
         {/* ─── Tab 2: Deal Intelligence ─── */}
