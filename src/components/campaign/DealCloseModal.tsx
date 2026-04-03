@@ -75,20 +75,21 @@ export function DealCloseModal({ open, onOpenChange, campaignId, campaignName, d
     setIsSubmitting(true);
 
     try {
-      // Insert deal outcome
+      // Insert deal outcome with DES snapshot
       const { error: outcomeError } = await supabase.from("deal_outcomes").insert({
         campaign_id: campaignId,
         outcome: selectedOutcome,
         notes: notes || null,
         outcome_at: new Date().toISOString(),
+        final_des: dealScore?.des ?? null,
+        calibration_weight: 1.0,
       });
       if (outcomeError) throw outcomeError;
 
-      // Update campaign status
-      const newStatus = selectedOutcome.startsWith("won") ? "completed" : "cancelled";
+      // Update campaign deal_status to closed (not legacy status field)
       const { error: campaignError } = await supabase
         .from("campaigns")
-        .update({ status: newStatus, completed_at: new Date().toISOString() })
+        .update({ deal_status: "closed", completed_at: new Date().toISOString() })
         .eq("id", campaignId);
       if (campaignError) throw campaignError;
 
