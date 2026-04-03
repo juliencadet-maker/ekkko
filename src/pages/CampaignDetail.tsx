@@ -1260,6 +1260,11 @@ export default function CampaignDetail() {
                 onMarkDone={handleNBAMarkDone}
                 secondaryAction={nbaSecondaryAction}
                 signalFreshness={signalFreshness}
+                whyLineDeclared={
+                  safeAgentContext.decision_window
+                    ? `Fenêtre de décision : ${safeFormatDate(safeAgentContext.decision_window, "d MMMM", { locale: fr })}`
+                    : undefined
+                }
               />
             </SectionGuard>
           )}
