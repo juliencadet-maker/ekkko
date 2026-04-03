@@ -238,7 +238,7 @@ export default function Campaigns() {
                   className={cn(
                     "group flex items-center gap-4 rounded-card shadow-card cursor-pointer hover:shadow-lg transition-all",
                     riskBg,
-                    isTopDeal ? "p-5 border-l-[4px]" : "p-4 border-l-4",
+                    isTopDeal ? "p-5 border-l-4" : "p-4 border-l-2",
                     getBorderColor(score),
                     !(campaign as any).first_action_completed_at && "border-l-accent animate-pulse-border"
                   )}
