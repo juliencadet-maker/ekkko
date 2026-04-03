@@ -653,7 +653,7 @@ export default function CampaignDetail() {
       }).eq("id", campaign.id);
       setCampaign(prev => prev ? { ...prev, deal_status: "snoozed", snoozed_until: date.toISOString() } : null);
       setSnoozeDate(date);
-      toast.success("Deal mis en veille");
+      toast.success(`Deal en veille jusqu'au ${format(date, "d MMMM yyyy", { locale: fr })} — notifications suspendues.`);
     } catch { toast.error("Erreur"); }
   };
 
