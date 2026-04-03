@@ -107,14 +107,37 @@ export default function Dashboard() {
           dealsActifs: activeDeals || 0,
         });
 
-        // Recent campaigns
+        // Recent campaigns — fetch with deal scores for priority sorting
         const { data: campaigns } = await supabase
           .from("campaigns")
           .select("*, identities(display_name)")
           .eq("org_id", membership.org_id)
-          .order("created_at", { ascending: false })
-          .limit(5);
-        setRecentCampaigns(campaigns as Campaign[] || []);
+          .limit(20);
+
+        if (campaigns && campaigns.length > 0) {
+          const cIds = campaigns.map((c: any) => c.id);
+          const { data: pScores } = await supabase
+            .from("deal_scores")
+            .select("campaign_id, priority_deal_score")
+            .in("campaign_id", cIds)
+            .order("scored_at", { ascending: false });
+
+          const scoreMap: Record<string, number> = {};
+          pScores?.forEach((s: any) => {
+            if (!(s.campaign_id in scoreMap) && s.priority_deal_score != null) {
+              scoreMap[s.campaign_id] = s.priority_deal_score;
+            }
+          });
+
+          const sorted = [...campaigns].sort((a: any, b: any) => {
+            const sa = scoreMap[a.id] ?? 0;
+            const sb = scoreMap[b.id] ?? 0;
+            return sb - sa;
+          });
+          setRecentCampaigns(sorted.slice(0, 5) as Campaign[]);
+        } else {
+          setRecentCampaigns([]);
+        }
 
         // Pending approvals
         const { data: approvals } = await supabase
