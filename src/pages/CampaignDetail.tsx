@@ -1116,23 +1116,19 @@ export default function CampaignDetail() {
 
           {/* Signal offline — collapsible with chevron and preview */}
           <SectionGuard name="SignalOffline">
-            {(() => {
-              const [offlineOpen, setOfflineOpen] = [false, () => {}]; // handled via useState above
-              return null; // placeholder — actual render below
-            })()}
             <Card className="shadow-none">
               <CardHeader className="pb-2 pt-3 px-3">
                 <button
                   className="flex items-center justify-between w-full text-left cursor-pointer rounded-md px-1 py-1 hover:bg-muted/40 transition-colors"
-                  onClick={() => {
-                    const el = document.getElementById("signal-offline-content");
-                    if (el) el.classList.toggle("hidden");
-                    const chevron = document.getElementById("signal-offline-chevron");
+                  onClick={(e) => {
+                    const content = e.currentTarget.closest('.shadow-none')?.querySelector('[data-offline-content]');
+                    const chevron = e.currentTarget.querySelector('[data-offline-chevron]');
+                    if (content) content.classList.toggle("hidden");
                     if (chevron) chevron.classList.toggle("rotate-180");
                   }}
                 >
                   <CardTitle className="text-sm font-semibold">Signal offline</CardTitle>
-                  <ChevronDown id="signal-offline-chevron" className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
+                  <ChevronDown data-offline-chevron className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
                 </button>
               </CardHeader>
               {/* Preview line */}
@@ -1143,7 +1139,7 @@ export default function CampaignDetail() {
                     : "Aucun signal offline"}
                 </p>
               </CardContent>
-              <div id="signal-offline-content" className="hidden">
+              <div data-offline-content className="hidden">
                 <CardContent className="pt-0 px-3">
                   <WhatHappenedWidget campaignId={campaign.id} />
                 </CardContent>
