@@ -966,7 +966,7 @@ export default function CampaignDetail() {
             <div className="space-y-1.5">
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
-                <p className="text-sm text-foreground leading-snug">{`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${daysSinceSignal === 0 ? "aucune activité récente" : `aucune activité depuis ${daysSinceSignal ?? "?"}j`}`}</p>
+                <p className="text-sm text-foreground leading-snug">{`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${daysSinceSignal === 0 ? "aucune activité récente" : `aucune activité depuis ${daysSinceSignal ?? "?"}j`} · ${stageLabel}`}</p>
               </div>
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
