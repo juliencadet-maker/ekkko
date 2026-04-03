@@ -766,7 +766,7 @@ export default function CampaignDetail() {
     return `il y a ${Math.floor(hrs / 24)}j`;
   })();
 
-  const desValue = dealScore?.des;
+  const desValue = safeDealScore.des ?? null;
   const desClass = desValue == null ? "bg-muted text-muted-foreground"
     : desValue >= 70 ? "bg-accent/15 text-accent"
     : desValue >= 40 ? "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))]"
