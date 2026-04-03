@@ -1093,19 +1093,6 @@ export default function CampaignDetail() {
             </CardContent>
           </Card>
 
-          {/* Script */}
-          {campaign.script && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Script du deal</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-muted/50 rounded-lg p-4 min-h-[100px]">
-                  <p className="text-sm whitespace-pre-wrap">{campaign.script}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
       </Tabs>
 
