@@ -1037,17 +1037,19 @@ export default function CampaignDetail() {
 
         {/* ─── Tab 1: Résumé du deal ─── */}
         <TabsContent value="overview" className="space-y-3">
-          {/* NBA Card — first visible element */}
-          <SectionGuard name="NBACard">
-            <NBACard
-              actionLine={nbaActionLine}
-              whyLine={nbaWhyLine}
-              confidenceLabel="Confiance modérée"
-              ctaLabel={nbaCtaLabel}
-              riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
-              onCtaClick={() => setShowAgent(true)}
-            />
-          </SectionGuard>
+          {/* NBA Card — visible only if no action completed yet */}
+          {showNBA && (
+            <SectionGuard name="NBACard">
+              <NBACard
+                actionLine={nbaActionLine}
+                whyLine={nbaWhyLine}
+                confidenceLabel="Confiance modérée"
+                riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
+                onMarkDone={handleNBAMarkDone}
+                secondaryAction={nbaSecondaryAction}
+              />
+            </SectionGuard>
+          )}
 
           {/* Pourquoi — Insights compressés inline */}
           <SectionGuard name="Insights">
