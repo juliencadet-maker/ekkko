@@ -1213,7 +1213,9 @@ export default function CampaignDetail() {
                         <p className="font-medium text-foreground">
                           {campaign.status === 'generating' ? 'Génération en cours...' :
                            campaign.status === 'pending_approval' ? "En attente d'approbation" :
-                           'Ajoutez un asset pour commencer à capter des signaux sur ce deal.'}
+                           'Aucun écho pour le moment.'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Tout contenu partagé devient un capteur.</p>
                         </p>
                         {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
                           <>
