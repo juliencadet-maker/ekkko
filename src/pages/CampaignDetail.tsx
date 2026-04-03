@@ -653,7 +653,7 @@ export default function CampaignDetail() {
       }).eq("id", campaign.id);
       setCampaign(prev => prev ? { ...prev, deal_status: "snoozed", snoozed_until: date.toISOString() } : null);
       setSnoozeDate(date);
-      toast.success("Deal mis en veille");
+      toast.success(`Deal en veille jusqu'au ${format(date, "d MMMM yyyy", { locale: fr })} — notifications suspendues.`);
     } catch { toast.error("Erreur"); }
   };
 
@@ -958,7 +958,7 @@ export default function CampaignDetail() {
         <TabsList>
           <TabsTrigger value="overview">Résumé du deal</TabsTrigger>
           <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
-          <TabsTrigger value="assets">Assets</TabsTrigger>
+          <TabsTrigger value="assets">Contenus envoyés</TabsTrigger>
         </TabsList>
 
         {/* ─── Tab 1: Résumé du deal ─── */}
@@ -979,7 +979,7 @@ export default function CampaignDetail() {
             <div className="space-y-1.5">
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
-                <p className="text-sm text-foreground leading-snug">{`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${daysSinceSignal === 0 ? "aucune activité récente" : `aucune activité depuis ${daysSinceSignal ?? "?"}j`} · ${stageLabel}`}</p>
+                <p className="text-sm text-foreground leading-snug">{viewers.length === 0 ? "Aucun relais interne identifié — vigilance requise" : `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""}`}{daysSinceSignal !== undefined && daysSinceSignal > 7 ? ` · Deal qui refroidit — aucune activité depuis ${daysSinceSignal}j` : daysSinceSignal !== undefined && daysSinceSignal > 0 ? ` · aucune activité depuis ${daysSinceSignal}j` : ""} · {stageLabel}</p>
               </div>
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
@@ -1074,7 +1074,8 @@ export default function CampaignDetail() {
                     <div className="w-px h-6 bg-[#D5D2CB]/30" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour révéler la carte politique réelle</p>
+                    <p className="text-sm font-medium text-foreground mb-1">Aucun écho identifié sur ce deal.</p>
+                    <p className="text-xs text-muted-foreground mb-4">Envoyez un contenu pour générer les premiers signaux.</p>
                     <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
                       <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
                     </Button>
@@ -1212,8 +1213,9 @@ export default function CampaignDetail() {
                         <p className="font-medium text-foreground">
                           {campaign.status === 'generating' ? 'Génération en cours...' :
                            campaign.status === 'pending_approval' ? "En attente d'approbation" :
-                           'Ajoutez un asset pour commencer à capter des signaux sur ce deal.'}
+                           'Aucun écho pour le moment.'}
                         </p>
+                        <p className="text-xs text-muted-foreground">Tout contenu partagé devient un capteur.</p>
                         {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
                           <>
                             <div className="flex flex-wrap justify-center gap-2">
@@ -1227,9 +1229,6 @@ export default function CampaignDetail() {
                                 <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
                               </Button>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                              Vidéo, document, présentation — tout asset partagé devient un capteur.
-                            </p>
                           </>
                         )}
                       </div>
