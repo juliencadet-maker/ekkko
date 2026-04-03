@@ -1216,7 +1216,6 @@ export default function CampaignDetail() {
                            'Aucun écho pour le moment.'}
                         </p>
                         <p className="text-xs text-muted-foreground">Tout contenu partagé devient un capteur.</p>
-                        </p>
                         {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
                           <>
                             <div className="flex flex-wrap justify-center gap-2">
