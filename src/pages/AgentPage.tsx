@@ -71,7 +71,7 @@ export default function AgentPage() {
         actions={
           <Select value={selectedId || ""} onValueChange={handleSelect}>
             <SelectTrigger className="w-[280px]">
-              <SelectValue placeholder="Analyser quel deal ?" />
+              <SelectValue placeholder="Choisir un deal" />
             </SelectTrigger>
             <SelectContent>
               {campaigns.map((c) => (
