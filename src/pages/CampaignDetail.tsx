@@ -527,7 +527,7 @@ export default function CampaignDetail() {
                   <h1 className="text-2xl font-bold text-foreground">{campaign.name}</h1>
                   <Badge variant="outline" className="text-xs">
                     <Layers className="mr-1 h-3 w-3" />
-                    {subCampaigns.length} sous-campagne{subCampaigns.length > 1 ? "s" : ""}
+                    {subCampaigns.length} sous-deal{subCampaigns.length > 1 ? "s" : ""}
                   </Badge>
                 </div>
                 <p className="mt-1 text-muted-foreground">
