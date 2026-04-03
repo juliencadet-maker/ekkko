@@ -829,7 +829,10 @@ export default function CampaignDetail() {
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Dernière mise à jour : {lastUpdate}
+              Dernière activité : {lastUpdate}
+            </p>
+            <p className="text-[11px] text-muted-foreground/60">
+              Analyse mise à jour {lastUpdate}
             </p>
           </div>
           <div className="flex gap-2">
