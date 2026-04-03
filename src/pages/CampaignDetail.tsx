@@ -756,16 +756,27 @@ export default function CampaignDetail() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className={cn("text-2xl font-bold", 
-                (campaign as any).deal_risk_level === "high_risk" ? "text-[#E24B4A]"
-                : (campaign as any).deal_risk_level === "watch" ? "text-[#E8A838]"
-                : "text-foreground"
-              )}>{campaign.name}</h1>
+              <h1 className="text-2xl font-bold text-[#0D1B2A]">{campaign.name}</h1>
               {dealValue && <span className="text-lg font-semibold text-muted-foreground">{(dealValue / 1000).toFixed(0)}k€</span>}
               {agentContext?.stage && (
                 <Badge variant="outline" className="text-xs capitalize">{agentContext.stage}</Badge>
               )}
-              <span className={cn("px-3 py-1 rounded-full text-sm font-bold", desClass)}>
+              {(() => {
+                const rl = (campaign as any).deal_risk_level || dealScore?.risk_level || "healthy";
+                const riskCfg: Record<string, { label: string; cls: string }> = {
+                  high_risk: { label: "Risque eleve", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
+                  critical: { label: "Risque eleve", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
+                  watch: { label: "A surveiller", cls: "bg-[#FAEEDA] text-[#E8A838] border-[#E8A838]/30" },
+                  healthy: { label: "Sain", cls: "bg-[#D0FAE8] text-[#1AE08A] border-[#1AE08A]/30" },
+                };
+                const cfg = riskCfg[rl] || riskCfg.healthy;
+                return (
+                  <Badge variant="outline" className={cn("text-xs font-semibold border", cfg.cls)}>
+                    {cfg.label}
+                  </Badge>
+                );
+              })()}
+              <span className={cn("px-3 py-1.5 rounded-full text-sm font-bold shadow-sm", desClass)}>
                 DES {desValue ?? "—"}
               </span>
             </div>
