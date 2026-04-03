@@ -988,14 +988,16 @@ export default function CampaignDetail() {
         {/* ─── Tab 1: Résumé du deal ─── */}
         <TabsContent value="overview" className="space-y-3">
           {/* NBA Card — first visible element */}
-          <NBACard
-            actionLine={nbaActionLine}
-            whyLine={nbaWhyLine}
-            confidenceLabel="Confiance modérée"
-            ctaLabel={nbaCtaLabel}
-            riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
-            onCtaClick={() => setShowAgent(true)}
-          />
+          <SectionGuard name="NBACard">
+            <NBACard
+              actionLine={nbaActionLine}
+              whyLine={nbaWhyLine}
+              confidenceLabel="Confiance modérée"
+              ctaLabel={nbaCtaLabel}
+              riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
+              onCtaClick={() => setShowAgent(true)}
+            />
+          </SectionGuard>
 
           {/* Pourquoi — Insights compressés inline */}
           <div className="rounded-lg border border-border p-3">
