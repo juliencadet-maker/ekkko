@@ -850,6 +850,8 @@ export default function CampaignDetail() {
             <p className="text-[11px] text-muted-foreground/60">
               Analyse mise à jour {lastUpdate}
             </p>
+          </div>
+          <div className="flex gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
