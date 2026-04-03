@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, Component, ErrorInfo, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useVideoJobPolling } from "@/hooks/useVideoJobPolling";
 import { useParams, useNavigate } from "react-router-dom";
@@ -63,12 +63,36 @@ import {
   Sparkles,
   CalendarIcon,
   PauseCircle,
+  Info,
 } from "lucide-react";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Campaign, Video as VideoType, Recipient } from "@/types/database";
+
+// ─── Section Error Boundary ─────────────────────────────────────────
+interface SectionGuardProps { children: ReactNode; name?: string; }
+interface SectionGuardState { hasError: boolean; }
+
+class SectionGuard extends Component<SectionGuardProps, SectionGuardState> {
+  state: SectionGuardState = { hasError: false };
+  static getDerivedStateFromError(): SectionGuardState { return { hasError: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error(`[SectionGuard] ${this.props.name || "section"} crashed:`, error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-lg border border-border bg-muted/20 p-6 text-center">
+          <Info className="h-5 w-5 mx-auto text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">Données indisponibles pour le moment.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const DEMO_VIDEO_PATTERNS = [
   "commondatastorage.googleapis.com",
