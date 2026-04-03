@@ -1263,12 +1263,12 @@ export default function CampaignDetail() {
 
           {/* Dernier signal — always visible, one discreet line */}
           <SectionGuard name="DernierSignal">
-            {mockTimelineEvents.length > 0 ? (
+            {displayEvents.length > 0 ? (
               <p className="text-xs text-muted-foreground px-1">
-                Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+                Dernier signal : {displayEvents[0].label} · {displayEvents[0].time}
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground px-1">Aucun signal reçu pour le moment.</p>
+              <p className="text-xs text-muted-foreground px-1">Aucun signal reçu.</p>
             )}
           </SectionGuard>
 
@@ -1285,14 +1285,19 @@ export default function CampaignDetail() {
                 </button>
               </CardHeader>
               {/* Preview line when collapsed */}
-              {!timelineOpen && mockTimelineEvents.length > 0 && (
+              {!timelineOpen && displayEvents.length > 0 && (
                 <CardContent className="pt-0 px-4 pb-3">
                   <p className="text-xs text-muted-foreground truncate">
-                    {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+                    {displayEvents[0].label} · {displayEvents[0].time}
                   </p>
                 </CardContent>
               )}
-              {mockTimelineEvents.length > 0 ? (
+              {!timelineOpen && displayEvents.length === 0 && (
+                <CardContent className="pt-0 px-4 pb-3">
+                  <p className="text-xs text-muted-foreground">Aucun événement enregistré.</p>
+                </CardContent>
+              )}
+              {displayEvents.length > 0 ? (
                 <div
                   className={cn(
                     "overflow-hidden transition-all duration-300 ease-out",
@@ -1300,14 +1305,15 @@ export default function CampaignDetail() {
                   )}
                 >
                   <CardContent className="pt-0 px-3">
-                    <DealTimeline events={mockTimelineEvents} />
+                    <DealTimeline events={displayEvents} />
                   </CardContent>
                 </div>
-              ) : (
+              ) : timelineOpen ? (
                 <CardContent className="pt-0 px-3">
-                  <p className="text-xs text-muted-foreground py-4 text-center">Aucun événement enregistré.</p>
+                  <p className="text-sm text-muted-foreground">Aucun écho identifié pour le moment.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Tout contenu partagé devient un capteur.</p>
                 </CardContent>
-              )}
+              ) : null}
             </Card>
           </SectionGuard>
 
