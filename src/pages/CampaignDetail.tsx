@@ -1075,20 +1075,26 @@ export default function CampaignDetail() {
             )}
           </SectionGuard>
 
-          {/* Timeline — collapsed by default */}
+          {/* Timeline — collapsed by default, with chevron and preview */}
           <SectionGuard name="Timeline">
             <Card className="shadow-none">
               <CardHeader className="pb-2 pt-3 px-3">
                 <button
-                  className="flex items-center justify-between w-full text-left"
+                  className="flex items-center justify-between w-full text-left cursor-pointer rounded-md px-1 py-1 hover:bg-muted/40 transition-colors"
                   onClick={() => setTimelineOpen((v) => !v)}
                 >
                   <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
-                  <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    {timelineOpen ? "Replier" : `Voir (${mockTimelineEvents.length})`}
-                  </span>
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", timelineOpen && "rotate-180")} />
                 </button>
               </CardHeader>
+              {/* Preview line when collapsed */}
+              {!timelineOpen && mockTimelineEvents.length > 0 && (
+                <CardContent className="pt-0 px-4 pb-3">
+                  <p className="text-xs text-muted-foreground truncate">
+                    {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+                  </p>
+                </CardContent>
+              )}
               {mockTimelineEvents.length > 0 ? (
                 <div
                   className={cn(
