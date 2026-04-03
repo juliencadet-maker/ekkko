@@ -2,38 +2,83 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-const OPTIONS = [
-  { value: "call_positive", label: "Call positif" },
-  { value: "call_negative", label: "Call négatif" },
-  { value: "internal_progress", label: "Avancement interne" },
-  { value: "new_contact", label: "Nouveau contact" },
-  { value: "nothing", label: "Rien" },
-];
 
 interface WhatHappenedWidgetProps {
   campaignId: string;
 }
 
 export function WhatHappenedWidget({ campaignId }: WhatHappenedWidgetProps) {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [text, setText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSubmit = async () => {
-    if (!selected) return;
+    if (!text.trim()) return;
     setIsSaving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Call ekko-agent to analyze the offline signal
+      const analysisMessages = [
+        {
+          role: "user",
+          content: `L'AE vient de décrire une interaction offline. Analyse ce texte et extrais :
+- Le sentiment général (positif / négatif / neutre)
+- Les contacts mentionnés si identifiables
+- L'impact sur le deal (avancement / blocage / neutre)
+Retourne un JSON : { "sentiment": "...", "contacts_mentioned": [...], "deal_impact": "...", "summary_fr": "..." }
+
+Texte de l'AE :
+${text.trim()}`
+        }
+      ];
+
+      let enrichedData: Record<string, unknown> = { raw_text: text.trim() };
+
+      try {
+        const { data: agentData, error: agentError } = await supabase.functions.invoke("ekko-agent", {
+          body: {
+            campaign_id: campaignId,
+            messages: analysisMessages,
+            user_id: user?.id,
+          },
+        });
+
+        if (!agentError && agentData?.reply) {
+          // Try to parse JSON from agent reply
+          const jsonMatch = agentData.reply.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              const parsed = JSON.parse(jsonMatch[0]);
+              enrichedData = {
+                raw_text: text.trim(),
+                sentiment: parsed.sentiment || "neutre",
+                contacts_mentioned: parsed.contacts_mentioned || [],
+                deal_impact: parsed.deal_impact || "neutre",
+                summary_fr: parsed.summary_fr || text.trim().slice(0, 80),
+              };
+            } catch {
+              enrichedData.summary_fr = text.trim().slice(0, 80);
+            }
+          }
+        }
+      } catch {
+        // Agent unavailable — store raw text anyway
+        enrichedData.summary_fr = text.trim().slice(0, 80);
+      }
+
       await supabase.from("timeline_events").insert({
         campaign_id: campaignId,
-        event_type: selected,
+        event_type: "offline_signal",
         event_layer: "declared",
-        event_data: { source: "what_happened_widget" },
+        event_data: enrichedData,
       });
-      toast.success("Signal enregistré");
-      setSelected(null);
+
+      toast.success("Signal enregistre");
+      setText("");
     } catch {
       toast.error("Erreur lors de l'enregistrement");
     } finally {
@@ -52,7 +97,7 @@ export function WhatHappenedWidget({ campaignId }: WhatHappenedWidgetProps) {
             Signal offline
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Ce qui s'est passé en dehors d'Ekko — enrichit la lecture du deal.
+            Ce qui s'est passe en dehors d'Ekko — enrichit la lecture du deal.
           </p>
         </button>
       </CardHeader>
@@ -62,35 +107,22 @@ export function WhatHappenedWidget({ campaignId }: WhatHappenedWidgetProps) {
           isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         )}
       >
-        <CardContent className="space-y-2 pt-1">
-          {OPTIONS.map((opt) => (
-            <label
-              key={opt.value}
-              className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
-                selected === opt.value
-                  ? "border-accent bg-accent/5"
-                  : "border-border hover:bg-muted/50"
-              }`}
-            >
-              <input
-                type="radio"
-                name="what_happened"
-                value={opt.value}
-                checked={selected === opt.value}
-                onChange={() => setSelected(opt.value)}
-                className="accent-[hsl(var(--accent))]"
-              />
-              <span className="text-sm">{opt.label}</span>
-            </label>
-          ))}
-          {selected && (
+        <CardContent className="space-y-3 pt-1">
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={"Decrivez ce qui s'est passe en dehors d'Ekko...\n\nEx: J'ai eu Pierre au telephone, il m'a dit que le budget etait valide mais que le DSI hesitait encore."}
+            className="min-h-[80px] resize-y text-sm"
+          />
+          {text.trim() && (
             <Button
               size="sm"
-              className="w-full mt-2 rounded-cta bg-accent text-accent-foreground hover:bg-accent/90"
+              variant="outline"
+              className="w-full mt-2 rounded-cta border-primary text-primary hover:bg-primary/5"
               onClick={handleSubmit}
               disabled={isSaving}
             >
-              Enregistrer
+              {isSaving ? "Analyse en cours..." : "Enregistrer"}
             </Button>
           )}
         </CardContent>

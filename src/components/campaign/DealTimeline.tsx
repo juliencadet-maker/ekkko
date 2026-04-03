@@ -18,6 +18,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   cta_click: MousePointerClick,
   new_contact: UserPlus,
   declared: MessageSquare,
+  offline_signal: MessageSquare,
 };
 
 export function DealTimeline({ events }: DealTimelineProps) {
