@@ -829,7 +829,7 @@ export default function CampaignDetail() {
   };
 
   // NBA secondary action detection
-  const nbaSecondaryAction = useMemo(() => {
+  const nbaSecondaryAction = (() => {
     const actionStr = ((recAction?.action as string) || "").toLowerCase();
     if (actionStr.includes("contenu") || actionStr.includes("envoyer") || actionStr.includes("asset")) {
       return { label: "Envoyer un contenu", onClick: () => navigate(`/app/campaigns/${id}?tab=assets`) };
@@ -838,7 +838,7 @@ export default function CampaignDetail() {
       return { label: "Ajouter un contact", onClick: () => navigate(`/app/campaigns/${id}?tab=intelligence`) };
     }
     return undefined;
-  }, [recAction, id, navigate]);
+  })();
 
   // Show NBA only if first_action_completed_at is null
   const showNBA = !(campaign as any)?.first_action_completed_at;
