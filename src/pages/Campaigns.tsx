@@ -163,7 +163,9 @@ export default function Campaigns() {
   };
 
   const getTimeSinceSignal = (campaign: Campaign) => {
-    const days = Math.floor((Date.now() - new Date(campaign.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+    const d = new Date(campaign.updated_at);
+    if (isNaN(d.getTime())) return "—";
+    const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
     if (days === 0) return "Aujourd'hui";
     return `il y a ${days}j`;
   };
