@@ -894,6 +894,7 @@ export default function CampaignDetail() {
             contextLine={nbaContext}
             confidenceLabel="Confiance modérée"
             ctaLabel={dealScore?.recommended_action?.label || "Voir les actions"}
+            riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
             onCtaClick={() => setShowAgent(true)}
           />
 
