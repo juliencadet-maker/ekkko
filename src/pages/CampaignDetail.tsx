@@ -492,7 +492,7 @@ export default function CampaignDetail() {
     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <p className="text-muted-foreground">Campagne non trouvée</p>
+          <p className="text-muted-foreground">Deal non trouvé</p>
           <Button variant="outline" onClick={() => navigate("/app/campaigns")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             ← Deals
