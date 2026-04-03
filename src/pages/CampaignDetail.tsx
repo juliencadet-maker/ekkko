@@ -1168,7 +1168,7 @@ export default function CampaignDetail() {
                               <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un asset
                             </Button>
                             <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                              Video, document, presentation — tout asset partage devient un capteur.
+                              Vidéo, document, présentation — tout asset partagé devient un capteur.
                             </p>
                           </>
                         )}
