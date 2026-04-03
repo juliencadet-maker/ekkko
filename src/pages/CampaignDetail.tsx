@@ -616,7 +616,7 @@ export default function CampaignDetail() {
                 </div>
                 <p className="mt-1 text-muted-foreground">
                   {(campaign as any).identities?.display_name || "Identité"} • Créé le{" "}
-                  {format(new Date(campaign.created_at), "d MMMM yyyy", { locale: fr })}
+                  {safeFormatDate(campaign.created_at, "d MMMM yyyy", { locale: fr })}
                 </p>
                 {campaign.description && (
                   <p className="mt-1 text-sm text-muted-foreground">{campaign.description}</p>
