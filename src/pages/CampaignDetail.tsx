@@ -1116,7 +1116,7 @@ export default function CampaignDetail() {
                   {viewers.length === 0
                     ? "Ajoutez des contacts pour visualiser le comité d'achat"
                     : viewers.length < 3
-                      ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${agentContext?.committee_size_declared || 8} estimés`
+                      ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${safeAgentContext.committee_size_declared || 8} estimés`
                       : "Cartographie du buying committee"
                   }
                 </CardDescription>
