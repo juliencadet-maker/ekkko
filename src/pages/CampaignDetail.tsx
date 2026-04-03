@@ -892,7 +892,7 @@ export default function CampaignDetail() {
       {/* ═══ TABS ═══ */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="overview">Vue ensemble</TabsTrigger>
+          <TabsTrigger value="overview">Résumé du deal</TabsTrigger>
           <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
           <TabsTrigger value="assets">Assets</TabsTrigger>
         </TabsList>
