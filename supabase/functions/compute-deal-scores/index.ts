@@ -6,6 +6,161 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── Utilitaire layer detection ──────────────────────────────────────────────
+function detectLayer(title: string | null, layers: any[]): string | null {
+  if (!title || !layers?.length) return null;
+  for (const l of layers) {
+    const keywords: string[] = l.typical_titles || [];
+    for (const kw of keywords) {
+      if (title.toLowerCase().includes(kw.toLowerCase())) return l.layer;
+    }
+  }
+  return null;
+}
+
+// ─── Viewer Scoring (C1b) ────────────────────────────────────────────────────
+async function computeViewerScores(supabase: any, campaign_id: string, committeeLayers: any[]) {
+  const { data: viewers } = await supabase
+    .from("viewers")
+    .select("id, total_watch_depth, replay_count, share_count, viewers_generated, cta_clicked, last_event_at, title, domain, identity_cluster_id, identity_confidence, role_confidence, viewer_hash, is_known, first_seen_at")
+    // fingerprint non sélectionné — bot filter par viewer_hash uniquement
+    .eq("campaign_id", campaign_id);
+
+  if (!viewers || viewers.length === 0) return;
+
+  // ── Bot filter (C1b — par viewer_hash) ──────────────────────────────────
+  // V1 — déduplication bot logs à ajouter si bruit console
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const { data: recentEvents } = await supabase
+    .from("video_events")
+    .select("viewer_hash")
+    .eq("campaign_id", campaign_id)
+    .gte("created_at", fiveMinAgo);
+
+  const hashCounts = new Map<string, number>();
+  (recentEvents || []).forEach((e: any) => {
+    hashCounts.set(e.viewer_hash, (hashCounts.get(e.viewer_hash) || 0) + 1);
+  });
+  const suspectHashes = new Set<string>();
+  hashCounts.forEach((count, hash) => { if (count > 10) suspectHashes.add(hash); });
+
+  const suspectIds = new Set<string>();
+  viewers.forEach((v: any) => {
+    if (v.viewer_hash && suspectHashes.has(v.viewer_hash)) suspectIds.add(v.id);
+  });
+
+  if (suspectIds.size > 0) {
+    await supabase.from("system_failures").insert(
+      Array.from(suspectIds).map(vid => ({
+        campaign_id, failure_type: "bot_filter", severity: "low",
+        message: `Viewer ${vid} — activité anormale >10 events/5min`,
+      }))
+    );
+  }
+
+  // ── Lire les declared existants (ne pas écraser) ──────────────────────────
+  const { data: declaredRoles } = await supabase
+    .from("deal_contact_roles").select("viewer_id")
+    .eq("campaign_id", campaign_id).eq("source", "declared");
+  const declaredViewerIds = new Set((declaredRoles || []).map((r: any) => r.viewer_id));
+
+  // ── Scorer chaque viewer ──────────────────────────────────────────────────
+  const roleUpserts: any[] = [];
+
+  // UPDATE viewers — une requête par viewer
+  // V1 — acceptable pour les volumes actuels (deals typiques < 20 viewers).
+  // À optimiser via batch update/upsert si volume augmente ou temps d'exécution devient sensible.
+  for (const viewer of viewers) {
+    if (suspectIds.has(viewer.id)) continue;
+
+    const watchDepth  = viewer.total_watch_depth ?? 0;
+    const replays     = viewer.replay_count ?? 0;
+    const shares      = viewer.share_count ?? 0;
+    const viewersGen  = viewer.viewers_generated ?? 0;
+    const cta         = viewer.cta_clicked ? 1 : 0;
+
+    const replayScore  = Math.min(replays * 25, 100);
+    const sharingScore = Math.min((shares * 30) + (viewersGen * 20), 100);
+    const ctaScore     = cta * 100;
+    const contact_score = Math.round(
+      watchDepth * 0.35 + replayScore * 0.20 + sharingScore * 0.25 + ctaScore * 0.20
+    );
+
+    const sponsor_score = Math.min(Math.round(
+      (shares > 0 ? 25 : 0) + (viewersGen > 0 ? 30 : 0) +
+      Math.min(viewersGen * 10, 20) + (cta ? 20 : 0) +
+      Math.min(replays * 5, 15) + (watchDepth > 70 ? 10 : watchDepth > 40 ? 5 : 0)
+    ), 100);
+
+    const daysSinceEvent = viewer.last_event_at
+      ? (Date.now() - new Date(viewer.last_event_at).getTime()) / 86400000 : 30;
+    const layer      = detectLayer(viewer.title, committeeLayers);
+    const layerObj   = committeeLayers?.find((l: any) => l.layer === layer);
+    const layerWeight = layerObj ? layerObj.expected_weight : 0.55;
+    const blocker_score = Math.min(Math.round(
+      ((daysSinceEvent > 14 ? 45 : daysSinceEvent > 7 ? 25 : 0) +
+       (watchDepth < 40 ? 35 : watchDepth < 60 ? 15 : 0) +
+       (replays === 0 && watchDepth < 50 ? 20 : 0)) * 0.70 +
+      Math.round(layerWeight * 30) * 0.30
+    ), 100);
+
+    const influence_score = Math.min(Math.round(viewersGen * 35 + shares * 25), 100);
+
+    // is_known=true → viewer a fourni son email (identifié), pas forcément "nouveau"
+    // "nouveau" = détecté récemment (first_seen < 7j) mais peu d'activité encore
+    const isRecent = viewer.first_seen_at
+      ? (Date.now() - new Date(viewer.first_seen_at).getTime()) < 7 * 86400000
+      : false;
+    const status =
+      sponsor_score >= 60 && contact_score >= 50 ? "sponsor_actif" :
+      blocker_score >= 50                         ? "bloqueur_potentiel" :
+      contact_score >= 30                         ? "neutre" :
+      isRecent                                    ? "nouveau" :
+      "inconnu";
+
+    // UPDATE viewers
+    await supabase.from("viewers").update({
+      contact_score, sponsor_score, blocker_score, influence_score, status,
+      updated_at: new Date().toISOString(),
+    }).eq("id", viewer.id);
+
+    // confidence_global
+    const idConf = viewer.identity_confidence;
+    const id_weight =
+      idConf === "high" || idConf === "verified" ? 1.0 :
+      idConf === "medium" || idConf === "soft"   ? 0.70 :
+      idConf === "low"                            ? 0.40 : 0.20;
+    const confidence_global = parseFloat((
+      id_weight * 0.40 +
+      (layer !== null ? 0.8 : 0.3) * 0.30 +
+      (viewer.role_confidence ?? 0.5) * 0.30
+    ).toFixed(3));
+
+    // deal_contact_roles — skip si declared existant OU confidence trop faible
+    // Ne pas pousser d'inférences < 0.40 en base — elles pollueraient les lectures futures
+    if (!declaredViewerIds.has(viewer.id) && confidence_global >= 0.40) {
+      roleUpserts.push({
+        campaign_id, viewer_id: viewer.id,
+        layer: layer ?? null,
+        role: sponsor_score >= 60 ? "sponsor" : blocker_score >= 50 ? "blocker" : "unknown",
+        confidence: confidence_global,
+        source: "inferred",
+        insight_reasons: JSON.stringify([
+          `layer: ${layer ?? "inconnu"}`,
+          `contact_score: ${contact_score}`,
+          `confidence: ${confidence_global}`,
+        ]),
+      });
+    }
+  }
+
+  if (roleUpserts.length > 0) {
+    await supabase.from("deal_contact_roles").upsert(roleUpserts, {
+      onConflict: "campaign_id,viewer_id",
+    });
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -37,7 +192,16 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
 
+    // Fetch committee_layers UNE FOIS avant la boucle (table statique)
+    const { data: committeeLayers } = await supabase
+      .from("committee_layers")
+      .select("layer, expected_weight, typical_titles");
+
     for (const cid of campaignIds) {
+      // C1b : scorer les viewers en premier
+      await computeViewerScores(supabase, cid, committeeLayers || []);
+      // C1a : scorer le deal (lit les viewers déjà mis à jour)
+      // NE PAS passer committeeLayers à computeForCampaign — signature inchangée en C1b
       const result = await computeForCampaign(supabase, cid);
       results.push(result);
     }
