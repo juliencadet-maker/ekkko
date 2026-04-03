@@ -807,7 +807,7 @@ export default function CampaignDetail() {
               <h1 className="text-2xl font-bold text-[#0D1B2A]">{campaign.name}</h1>
               {dealValue && <span className="text-lg font-semibold text-muted-foreground">{(dealValue / 1000).toFixed(0)}k€</span>}
               {agentContext?.stage && (
-                <Badge variant="outline" className="text-xs capitalize">{agentContext.stage}</Badge>
+                <Badge variant="outline" className="text-xs">{stageLabel}</Badge>
               )}
               {(() => {
                 const rl = (campaign as any).deal_risk_level || dealScore?.risk_level || "healthy";
