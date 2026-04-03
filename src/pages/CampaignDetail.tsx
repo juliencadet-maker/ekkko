@@ -449,7 +449,7 @@ export default function CampaignDetail() {
       setCampaign((prev) => (prev ? { ...prev, status: "pending_approval" } : null));
       setRejectionComment(null);
       setScriptSaved(false);
-      toast.success("Campagne resoumise pour approbation");
+      toast.success("Deal resoumis pour approbation");
     } catch {
       console.error("Resubmit failed");
       toast.error("Erreur lors de la resoumission");
