@@ -543,6 +543,7 @@ export default function CampaignDetail() {
     return signalAge <= 48 * 60 * 60 * 1000;
   }, [campaign]);
 
+  if (isLoading) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
