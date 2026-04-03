@@ -1094,6 +1094,8 @@ export default function CampaignDetail() {
         .eq("failure_type", "inference_error")
         .eq("reason", contradictionId);
 
+      // SIMPLIFICATION V1 : downgrade global sur le deal, pas ciblé sur la contradiction.
+      // Jamais downgrader source='declared' — priorité absolue de l'AE.
       if ((count ?? 0) >= 2) {
         await supabase
           .from("deal_contact_roles")
