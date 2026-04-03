@@ -1353,6 +1353,61 @@ export default function CampaignDetail() {
 
         {/* ─── Tab 2: Deal Intelligence ─── */}
         <TabsContent value="intelligence" className="space-y-6">
+          {/* B3 — Questions clés */}
+          <SectionGuard name="QuestionsClés">
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-[#0D1B2A]">Questions clés</p>
+
+              <Card className="shadow-none">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs font-medium text-[#0D1B2A] mb-1">Qui regarde ?</p>
+                  <p className="text-sm text-muted-foreground">{q1Text}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-none">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs font-medium text-[#0D1B2A] mb-1">Qui ne regarde pas ?</p>
+                  <p className="text-sm text-muted-foreground">{q2Text}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-none">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs font-medium text-[#0D1B2A] mb-1">Qui a lu ce qui compte ?</p>
+                  {q3Loading ? (
+                    <EkkoLoader mode="loop" size={16} />
+                  ) : (
+                    <>
+                      {q3Result.lines.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Aucun asset critique envoyé sur ce deal.</p>
+                      ) : (
+                        q3Result.lines.map((line, i) => (
+                          <p key={i} className="text-sm text-muted-foreground">{line}</p>
+                        ))
+                      )}
+                      {q3Result.videoActivity && (
+                        <p className="text-sm text-muted-foreground mt-1">{q3Result.videoActivity}</p>
+                      )}
+                      {q3Result.hasVideoAssets && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Mesure actuelle : niveau deal. Le suivi par asset vidéo individuel sera disponible ultérieurement.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-none">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs font-medium text-[#0D1B2A] mb-1">Qui vient d'apparaître ?</p>
+                  <p className="text-sm text-muted-foreground">{q4Text}</p>
+                </CardContent>
+              </Card>
+            </div>
+          </SectionGuard>
+
           <SectionGuard name="PowerMap">
             <Card>
               <CardHeader>
