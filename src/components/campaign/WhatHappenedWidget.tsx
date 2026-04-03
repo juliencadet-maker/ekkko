@@ -21,22 +21,38 @@ export function WhatHappenedWidget({ campaignId }: WhatHappenedWidgetProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Call ekko-agent to analyze the offline signal
       const analysisMessages = [
         {
           role: "user",
-          content: `L'AE vient de décrire une interaction offline. Analyse ce texte et extrais :
-- Le sentiment général (positif / négatif / neutre)
-- Les contacts mentionnés si identifiables
-- L'impact sur le deal (avancement / blocage / neutre)
-Retourne un JSON : { "sentiment": "...", "contacts_mentioned": [...], "deal_impact": "...", "summary_fr": "..." }
+          content: `L'AE vient de décrire une interaction offline.
+Analyse ce texte et retourne UNIQUEMENT un JSON valide (sans markdown, sans explication) avec cette structure exacte :
+{
+  "sentiment": "positive" | "negative" | "neutral",
+  "impact": "low" | "medium" | "high",
+  "contacts_detected": ["nom1", "nom2"],
+  "summary_fr": "résumé en français, max 100 caractères"
+}
+
+Règles :
+- Si tu ne peux pas extraire le sentiment avec confiance, utilise "neutral"
+- Si tu ne peux pas évaluer l'impact avec confiance, utilise "low"
+- contacts_detected = tableau vide si aucun contact identifiable
+- summary_fr = résumé factuel, max 100 caractères
+- Ce signal est du contexte déclaratif (declared). Il ne modifie JAMAIS le DES ni le priority_score. fact > inference > declared.
 
 Texte de l'AE :
 ${text.trim()}`
         }
       ];
 
-      let enrichedData: Record<string, unknown> = { raw_text: text.trim() };
+      let enrichedData: Record<string, unknown> = {
+        raw_text: text.trim(),
+        sentiment: "neutral",
+        impact: "low",
+        contacts_detected: [],
+        summary_fr: text.trim().slice(0, 100),
+        signal_layer: "declared",
+      };
 
       try {
         const { data: agentData, error: agentError } = await supabase.functions.invoke("ekko-agent", {
@@ -48,17 +64,19 @@ ${text.trim()}`
         });
 
         if (!agentError && agentData?.reply) {
-          // Try to parse JSON from agent reply
           const jsonMatch = agentData.reply.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             try {
               const parsed = JSON.parse(jsonMatch[0]);
+              const validSentiments = ["positive", "negative", "neutral"];
+              const validImpacts = ["low", "medium", "high"];
               enrichedData = {
                 raw_text: text.trim(),
-                sentiment: parsed.sentiment || "neutre",
-                contacts_mentioned: parsed.contacts_mentioned || [],
-                deal_impact: parsed.deal_impact || "neutre",
-                summary_fr: parsed.summary_fr || text.trim().slice(0, 80),
+                sentiment: validSentiments.includes(parsed.sentiment) ? parsed.sentiment : "neutral",
+                impact: validImpacts.includes(parsed.impact) ? parsed.impact : "low",
+                contacts_detected: Array.isArray(parsed.contacts_detected) ? parsed.contacts_detected : [],
+                summary_fr: typeof parsed.summary_fr === "string" ? parsed.summary_fr.slice(0, 100) : text.trim().slice(0, 100),
+                signal_layer: "declared",
               };
             } catch {
               enrichedData.summary_fr = text.trim().slice(0, 80);
@@ -111,7 +129,7 @@ ${text.trim()}`
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={"Decrivez ce qui s'est passe en dehors d'Ekko...\n\nEx: J'ai eu Pierre au telephone, il m'a dit que le budget etait valide mais que le DSI hesitait encore."}
+            placeholder={"Ex : Call positif avec le CFO, mais budget a confirmer en interne avant fin avril."}
             className="min-h-[80px] resize-y text-sm"
           />
           {text.trim() && (
