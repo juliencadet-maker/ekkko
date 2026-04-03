@@ -698,12 +698,38 @@ export default function CampaignDetail() {
     { id: "5", type: "declared", label: "Call positif enregistré", detail: "Déclaré par l'AE", time: "il y a 7j" },
   ];
 
-  // Mock layer coverage
-  const mockLayers = [
-    { layer: "COMEX", current: 0, estimated: 3 },
-    { layer: "Finance", current: 1, estimated: 2 },
-    { layer: "Technique", current: 2, estimated: 5 },
-  ];
+  // Build layer coverage from viewers (traceable to Power Map)
+  const LAYER_MAP: Record<string, { label: string; estimated: number }> = {
+    executive: { label: "COMEX", estimated: 3 },
+    financial: { label: "Finance", estimated: 2 },
+    technical: { label: "Technique", estimated: 5 },
+  };
+
+  const computedLayers = useMemo(() => {
+    return Object.entries(LAYER_MAP).map(([key, cfg]) => {
+      // Count viewers whose inferred_role or contact_type maps to this layer
+      const matchingViewers = viewers.filter((v: any) => {
+        const role = (v.inferred_role || "").toLowerCase();
+        const contactType = (v.contact_type || "").toLowerCase();
+        return role.includes(key) || contactType.includes(key);
+      });
+      // A layer is "confirmed" only if there's at least one viewer with high identity confidence
+      const hasConfirmed = matchingViewers.some(
+        (v: any) => v.identity_confidence === "high" || v.identity_confidence === "verified"
+      );
+      return {
+        layer: cfg.label,
+        current: matchingViewers.length,
+        estimated: cfg.estimated,
+        confirmed: matchingViewers.length > 0 && hasConfirmed,
+      };
+    });
+  }, [viewers]);
+
+  // Layers with inferred (non-confirmed) contacts that aren't visible in Power Map
+  const ghostLayerContacts = useMemo(() => {
+    return computedLayers.filter((l) => l.current > 0 && !l.confirmed);
+  }, [computedLayers]);
 
   // Contact badge helper
   const getContactBadge = (status: string) => {
@@ -1014,8 +1040,23 @@ export default function CampaignDetail() {
           {/* Layer Coverage */}
           <div>
             <p className="text-sm font-semibold mb-2">Couverture du comité</p>
-            <LayerCoverage layers={mockLayers} />
+            <LayerCoverage layers={computedLayers} />
           </div>
+
+          {/* Ghost cards for inferred contacts not yet visible in Power Map */}
+          {ghostLayerContacts.length > 0 && (
+            <div className="space-y-1.5">
+              {ghostLayerContacts.map((l) => (
+                <div key={l.layer} className="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-border bg-muted/20">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    ~{l.current} contact{l.current > 1 ? "s" : ""} {l.layer} identifié{l.current > 1 ? "s" : ""} (estimation)
+                  </span>
+                  <Badge variant="outline" className="text-[9px] ml-auto">confiance faible</Badge>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Contact list */}
           {viewers.length > 0 && (

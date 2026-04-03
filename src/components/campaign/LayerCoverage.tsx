@@ -4,6 +4,7 @@ interface LayerRow {
   layer: string;
   current: number;
   estimated: number;
+  confirmed?: boolean; // true = count comes from identified contacts; false/undefined = inferred
 }
 
 interface LayerCoverageProps {
@@ -15,6 +16,8 @@ export function LayerCoverage({ layers }: LayerCoverageProps) {
     <div className="flex flex-wrap gap-3">
       {layers.map((l) => {
         const ok = l.current >= Math.ceil(l.estimated * 0.5);
+        const isConfirmed = l.confirmed === true;
+        const currentDisplay = isConfirmed ? `${l.current}` : `~${l.current}`;
         return (
           <div
             key={l.layer}
@@ -23,7 +26,7 @@ export function LayerCoverage({ layers }: LayerCoverageProps) {
             }`}
           >
             <span className="font-medium">{l.layer}</span>
-            <span>{l.current}/~{l.estimated}</span>
+            <span>{currentDisplay}/{l.estimated}</span>
             {ok ? (
               <CheckCircle2 className="h-3.5 w-3.5" />
             ) : (
