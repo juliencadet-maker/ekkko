@@ -20,6 +20,7 @@ interface DealCloseModalProps {
   onOpenChange: (open: boolean) => void;
   campaignId: string;
   campaignName: string;
+  dealScore?: any;
 }
 
 const OUTCOME_CATEGORIES = [

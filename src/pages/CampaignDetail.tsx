@@ -1713,6 +1713,7 @@ export default function CampaignDetail() {
         onOpenChange={setShowDealClose}
         campaignId={campaign.id}
         campaignName={campaign.name}
+        dealScore={dealScore}
       />
 
       {scriptVersions.length >= 2 && (
