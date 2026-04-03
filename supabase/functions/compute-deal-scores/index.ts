@@ -88,319 +88,402 @@ function computePriorityScore(score: any): number {
   return Math.min(100, urgency + recency + momentumScore + nbaScore);
 }
 
-// FONCTION 3 : Calcul et upsert des contradictions
-async function upsertContradictions(supabase: any, campaignId: string, orgId: string, score: any, viewers: any[]) {
-  const active: any[] = [];
-
-  // C1 : Champion silencieux
-  if ((score.sponsor_count ?? 0) > 0 && (score.days_since_last_signal ?? 0) > 7) {
-    active.push({ contradiction_id: 'C1', severity: 'high',
-      message: `Votre sponsor n'a plus eu d'activité depuis 7 jours`,
-      signal_a: `sponsors actifs: ${score.sponsor_count}`,
-      signal_b: `silence: ${score.days_since_last_signal} jours` });
-  }
-
-  // C2 : Vues sans sponsor identifié
-  if ((score.viewer_count ?? 0) > 3 && (score.sponsor_count ?? 0) === 0) {
-    active.push({ contradiction_id: 'C2', severity: 'medium',
-      message: `${score.viewer_count} contacts ont visionné mais aucun sponsor n'est identifié`,
-      signal_a: `viewer_count: ${score.viewer_count}`,
-      signal_b: 'sponsor_count: 0' });
-  }
-
-  // C3 : DES qui chute malgré activité récente
-  if ((score.event_velocity ?? 0) > 0 && score.momentum === 'declining' && (score.des ?? 100) < 50) {
-    active.push({ contradiction_id: 'C3', severity: 'high',
-      message: `L'engagement baisse malgré une activité récente — signal contradictoire`,
-      signal_a: `event_velocity: ${score.event_velocity}`,
-      signal_b: `momentum: declining, DES: ${score.des}` });
-  }
-
-  // C5 : Contact très engagé mais n'a pas partagé
-  const heavyViewerNoShare = viewers.find((v: any) =>
-    (v.replay_count || 0) > 3 && (v.total_watch_depth || 0) > 80 && !v.via_viewer_id);
-  if (heavyViewerNoShare) {
-    active.push({ contradiction_id: 'C5', severity: 'low',
-      message: `${heavyViewerNoShare.name || 'Un contact'} est très engagé mais n'a pas partagé la vidéo`,
-      signal_a: `replays: ${heavyViewerNoShare.replay_count}, complétion: ${heavyViewerNoShare.total_watch_depth}%`,
-      signal_b: 'aucun partage détecté' });
-  }
-
-  // Désactiver les contradictions résolues
-  const activeIds = active.map(c => c.contradiction_id);
-  if (activeIds.length < 5) {
-    await supabase.from('deal_contradictions')
-      .update({ is_active: false, resolved_at: new Date().toISOString() })
-      .eq('campaign_id', campaignId)
-      .eq('is_active', true)
-      .not('contradiction_id', 'in', `(${activeIds.map((id: string) => `'${id}'`).join(',')})`);
-  }
-
-  // Upsert les contradictions actives
-  if (active.length > 0) {
-    await supabase.from('deal_contradictions').upsert(
-      active.map(c => ({ ...c, campaign_id: campaignId, org_id: orgId, is_active: true })),
-      { onConflict: 'campaign_id,contradiction_id' }
-    );
-  }
-}
-
 async function computeForCampaign(supabase: any, campaign_id: string) {
-  // 1. Fetch all viewers for this campaign
-  const { data: viewers } = await supabase
-    .from("viewers")
-    .select("*")
-    .eq("campaign_id", campaign_id);
+  // ── 1. FETCH INITIAL EN PARALLÈLE ──────────────────────────────────
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
-  if (!viewers || viewers.length === 0) {
-    const { data: campaignData } = await supabase
-      .from('campaigns').select('created_at, org_id').eq('id', campaign_id).single();
-    const daysSinceSignal = campaignData
-      ? Math.floor((Date.now() - new Date(campaignData.created_at).getTime()) / 86400000)
-      : 999;
+  const [campaignRes, agentCtxRes, viewersRes, recentVideoRes, recentDocRes, prevScoreRes, dealAssetsRes] = await Promise.all([
+    supabase.from("campaigns")
+      .select("org_id, deal_value, deal_status, deal_risk_override, first_signal_at, committee_size_declared, deal_owner_id")
+      .eq("id", campaign_id).single(),
+    supabase.from("agent_context")
+      .select("stage, decision_window, incumbent_present, incumbent_type, committee_size_declared")
+      .eq("campaign_id", campaign_id).maybeSingle(),
+    supabase.from("viewers")
+      .select("id, contact_score, sponsor_score, blocker_score, total_watch_depth, last_event_at, title, domain, share_count, viewers_generated")
+      .eq("campaign_id", campaign_id),
+    supabase.from("video_events")
+      .select("event_type, created_at")
+      .eq("campaign_id", campaign_id)
+      .gte("created_at", sevenDaysAgo),
+    supabase.from("asset_page_events")
+      .select("asset_id, time_spent_seconds, created_at")
+      .eq("campaign_id", campaign_id)
+      .gte("created_at", sevenDaysAgo),
+    supabase.from("deal_scores")
+      .select("des")
+      .eq("campaign_id", campaign_id)
+      .order("scored_at", { ascending: false })
+      .limit(1),
+    supabase.from("deal_assets")
+      .select("id, asset_type, asset_purpose")
+      .eq("campaign_id", campaign_id)
+      .eq("asset_status", "active"),
+  ]);
 
-    await supabase.from("deal_scores").insert({
-      campaign_id,
-      des: 0,
-      viewer_count: 0,
-      sponsor_count: 0,
-      blocker_count: 0,
-      avg_watch_depth: 0,
-      breadth: 0,
-      event_velocity: 0,
-      momentum: "stable",
-      cold_start_regime: "cold_global",
-      alerts: [],
-      risk_level: "watch",
-      priority_score: 10,
-      days_since_last_signal: daysSinceSignal,
-    });
-    return { campaign_id, des: 0, regime: "cold_global", risk_level: "watch", priority_score: 10 };
+  const campaign = campaignRes.data;
+  const agentCtx = agentCtxRes.data;
+  const viewers = viewersRes.data || [];
+  const recentVideo = recentVideoRes.data || [];
+  const recentDoc = recentDocRes.data || [];
+  const prevScore = (prevScoreRes.data || [])[0] ?? null;
+  const dealAssets = dealAssetsRes.data || [];
+
+  if (!campaign) {
+    console.error("[C1a][computeForCampaign] campaign not found:", campaign_id);
+    return { campaign_id, error: "campaign not found" };
   }
 
-  // 2. Fetch events from last 7 days for velocity
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: recentEvents } = await supabase
-    .from("video_events")
-    .select("event_type, created_at, viewer_hash")
-    .eq("campaign_id", campaign_id)
-    .gte("created_at", sevenDaysAgo);
+  // ── 2. daysSinceSignal MULTI-SOURCE (asset-agnostic V1) ────────────
+  const [lastVideoRes, lastDocRes] = await Promise.all([
+    supabase.from("video_events").select("created_at")
+      .eq("campaign_id", campaign_id)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("asset_page_events").select("created_at")
+      .eq("campaign_id", campaign_id)
+      .gt("time_spent_seconds", 5)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const videoTs = lastVideoRes.data?.created_at ? new Date(lastVideoRes.data.created_at).getTime() : 0;
+  const docTs = lastDocRes.data?.created_at ? new Date(lastDocRes.data.created_at).getTime() : 0;
+  const lastSignalTs = Math.max(videoTs, docTs);
+  const daysSinceSignal = lastSignalTs > 0
+    ? Math.floor((Date.now() - lastSignalTs) / 86400000)
+    : 999;
 
-  // 3. Compute Contact Scores for each viewer
-  for (const viewer of viewers) {
-    const watchDepth = viewer.total_watch_depth || 0;
-    const replays = viewer.replay_count || 0;
-    const shares = viewer.share_count || 0;
-    const cta = viewer.cta_clicked ? 1 : 0;
-    const viewersGen = viewer.viewers_generated || 0;
+  // ── 3. STAGE ───────────────────────────────────────────────────────
+  const rawStage = agentCtx?.stage ?? null;
+  const hasStage = rawStage !== null;
+  const stage: "Early" | "Mid" | "Late" =
+    rawStage === "negotiation" || rawStage === "close" ? "Late"
+    : rawStage === "rfp" || rawStage === "shortlist" ? "Mid"
+    : "Early";
 
-    const replayIntensity = Math.min(replays * 25, 100);
-    const sharingScore = Math.min((shares * 30) + (viewersGen * 20), 100);
-    const ctaScore = cta * 100;
-    
-    const contactScore = Math.round(
-      watchDepth * 0.35 +
-      replayIntensity * 0.20 +
-      sharingScore * 0.25 +
-      ctaScore * 0.20
-    );
+  // ── 4. qualifiedEvents MULTI-SOURCE (asset-agnostic V1) ────────────
+  const qualifiedVideoTypes = ["watch_progress", "segment_replayed", "cta_clicked", "video_completed"];
+  const qualifiedVideoCount = recentVideo.filter(
+    (e: any) => qualifiedVideoTypes.includes(e.event_type)
+  ).length;
+  const qualifiedDocCount = recentDoc.filter(
+    (e: any) => (e.time_spent_seconds ?? 0) > 5
+  ).length;
+  const eventVelocity = qualifiedVideoCount + qualifiedDocCount;
 
-    const sponsorScore = Math.round(
-      (shares > 0 ? 30 : 0) +
-      (viewersGen > 0 ? 30 : 0) +
-      (watchDepth > 70 ? 20 : watchDepth > 40 ? 10 : 0) +
-      (cta ? 20 : 0)
-    );
+  // ── 5. DES STAGE-AWARE ─────────────────────────────────────────────
+  // Priorité committee_size : agent_context (déclaratif AE) → campaigns (fallback) → 6 (défaut)
+  const committeeSize = agentCtx?.committee_size_declared ?? campaign.committee_size_declared ?? 6;
 
-    const daysSinceLastEvent = viewer.last_event_at
-      ? (Date.now() - new Date(viewer.last_event_at).getTime()) / (1000 * 60 * 60 * 24)
-      : 30;
-    
-    const blockerScore = Math.round(
-      (watchDepth < 40 ? 30 : 0) +
-      (shares === 0 && daysSinceLastEvent > 7 ? 25 : 0) +
-      (replays === 0 && watchDepth < 60 ? 20 : 0) +
-      (daysSinceLastEvent > 14 ? 25 : daysSinceLastEvent > 7 ? 15 : 0)
-    );
+  const uniqueActiveContacts = viewers.filter(
+    (v: any) => (v.contact_score ?? 0) > 0
+  ).length;
+  const breadth = Math.min(uniqueActiveContacts / Math.max(committeeSize, 3), 1.0);
 
-    const influenceScore = Math.round(
-      Math.min((viewersGen * 35) + (shares * 25), 100)
-    );
+  const avgWatchDepth = viewers.length > 0
+    ? viewers.reduce((s: number, v: any) => s + (v.total_watch_depth ?? 0), 0) / viewers.length
+    : 0;
+  const depth = avgWatchDepth / 100;
+  const velocity = Math.min(eventVelocity / 10, 1.0);
 
-    let status = viewer.status || "unknown";
-    if (sponsorScore >= 60 && contactScore >= 50) status = "sponsor_actif";
-    else if (blockerScore >= 50) status = "bloqueur_potentiel";
-    else if (contactScore >= 30) status = "neutre";
-    else if (viewer.is_known) status = "nouveau";
-    else status = "inconnu";
+  const lambda = stage === "Late" ? 0.08 : stage === "Mid" ? 0.04 : 0.02;
+  const recency = Math.exp(-lambda * daysSinceSignal);
 
-    await supabase.from("viewers").update({
-      contact_score: contactScore,
-      sponsor_score: sponsorScore,
-      influence_score: influenceScore,
-      blocker_score: blockerScore,
-      status,
-      updated_at: new Date().toISOString(),
-    }).eq("id", viewer.id);
-  }
+  const distinctDomains = new Set(
+    viewers.filter((v: any) => v.domain).map((v: any) => v.domain)
+  ).size;
+  // threading : heuristique V1 par domaine — proxy faible, amélioré en C1b avec layers
+  const threading = Math.min(distinctDomains / Math.max(committeeSize, 3), 1.0);
 
-  // 4. Compute Deal-level scores
-  const viewerCount = viewers.length;
-  const avgWatchDepth = viewers.reduce((sum: number, v: any) => sum + (v.total_watch_depth || 0), 0) / viewerCount;
-  const sponsors = viewers.filter((v: any) => (v.sponsor_score || 0) >= 60);
-  const sponsorCount = sponsors.length;
-  const blockers = viewers.filter((v: any) => (v.blocker_score || 0) >= 50);
-  const blockerCount = blockers.length;
+  const weights = stage === "Late"
+    ? { b: 0.15, d: 0.30, v: 0.20, r: 0.25, t: 0.10 }
+    : stage === "Mid"
+    ? { b: 0.25, d: 0.25, v: 0.20, r: 0.15, t: 0.15 }
+    : { b: 0.35, d: 0.20, v: 0.20, r: 0.10, t: 0.15 };
 
-  const estimatedCommitteeSize = Math.max(viewerCount, 6);
-  const breadth = Math.round((viewerCount / estimatedCommitteeSize) * 100);
-
-  const qualifiedEventTypes = ["watch_progress", "segment_replayed", "page_shared", "cta_clicked", "video_completed"];
-  const qualifiedEvents = (recentEvents || []).filter((e: any) => qualifiedEventTypes.includes(e.event_type));
-  const eventVelocity = qualifiedEvents.length;
-
-  const distinctDomains = new Set(viewers.filter((v: any) => v.domain).map((v: any) => v.domain));
-  const multiThreadingScore = distinctDomains.size;
-
-  const avgContactScore = viewers.reduce((sum: number, v: any) => sum + (v.contact_score || 0), 0) / viewerCount;
-  const sponsorBonus = Math.min(sponsorCount * 10, 20);
-  const des = Math.round(
-    avgContactScore * 0.35 +
-    breadth * 0.20 +
-    Math.min(eventVelocity * 3, 100) * 0.15 +
-    sponsorBonus +
-    Math.min(multiThreadingScore * 15, 100) * 0.10
+  const DES = Math.round(
+    (breadth * weights.b + depth * weights.d + velocity * weights.v +
+     recency * weights.r + threading * weights.t) * 100
   );
 
-  // Momentum
-  const { data: prevScore } = await supabase
-    .from("deal_scores")
-    .select("des")
-    .eq("campaign_id", campaign_id)
-    .order("scored_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // ── 6. MOMENTUM ────────────────────────────────────────────────────
+  const prevDES = prevScore?.des ?? null;
+  const momentum = prevDES === null ? "stable"
+    : DES - prevDES > 5 ? "rising"
+    : DES - prevDES < -5 ? "declining"
+    : "stable";
 
-  let momentum = "stable";
-  if (prevScore) {
-    const delta = des - (prevScore.des || 0);
-    if (delta > 5) momentum = "rising";
-    else if (delta < -5) momentum = "declining";
+  // ── 7. CONTRADICTIONS C1-C10 ───────────────────────────────────────
+  const incumbentMultiplier =
+    (agentCtx?.incumbent_present && agentCtx?.incumbent_type === "competitor_named") ? 1.5 : 1.0;
+
+  const sponsors = viewers.filter((v: any) => (v.sponsor_score ?? 0) >= 60);
+  const maxBlocker = viewers.length > 0
+    ? Math.max(0, ...viewers.map((v: any) => v.blocker_score ?? 0))
+    : 0;
+  const silenceSeuil = stage === "Late" ? 5 : stage === "Mid" ? 7 : 10;
+
+  // newDealRiskOverride calculé ICI — avant C4 qui en dépend
+  // TEMPORAIRE C1a — approximation par titre. Remplacé par layer scoring en C1b.
+  const execFinanceTitles = ["CEO", "CFO", "COO", "DG", "PDG", "DAF", "Directeur Financier"];
+  const silentExecFinance = viewers.some((v: any) => {
+    if (!v.title) return false;
+    const match = execFinanceTitles.some(t =>
+      (v.title as string).toLowerCase().includes(t.toLowerCase())
+    );
+    if (!match) return false;
+    const daysSinceViewer = v.last_event_at
+      ? (Date.now() - new Date(v.last_event_at).getTime()) / 86400000
+      : 999;
+    return daysSinceViewer > 0.7 * Math.max(daysSinceSignal, 1);
+  });
+  const newDealRiskOverride = campaign.deal_risk_override || silentExecFinance;
+
+  // C7/C8 — documents uniquement en C1a
+  // C7/C8 vidéo : granularité asset insuffisante en C1a — traité en C1b
+  const criticalDocAssets = dealAssets.filter(
+    (a: any) => ["pricing", "closing"].includes(a.asset_purpose) && a.asset_type === "document"
+  );
+  const criticalDocIds = criticalDocAssets.map((a: any) => a.id);
+  let openedDocAssetIds = new Set<string>();
+  if (criticalDocIds.length > 0) {
+    const { data: docOpened } = await supabase
+      .from("asset_page_events").select("asset_id")
+      .in("asset_id", criticalDocIds).gt("time_spent_seconds", 5);
+    (docOpened || []).forEach((e: any) => openedDocAssetIds.add(e.asset_id));
+  }
+  const pricingDocOpened = criticalDocIds.some(id => openedDocAssetIds.has(id));
+
+  const active: any[] = [];
+
+  // C1 — Sponsor actif + silence en phase Late
+  if (hasStage && stage === "Late" && sponsors.length > 0 && daysSinceSignal > 10) {
+    active.push({ contradiction_id: "C1", severity: "high",
+      message: `Sponsor actif mais silence depuis ${daysSinceSignal}j en phase ${rawStage}`,
+      signal_a: `sponsors: ${sponsors.length}`, signal_b: `silence: ${daysSinceSignal}j` });
+  }
+  // C2 — Contacts sans sponsor
+  if (viewers.length > 3 && sponsors.length === 0) {
+    active.push({ contradiction_id: "C2", severity: "medium",
+      message: `${viewers.length} contacts identifiés, aucun sponsor détecté`,
+      signal_a: `viewers: ${viewers.length}`, signal_b: "sponsor_count: 0" });
+  }
+  // C3 — Activité + engagement en baisse
+  if (eventVelocity > 0 && momentum === "declining" && DES < 50) {
+    active.push({ contradiction_id: "C3", severity: "high",
+      message: "Activité récente mais engagement en baisse",
+      signal_a: `velocity: ${eventVelocity}`, signal_b: `DES: ${DES}` });
+  }
+  // C4 — Bloqueur + engagement faible (utilise newDealRiskOverride)
+  if (newDealRiskOverride || (maxBlocker > 70 && avgWatchDepth < 25 && daysSinceSignal > silenceSeuil)) {
+    active.push({ contradiction_id: "C4", severity: "medium",
+      message: `Bloqueur potentiel détecté — engagement faible depuis ${daysSinceSignal}j`,
+      signal_a: `max_blocker: ${maxBlocker}`, signal_b: `avg_watch: ${Math.round(avgWatchDepth)}%` });
+  }
+  // C5 — Engagement profond sans partage
+  const maxDepth = viewers.length > 0
+    ? Math.max(0, ...viewers.map((v: any) => v.total_watch_depth ?? 0))
+    : 0;
+  const anyShare = viewers.some((v: any) => (v.share_count ?? 0) > 0);
+  const anyViewersGen = viewers.some((v: any) => (v.viewers_generated ?? 0) > 0);
+  if (maxDepth > 75 && !anyShare && !anyViewersGen) {
+    active.push({ contradiction_id: "C5", severity: "low",
+      message: "Contact très engagé mais aucun partage",
+      signal_a: `max_depth: ${maxDepth}%`, signal_b: "partages: 0" });
+  }
+  // C6 — Deal élevé, 1 seul contact actif en Late
+  const uniqueActive = viewers.filter((v: any) => (v.contact_score ?? 0) > 0).length;
+  if (hasStage && stage === "Late" && uniqueActive === 1 && (campaign.deal_value ?? 0) > 50000) {
+    active.push({ contradiction_id: "C6", severity: "high",
+      message: `Deal ${Math.round((campaign.deal_value ?? 0) / 1000)}k€ en phase finale — 1 seul contact actif`,
+      signal_a: "contacts_actifs: 1", signal_b: `valeur: ${campaign.deal_value}` });
+  }
+  // C7 — Document critique envoyé non consulté en Late
+  // S'applique uniquement aux assets document critiques (C1a)
+  if (hasStage && stage === "Late" && daysSinceSignal > 5 && criticalDocAssets.length > 0 && !pricingDocOpened) {
+    const sev: "high" | "medium" = incumbentMultiplier > 1 ? "high" : "medium";
+    active.push({ contradiction_id: "C7", severity: sev,
+      message: "Asset pricing/closing (document) envoyé mais non consulté en phase finale",
+      signal_a: `assets_doc_critiques: ${criticalDocAssets.length}`, signal_b: `silence: ${daysSinceSignal}j` });
+  }
+  // C8 — Aucune consultation pricing en Late (angle distinct de C7)
+  // C7 et C8 peuvent coexister : C7 = envoi sans retour, C8 = absence d'engagement pricing
+  if (hasStage && stage === "Late" && criticalDocAssets.length > 0 && !pricingDocOpened) {
+    active.push({ contradiction_id: "C8", severity: "high",
+      message: "Aucune consultation de document pricing détectée en phase finale",
+      signal_a: "pricing_doc: jamais ouvert", signal_b: `stage: ${rawStage}` });
+  }
+  // C9 — Activité forte, profondeur faible
+  if (eventVelocity > 5 && avgWatchDepth < 30) {
+    active.push({ contradiction_id: "C9", severity: "medium",
+      message: "Forte activité mais faible profondeur — engagement superficiel",
+      signal_a: `events_7d: ${eventVelocity}`, signal_b: `avg_depth: ${Math.round(avgWatchDepth)}%` });
+  }
+  // C10 — Sur-engagement unique
+  const contactScores = viewers.map((v: any) => v.contact_score ?? 0);
+  const maxContact = contactScores.length > 0 ? Math.max(0, ...contactScores) : 0;
+  const indexOfMax = contactScores.indexOf(maxContact);
+  const othersScores = contactScores.filter((_: number, i: number) => i !== indexOfMax);
+  const othersAvg = othersScores.length > 0
+    ? othersScores.reduce((a: number, b: number) => a + b, 0) / othersScores.length
+    : 0;
+  if (maxContact > 80 && othersAvg < 30 && viewers.length > 1) {
+    active.push({ contradiction_id: "C10", severity: "high",
+      message: "1 contact sur-engagé, les autres inactifs — risque thread unique",
+      signal_a: `max_contact: ${maxContact}`, signal_b: `avg_autres: ${Math.round(othersAvg)}` });
   }
 
-  // Alerts
-  const alerts: { type: string; text: string }[] = [];
-  
-  for (const b of blockers) {
-    alerts.push({
-      type: "danger",
-      text: `${b.name || b.domain || "Contact inconnu"} — bloqueur potentiel (score ${b.blocker_score})`,
-    });
+  // ── 8. UPSERT CONTRADICTIONS + DÉSACTIVATION ───────────────────────
+  const activeIds = active.map((c: any) => c.contradiction_id);
+  if (active.length > 0) {
+    await supabase.from("deal_contradictions").upsert(
+      active.map((c: any) => ({ ...c, campaign_id, org_id: campaign.org_id, is_active: true })),
+      { onConflict: "campaign_id,contradiction_id" }
+    );
+  }
+  // Guard : évite SQL invalide NOT IN ()
+  if (activeIds.length > 0) {
+    await supabase.from("deal_contradictions")
+      .update({ is_active: false, resolved_at: new Date().toISOString() })
+      .eq("campaign_id", campaign_id).eq("is_active", true)
+      .not("contradiction_id", "in", `(${activeIds.map((id: string) => `'${id}'`).join(",")})`);
+  } else {
+    await supabase.from("deal_contradictions")
+      .update({ is_active: false, resolved_at: new Date().toISOString() })
+      .eq("campaign_id", campaign_id).eq("is_active", true);
   }
 
-  const silentSponsors = viewers.filter((v: any) => (v.total_watch_depth || 0) > 60 && (v.share_count || 0) === 0);
-  for (const s of silentSponsors) {
-    if (s.is_known) {
-      alerts.push({
-        type: "warning",
-        text: `${s.name || s.email} — engagement passif (${s.total_watch_depth}% vu, 0 partage)`,
+  // ── 9. INSIGHT PRIORITY SCORE + ALERTS ─────────────────────────────
+  const impactMap: Record<string, number> = {
+    C7: 1.0, C8: 1.0, C10: 1.0, C3: 0.8, C6: 0.8,
+    C1: 0.7, C4: 0.7, C2: 0.4, C9: 0.4, C5: 0.3,
+  };
+  const sevScoreMap: Record<string, number> = { high: 1.0, medium: 0.6, low: 0.3 };
+  const recencyFactor = Math.exp(-0.05 * daysSinceSignal);
+
+  const scored = active.map((c: any) => ({
+    ...c,
+    insight_priority_score:
+      (impactMap[c.contradiction_id] ?? 0.4) *
+      (sevScoreMap[c.severity] ?? 0.4) *
+      recencyFactor * 0.8,
+  })).sort((a: any, b: any) => b.insight_priority_score - a.insight_priority_score);
+
+  const alerts = scored.slice(0, 2).map((c: any, i: number) => ({
+    type: i === 0 ? "primary" : "secondary",
+    contradiction_id: c.contradiction_id,
+    message: c.message,
+    insight_priority_score: c.insight_priority_score,
+  }));
+
+  // ── 10. PRIORITY SCORES ────────────────────────────────────────────
+  const severityMap: Record<string, number> = { high: 3, medium: 2, low: 1 };
+  // incumbentMultiplier appliqué uniquement sur C7 et C8 (contrat canonique)
+  const contradictionSeverity = active.reduce(
+    (sum: number, c: any) =>
+      sum + (severityMap[c.severity] ?? 1) *
+      (["C7", "C8"].includes(c.contradiction_id) ? incumbentMultiplier : 1),
+    0
+  );
+  const momentum_decay = momentum === "declining" ? 0.8 : momentum === "rising" ? 0.2 : 0.5;
+  const daysRemaining = agentCtx?.decision_window
+    ? Math.floor((new Date(agentCtx.decision_window).getTime() - Date.now()) / 86400000)
+    : null;
+  const decision_window_score = daysRemaining !== null
+    ? Math.max(0, 1 - daysRemaining / 90)
+    : 0;
+
+  const priority_score = Math.round(
+    (100 - DES) * 0.35 +
+    momentum_decay * 100 * 0.30 +
+    Math.min(contradictionSeverity * 20, 100) * 0.20 +
+    decision_window_score * 100 * 0.15
+  );
+
+  // Priority Deal Score — orgMedian borné V1
+  // DOCTRINE : orgMedian est une heuristique de normalisation inter-deals, non une vérité business.
+  // Médiane d'échantillon sur les 100 deals récents. À refactorer si volume org > 200 deals.
+  const { data: orgDeals } = await supabase
+    .from("campaigns").select("deal_value")
+    .eq("org_id", campaign.org_id)
+    .not("deal_value", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  const orgValues = ((orgDeals || []).map((d: any) => Number(d.deal_value)) as number[])
+    .filter(v => v > 0).sort((a, b) => a - b);
+  const orgMedian = orgValues.length > 0
+    ? orgValues[Math.floor(orgValues.length / 2)]
+    : 50000;
+  const deal_value_weight = orgMedian > 0
+    ? Math.max(0.5, Math.min(2.0, (campaign.deal_value ?? 0) / orgMedian))
+    : 1.0;
+  const recency_weight = Math.exp(-0.1 * daysSinceSignal);
+  const priority_deal_score =
+    Math.round(priority_score * deal_value_weight * recency_weight * 10) / 10;
+
+  // ── 11. DEAL RISK LEVEL + OVERRIDE ─────────────────────────────────
+  const hasHighContradiction = active.some((c: any) => c.severity === "high");
+
+  const deal_risk_level = newDealRiskOverride ? "high_risk"
+    : (daysSinceSignal > 14 && campaign.deal_status === "observing") ? "stale"
+    : hasHighContradiction ? "high_risk"
+    : null; // null = conserver valeur existante
+
+  // ── 12. UPDATE CAMPAIGNS ───────────────────────────────────────────
+  const campaignUpdates: Record<string, any> = {};
+  if (newDealRiskOverride !== campaign.deal_risk_override)
+    campaignUpdates.deal_risk_override = newDealRiskOverride;
+  if (deal_risk_level !== null)
+    campaignUpdates.deal_risk_level = deal_risk_level;
+  // first_signal_at asset-agnostic : déclenché dès qu'un signal observé existe
+  if (!campaign.first_signal_at && lastSignalTs > 0) {
+    campaignUpdates.first_signal_at = new Date(lastSignalTs).toISOString();
+    campaignUpdates.deal_status = "observing";
+  }
+  if (Object.keys(campaignUpdates).length > 0) {
+    await supabase.from("campaigns").update(campaignUpdates).eq("id", campaign_id);
+  }
+
+  // ── 13. INSERT DEAL SCORES ─────────────────────────────────────────
+  await supabase.from("deal_scores").insert({
+    campaign_id,
+    des: DES,
+    viewer_count: viewers.length,
+    sponsor_count: sponsors.length,
+    blocker_count: viewers.filter((v: any) => (v.blocker_score ?? 0) > 70).length,
+    avg_watch_depth: Math.round(avgWatchDepth),
+    breadth: Math.round(breadth * 100),
+    event_velocity: eventVelocity,
+    multi_threading_score: distinctDomains,
+    momentum,
+    days_since_last_signal: daysSinceSignal,
+    risk_level: deal_risk_level ?? (DES < 35 ? "critical" : DES < 55 ? "watch" : "healthy"),
+    priority_score,
+    priority_deal_score,
+    alerts,
+    cold_start_regime: viewers.length === 0 ? "cold_global"
+      : viewers.length < 2 ? "cold_account"
+      : "warm_account",
+  });
+
+  // ── 14. CHURN SIGNAL ───────────────────────────────────────────────
+  // DÉCISION PRODUIT V1 : churn_signals = signal d'adoption org-level (pas deal-level)
+  // Granularité deal-level : gérée par deal_triggers en E2
+  if (daysSinceSignal > 30 && campaign.deal_status === "observing" && campaign.deal_owner_id) {
+    const { data: existingChurn } = await supabase.from("churn_signals").select("id")
+      .eq("org_id", campaign.org_id)
+      .eq("signal_type", "no_assets")
+      .is("resolved_at", null).limit(1);
+    if (!existingChurn || existingChurn.length === 0) {
+      await supabase.from("churn_signals").insert({
+        org_id: campaign.org_id,
+        user_id: campaign.deal_owner_id,
+        risk_level: "medium",
+        signal_type: "no_assets",
       });
     }
   }
 
-  const newViewers = viewers.filter((v: any) => {
-    const daysSince = (Date.now() - new Date(v.first_seen_at || v.created_at).getTime()) / (1000 * 60 * 60 * 24);
-    return daysSince <= 7;
-  });
-  if (newViewers.length > 0) {
-    alerts.push({
-      type: "info",
-      text: `${newViewers.length} nouveau(x) contact(s) détecté(s) cette semaine`,
-    });
-  }
-
-  // Recommended action
-  let recommendedAction: any = null;
-  if (blockerCount > 0 && sponsorCount === 0) {
-    recommendedAction = {
-      action: "address_blockers",
-      label: "Traiter les bloqueurs — aucun sponsor identifié",
-      cost: "élevé",
-      priority: "high",
-    };
-  } else if (sponsorCount > 0 && viewerCount < 3) {
-    recommendedAction = {
-      action: "expand_committee",
-      label: "Élargir le buying committee — seulement " + viewerCount + " contacts",
-      cost: "moyen",
-      priority: "high",
-    };
-  } else if (eventVelocity === 0 && viewerCount > 0) {
-    recommendedAction = {
-      action: "re_engage",
-      label: "Relancer le deal — aucune activité sur 7 jours",
-      cost: "faible",
-      priority: "medium",
-    };
-  } else if (sponsorCount >= 2 && avgWatchDepth > 50) {
-    recommendedAction = {
-      action: "push_for_close",
-      label: "Pousser vers la clôture — signaux favorables",
-      cost: "moyen",
-      priority: "high",
-    };
-  }
-
-  // Cold start regime
-  let coldStartRegime = "cold_global";
-  if (viewerCount >= 5 && sponsorCount >= 2) coldStartRegime = "warm_account";
-  else if (viewerCount >= 2) coldStartRegime = "cold_account";
-
-  // Calculer days_since_last_signal
-  const { data: lastEvent } = await supabase
-    .from('video_events').select('created_at')
-    .eq('campaign_id', campaign_id)
-    .order('created_at', { ascending: false }).limit(1).maybeSingle();
-  const daysSinceSignal = lastEvent
-    ? Math.floor((Date.now() - new Date(lastEvent.created_at).getTime()) / 86400000)
-    : 999;
-
-  // Calculer risk_level et priority_score
-  const scoreData: any = {
-    des, momentum, sponsor_count: sponsorCount, blocker_count: blockerCount,
-    viewer_count: viewerCount, event_velocity: eventVelocity,
-    days_since_last_signal: daysSinceSignal, recommended_action_v2: recommendedAction,
+  return {
+    campaign_id, DES, stage, momentum, priority_score, priority_deal_score,
+    contradictions: activeIds, deal_risk_level, daysSinceSignal,
   };
-  const riskLevel = computeRiskLevel(scoreData);
-  scoreData.risk_level = riskLevel;
-  const priorityScore = computePriorityScore(scoreData);
-
-  await supabase.from("deal_scores").insert({
-    campaign_id,
-    des,
-    viewer_count: viewerCount,
-    sponsor_count: sponsorCount,
-    blocker_count: blockerCount,
-    avg_watch_depth: Math.round(avgWatchDepth),
-    breadth,
-    event_velocity: eventVelocity,
-    multi_threading_score: multiThreadingScore,
-    momentum,
-    cold_start_regime: coldStartRegime,
-    alerts,
-    recommended_action: recommendedAction,
-    days_since_last_signal: daysSinceSignal,
-    risk_level: riskLevel,
-    priority_score: priorityScore,
-  });
-
-  // Get org_id for contradictions
-  const { data: campaign } = await supabase
-    .from('campaigns').select('org_id').eq('id', campaign_id).single();
-  const orgId = campaign?.org_id;
-  if (orgId) {
-    await upsertContradictions(supabase, campaign_id, orgId, scoreData, viewers);
-  }
-
-  return { campaign_id, des, momentum, regime: coldStartRegime, risk_level: riskLevel, priority_score: priorityScore };
 }
