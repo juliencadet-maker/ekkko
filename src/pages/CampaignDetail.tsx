@@ -1099,17 +1099,27 @@ export default function CampaignDetail() {
             <CardContent>
               {(() => {
                 const url = getVideoUrl(videos.find((v) => v.campaign_id === id));
-                if (!url && videos.length === 0) {
-                  return (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                      <Video className="h-12 w-12 text-muted-foreground/40" />
-                      <p className="font-medium text-foreground">
-                        {campaign.status === 'generating' ? 'Génération en cours...' :
-                         campaign.status === 'pending_approval' ? "En attente d'approbation" :
-                         'Aucun asset pour le moment'}
-                      </p>
-                    </div>
-                  );
+                  if (!url && videos.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                        <Video className="h-12 w-12 text-muted-foreground/40" />
+                        <p className="font-medium text-foreground">
+                          {campaign.status === 'generating' ? 'Generation en cours...' :
+                           campaign.status === 'pending_approval' ? "En attente d'approbation" :
+                           'Ajoutez un asset pour commencer a capter des signaux sur ce deal.'}
+                        </p>
+                        {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
+                          <>
+                            <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                              <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un asset
+                            </Button>
+                            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                              Video, document, presentation — tout asset partage devient un capteur.
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    );
                 }
                 return (
                   <div className="space-y-3">
