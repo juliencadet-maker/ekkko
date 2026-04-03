@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Campaign } from "@/types/database";
 import { DealRiskBadge } from "@/components/ui/DealRiskBadge";
+import { cn } from "@/lib/utils";
 
 interface DealScoreRow {
   campaign_id: string;
