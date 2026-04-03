@@ -566,7 +566,7 @@ export default function CampaignDetail() {
             {/* Sub-campaigns grid */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Sous-campagnes</h2>
+                <h2 className="text-lg font-semibold text-foreground">Sous-deals</h2>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 {subCampaigns.map((sub) => {
