@@ -13,8 +13,8 @@ interface NBACardProps {
   riskLevel?: RiskLevel;
   onCtaClick?: () => void;
   onMarkDone?: () => void;
-  /** Optional extra actions: e.g. "Envoyer un contenu", "Ajouter un contact" */
   secondaryAction?: { label: string; onClick: () => void };
+  signalFreshness?: "recent" | "old" | null;
 }
 
 const riskStyles: Record<string, { bg: string; border: string }> = {
@@ -23,16 +23,22 @@ const riskStyles: Record<string, { bg: string; border: string }> = {
   healthy: { bg: "bg-[#D0FAE8]", border: "border-l-[3px] border-l-[#1AE08A]" },
 };
 
-export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMarkDone, secondaryAction }: NBACardProps) {
+const FRESHNESS_BADGE = {
+  recent: { text: "Récent", bg: "#D0FAE8", color: "#1A7A4A" },
+  old: { text: "Ancien", bg: "#F3F4F6", color: "#6B7280" },
+} as const;
+
+export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMarkDone, secondaryAction, signalFreshness }: NBACardProps) {
   const [dismissed, setDismissed] = useState(false);
   const risk = riskLevel && riskStyles[riskLevel] ? riskLevel : "healthy";
   const style = riskStyles[risk];
 
   if (dismissed) return null;
 
+  const freshnessBadge = signalFreshness ? (FRESHNESS_BADGE[signalFreshness] ?? null) : null;
+
   return (
     <div className={cn("rounded-lg border border-border overflow-hidden", style.bg, style.border)}>
-      {/* Label */}
       <div className="px-4 pt-3 pb-1 flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Action recommandée
@@ -49,25 +55,25 @@ export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMar
         </TooltipProvider>
       </div>
 
-      {/* Action line — bold, prominent */}
       <div className="px-4 py-2">
         <p className="text-base font-bold text-foreground leading-snug">{actionLine}</p>
       </div>
 
-      {/* Why line — factual, one line */}
-      <div className="px-4 pb-2">
+      <div className="px-4 pb-2 flex items-center gap-2">
         <p className="text-sm text-muted-foreground leading-snug">{whyLine}</p>
+        {freshnessBadge && (
+          <span
+            className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium shrink-0"
+            style={{ backgroundColor: freshnessBadge.bg, color: freshnessBadge.color }}
+          >
+            {freshnessBadge.text}
+          </span>
+        )}
       </div>
 
-      {/* CTAs */}
       <div className="px-4 py-3 flex items-center justify-end gap-2 flex-wrap">
         {secondaryAction && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-sm"
-            onClick={secondaryAction.onClick}
-          >
+          <Button size="sm" variant="outline" className="text-sm" onClick={secondaryAction.onClick}>
             {secondaryAction.label}
           </Button>
         )}

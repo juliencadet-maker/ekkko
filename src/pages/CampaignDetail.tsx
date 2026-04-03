@@ -67,7 +67,7 @@ import {
   Info,
 } from "lucide-react";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Campaign, Video as VideoType, Recipient } from "@/types/database";
@@ -222,6 +222,29 @@ export default function CampaignDetail() {
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
   >({});
 
+  // ─── B3 State ─────────────────────────────────────────────────────
+  type TimelineEventRow = {
+    id: string;
+    event_type: string;
+    event_layer: "fact" | "inference" | "declared" | null;
+    event_data: Record<string, unknown> | null;
+    created_at: string;
+  };
+
+  type DealAssetRow = {
+    id: string;
+    asset_type: string;
+    asset_purpose: string;
+    version_number: number | null;
+  };
+
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEventRow[]>([]);
+  const [dealAssets, setDealAssets] = useState<DealAssetRow[]>([]);
+  const [q3DocEvents, setQ3DocEvents] = useState<{ asset_id: string }[]>([]);
+  const [q3VideoHasEvents, setQ3VideoHasEvents] = useState<boolean>(false);
+  const [timelineLoading, setTimelineLoading] = useState(true);
+  const [q3Loading, setQ3Loading] = useState(true);
+
   const isParent = campaign && !campaign.parent_campaign_id && subCampaigns.length > 0;
 
   // Video generation polling
@@ -356,15 +379,66 @@ export default function CampaignDetail() {
           .order("version_number", { ascending: false });
         setScriptVersions(versionsData || []);
 
-        // Fetch deal score + viewers + agent_context
-        const [dealScoreRes, viewersRes, agentCtxRes] = await Promise.all([
+        // Fetch deal score + viewers + agent_context + timeline + deal_assets
+        const [dealScoreRes, viewersRes, agentCtxRes, timelineRes, dealAssetsRes] = await Promise.all([
           supabase.from("deal_scores").select("*").eq("campaign_id", id).order("scored_at", { ascending: false }).limit(1),
           supabase.from("viewers").select("*").eq("campaign_id", id).order("contact_score", { ascending: false, nullsFirst: false }),
           supabase.from("agent_context").select("*").eq("campaign_id", id).maybeSingle(),
+          supabase.from("timeline_events").select("id, event_type, event_layer, event_data, created_at").eq("campaign_id", id).order("created_at", { ascending: false }).limit(5),
+          supabase.from("deal_assets").select("id, asset_type, asset_purpose, version_number").eq("campaign_id", id).eq("asset_status", "active"),
         ]);
         if (dealScoreRes.data?.[0]) setDealScore(dealScoreRes.data[0]);
         if (viewersRes.data) setViewers(viewersRes.data);
         if (agentCtxRes.data) setAgentContext(agentCtxRes.data);
+
+        // B3 — timeline_events
+        if (timelineRes.error) console.error("[B3][timeline_events][campaign_id=%s] %s", id, timelineRes.error.message);
+        else setTimelineEvents((timelineRes.data || []) as TimelineEventRow[]);
+        setTimelineLoading(false);
+
+        // B3 — deal_assets
+        if (dealAssetsRes.error) console.error("[B3][deal_assets][campaign_id=%s] %s", id, dealAssetsRes.error.message);
+        else setDealAssets((dealAssetsRes.data || []) as DealAssetRow[]);
+
+        // B3 — Q3 queries
+        const criticalPurposes = ["pricing", "closing", "technical"];
+        const dealAssetsData = (dealAssetsRes.data || []) as DealAssetRow[];
+
+        const documentAssetIds: string[] = [...new Set(
+          dealAssetsData
+            .filter((a: DealAssetRow) => a.asset_type === "document" && criticalPurposes.includes(a.asset_purpose))
+            .map((a: DealAssetRow) => a.id)
+        )];
+        const videoPurposes: string[] = [...new Set(
+          dealAssetsData
+            .filter((a: DealAssetRow) => a.asset_type === "video" && criticalPurposes.includes(a.asset_purpose))
+            .map((a: DealAssetRow) => a.asset_purpose)
+        )];
+
+        if (documentAssetIds.length === 0 && videoPurposes.length === 0) {
+          setQ3Loading(false);
+        } else {
+          const emptyDocResult = { data: [] as { asset_id: string }[], error: null } as const;
+          const emptyVidResult = { data: [] as { campaign_id: string }[], error: null } as const;
+
+          const [docEventsRes, videoEventsRes] = await Promise.all([
+            documentAssetIds.length > 0
+              ? supabase.from("asset_page_events").select("asset_id").in("asset_id", documentAssetIds).gt("time_spent_seconds", 5)
+              : Promise.resolve(emptyDocResult),
+            videoPurposes.length > 0
+              ? supabase.from("video_events").select("campaign_id").eq("campaign_id", id).limit(1)
+              : Promise.resolve(emptyVidResult),
+          ]);
+
+          if (docEventsRes.error) console.error("[B3][asset_page_events][campaign_id=%s] %s", id, docEventsRes.error.message);
+          else setQ3DocEvents((docEventsRes.data || []) as { asset_id: string }[]);
+
+          if (videoEventsRes.error) console.error("[B3][video_events][campaign_id=%s] %s", id, videoEventsRes.error.message);
+          else setQ3VideoHasEvents((videoEventsRes.data || []).length > 0);
+
+          setQ3Loading(false);
+        }
+
         // Initialize snooze date from campaign
         if (campaignData.snoozed_until) setSnoozeDate(new Date(campaignData.snoozed_until));
       } catch {
@@ -379,6 +453,135 @@ export default function CampaignDetail() {
   }, [id, membership?.org_id]);
 
   const kpis = useMemo(() => computeKpis(viewEvents, watchProgress), [viewEvents, watchProgress]);
+
+  // ─── B3 — getSignalFreshness ──────────────────────────────────────
+  function getSignalFreshness(isoDate: string): "recent" | "old" | null {
+    const diffHours = (Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60);
+    if (diffHours < 72) return "recent";
+    if (diffHours > 168) return "old";
+    return null;
+  }
+
+  // ─── B3 — MAPPING_TABLE ───────────────────────────────────────────
+  const MAPPING_TABLE: Record<string, string> = {
+    "video_opened": "Vidéo ouverte",
+    "video_started": "Vidéo démarrée",
+    "watch_progress": "Progression vidéo",
+    "video_completed": "Vidéo regardée en entier",
+    "segment_replayed": "Segment rejoué",
+    "cta_clicked": "CTA cliqué",
+    "page_shared": "Contenu partagé",
+    "doc_opened": "Document ouvert",
+    "doc_page_viewed": "Page consultée",
+    "doc_downloaded": "Document téléchargé",
+    "doc_return_visit": "Retour sur le document",
+    "ae_action_done": "Action effectuée par l'AE",
+    "offline_signal": "Signal offline enregistré",
+  };
+
+  const displayEvents = useMemo(() => {
+    return timelineEvents.map(row => ({
+      id: row.id,
+      type: row.event_type,
+      label: (typeof row.event_data?.summary_fr === "string" && (row.event_data.summary_fr as string).trim())
+        ? (row.event_data.summary_fr as string).trim()
+        : (MAPPING_TABLE[row.event_type] ?? row.event_type),
+      time: (() => {
+        const d = safeDate(row.created_at);
+        if (!d) return "—";
+        try { return formatDistanceToNow(d, { locale: fr, addSuffix: true }); } catch { return "—"; }
+      })(),
+      event_layer: row.event_layer ?? undefined,
+      freshness: getSignalFreshness(row.created_at),
+    }));
+  }, [timelineEvents]);
+
+  // ─── B3 — Q1: Qui regarde ? ──────────────────────────────────────
+  const q1Text = useMemo(() => {
+    if (viewers.length === 0) return "Aucun contact identifié — partagez un asset pour générer les premiers signaux.";
+    return viewers
+      .map((v: any) => v.name ? (v.title ? `${v.name} (${v.title})` : v.name) : "Contact identifié partiellement")
+      .join(" · ");
+  }, [viewers]);
+
+  // ─── B3 — Q2: Qui ne regarde pas ? ───────────────────────────────
+  const LAYER_KEYWORDS: Record<string, string[]> = {
+    executive: ["CEO","CFO","COO","DG","PDG","Directeur Général","Directeur Financier"],
+    financial: ["DAF","Contrôleur","Finance","Trésorier"],
+    legal: ["Juridique","DPO","Legal","Juriste"],
+    procurement: ["Achats","Procurement","Acheteur"],
+    technical: ["DSI","CTO","Architecte","Responsable SI","IT"],
+    operational: ["Chef projet","Manager","Responsable","Directeur de projet"],
+  };
+
+  const q2Text = useMemo(() => {
+    if (viewers.length === 0) return "Impossible à déterminer — aucun contact identifié.";
+    const viewerTitles = viewers.map((v: any) => ((v.title as string) ?? "").toLowerCase());
+    const missingCritical: string[] = [];
+    const missingOther: string[] = [];
+    Object.entries(LAYER_KEYWORDS).forEach(([layer, keywords]) => {
+      const covered = keywords.some(kw => viewerTitles.some(t => t.includes(kw.toLowerCase())));
+      if (!covered) {
+        if (["executive", "financial"].includes(layer)) missingCritical.push(layer);
+        else missingOther.push(layer);
+      }
+    });
+    if (missingCritical.length === 0 && missingOther.length === 0) return "Couverture complète identifiée.";
+    const parts = [
+      ...missingCritical.map(l => `${l} : non couvert`),
+      ...missingOther.map(l => `${l} : non couvert`),
+    ];
+    return parts.join(" · ");
+  }, [viewers]);
+
+  // ─── B3 — Q3: Qui a lu ce qui compte ? ───────────────────────────
+  const q3Result = useMemo(() => {
+    const critPurposes = ["pricing", "closing", "technical"];
+    const openedDocAssetIds = new Set(q3DocEvents.map(e => e.asset_id));
+
+    const docLines = dealAssets
+      .filter(a => a.asset_type === "document" && critPurposes.includes(a.asset_purpose))
+      .map(a => `${a.asset_purpose} (document) : ${openedDocAssetIds.has(a.id) ? "ouvert" : "non ouvert"}`);
+
+    const videoLines = [...new Set(
+      dealAssets
+        .filter(a => a.asset_type === "video" && critPurposes.includes(a.asset_purpose))
+        .map(a => a.asset_purpose)
+    )].map(purpose => `${purpose} (vidéo) : granularité asset indisponible`);
+
+    const hasVideoAssets = videoLines.length > 0;
+    const videoActivity = hasVideoAssets
+      ? (q3VideoHasEvents ? "Activité vidéo détectée sur ce deal." : "Aucune activité vidéo détectée sur ce deal.")
+      : null;
+
+    if (docLines.length === 0 && videoLines.length === 0)
+      return { lines: [] as string[], videoActivity: null as string | null, hasVideoAssets: false };
+
+    return { lines: [...docLines, ...videoLines], videoActivity, hasVideoAssets };
+  }, [dealAssets, q3DocEvents, q3VideoHasEvents]);
+
+  // ─── B3 — Q4: Qui vient d'apparaître ? ───────────────────────────
+  const q4Text = useMemo(() => {
+    const now48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const recent = viewers.filter((v: any) => v.first_seen_at && new Date(v.first_seen_at) >= now48h);
+    if (recent.length === 0) return "Aucun nouveau contact dans les 48h.";
+    return recent
+      .map((v: any) => {
+        const d = safeDate(v.first_seen_at);
+        const ago = d ? (() => { try { return formatDistanceToNow(d, { locale: fr, addSuffix: true }); } catch { return "—"; } })() : "—";
+        return `${v.name ?? "Contact"} — détecté ${ago}`;
+      })
+      .join(", ");
+  }, [viewers]);
+
+  // ─── B3 — signalFreshness for NBACard ─────────────────────────────
+  const signalFreshness = useMemo(() =>
+    dealScore?.last_signal_at
+      ? getSignalFreshness(dealScore.last_signal_at)
+      : (campaign as any)?.first_signal_at
+        ? getSignalFreshness((campaign as any).first_signal_at)
+        : null,
+  [dealScore, campaign]);
 
   const handleSaveLandingPageConfig = async (config: Record<string, unknown>) => {
     if (!campaign || !membership?.org_id) return;
@@ -790,14 +993,7 @@ export default function CampaignDetail() {
     : desValue >= 40 ? "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))]"
     : "bg-destructive/15 text-destructive";
 
-  // Mock timeline events
-  const mockTimelineEvents = [
-    { id: "1", type: "view", label: "Claire Martin a ouvert le deck pricing", detail: "se.com · desktop · 3 min", time: "il y a 2h" },
-    { id: "2", type: "share", label: "Claire Martin a partagé le lien", detail: "1 nouveau viewer détecté", time: "il y a 1j" },
-    { id: "3", type: "cta_click", label: "Lucas Perrin a cliqué le CTA", detail: "Réserver une démo", time: "il y a 3j" },
-    { id: "4", type: "view", label: "Nathalie Roy a ouvert la vidéo exec", detail: "se.com · mobile · 45s", time: "il y a 5j" },
-    { id: "5", type: "declared", label: "Call positif enregistré", detail: "Déclaré par l'AE", time: "il y a 7j" },
-  ];
+  // B3 — mockTimelineEvents removed, using displayEvents from real data
 
   // Contact badge helper
   const getContactBadge = (status: string) => {
@@ -1043,6 +1239,7 @@ export default function CampaignDetail() {
                 riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
                 onMarkDone={handleNBAMarkDone}
                 secondaryAction={nbaSecondaryAction}
+                signalFreshness={signalFreshness}
               />
             </SectionGuard>
           )}
@@ -1066,12 +1263,12 @@ export default function CampaignDetail() {
 
           {/* Dernier signal — always visible, one discreet line */}
           <SectionGuard name="DernierSignal">
-            {mockTimelineEvents.length > 0 ? (
+            {displayEvents.length > 0 ? (
               <p className="text-xs text-muted-foreground px-1">
-                Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+                Dernier signal : {displayEvents[0].label} · {displayEvents[0].time}
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground px-1">Aucun signal reçu pour le moment.</p>
+              <p className="text-xs text-muted-foreground px-1">Aucun signal reçu.</p>
             )}
           </SectionGuard>
 
@@ -1088,14 +1285,19 @@ export default function CampaignDetail() {
                 </button>
               </CardHeader>
               {/* Preview line when collapsed */}
-              {!timelineOpen && mockTimelineEvents.length > 0 && (
+              {!timelineOpen && displayEvents.length > 0 && (
                 <CardContent className="pt-0 px-4 pb-3">
                   <p className="text-xs text-muted-foreground truncate">
-                    {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+                    {displayEvents[0].label} · {displayEvents[0].time}
                   </p>
                 </CardContent>
               )}
-              {mockTimelineEvents.length > 0 ? (
+              {!timelineOpen && displayEvents.length === 0 && (
+                <CardContent className="pt-0 px-4 pb-3">
+                  <p className="text-xs text-muted-foreground">Aucun événement enregistré.</p>
+                </CardContent>
+              )}
+              {displayEvents.length > 0 ? (
                 <div
                   className={cn(
                     "overflow-hidden transition-all duration-300 ease-out",
@@ -1103,14 +1305,15 @@ export default function CampaignDetail() {
                   )}
                 >
                   <CardContent className="pt-0 px-3">
-                    <DealTimeline events={mockTimelineEvents} />
+                    <DealTimeline events={displayEvents} />
                   </CardContent>
                 </div>
-              ) : (
+              ) : timelineOpen ? (
                 <CardContent className="pt-0 px-3">
-                  <p className="text-xs text-muted-foreground py-4 text-center">Aucun événement enregistré.</p>
+                  <p className="text-sm text-muted-foreground">Aucun écho identifié pour le moment.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Tout contenu partagé devient un capteur.</p>
                 </CardContent>
-              )}
+              ) : null}
             </Card>
           </SectionGuard>
 
@@ -1150,6 +1353,61 @@ export default function CampaignDetail() {
 
         {/* ─── Tab 2: Deal Intelligence ─── */}
         <TabsContent value="intelligence" className="space-y-6">
+          {/* B3 — Questions clés */}
+          <SectionGuard name="QuestionsClés">
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-[#0D1B2A]">Questions clés</p>
+
+              <Card className="shadow-none">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs font-medium text-[#0D1B2A] mb-1">Qui regarde ?</p>
+                  <p className="text-sm text-muted-foreground">{q1Text}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-none">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs font-medium text-[#0D1B2A] mb-1">Qui ne regarde pas ?</p>
+                  <p className="text-sm text-muted-foreground">{q2Text}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-none">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs font-medium text-[#0D1B2A] mb-1">Qui a lu ce qui compte ?</p>
+                  {q3Loading ? (
+                    <EkkoLoader mode="loop" size={16} />
+                  ) : (
+                    <>
+                      {q3Result.lines.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Aucun asset critique envoyé sur ce deal.</p>
+                      ) : (
+                        q3Result.lines.map((line, i) => (
+                          <p key={i} className="text-sm text-muted-foreground">{line}</p>
+                        ))
+                      )}
+                      {q3Result.videoActivity && (
+                        <p className="text-sm text-muted-foreground mt-1">{q3Result.videoActivity}</p>
+                      )}
+                      {q3Result.hasVideoAssets && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Mesure actuelle : niveau deal. Le suivi par asset vidéo individuel sera disponible ultérieurement.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-none">
+                <CardContent className="py-3 px-4">
+                  <p className="text-xs font-medium text-[#0D1B2A] mb-1">Qui vient d'apparaître ?</p>
+                  <p className="text-sm text-muted-foreground">{q4Text}</p>
+                </CardContent>
+              </Card>
+            </div>
+          </SectionGuard>
+
           <SectionGuard name="PowerMap">
             <Card>
               <CardHeader>
