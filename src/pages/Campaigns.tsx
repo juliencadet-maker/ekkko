@@ -297,6 +297,7 @@ export default function Campaigns() {
                   Analyser ↗
                 </button>
               </div>
+              </div>
             );
           })}
         </div>
