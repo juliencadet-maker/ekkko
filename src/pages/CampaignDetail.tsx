@@ -781,7 +781,16 @@ export default function CampaignDetail() {
   const recAction = (dealScore?.recommended_action_v2 as Record<string, unknown> | null) ?? null;
   const nbaActionLine = (recAction?.action as string) || (dealScore?.recommended_action as any)?.label || "Définir la prochaine action";
   const stageLabel = STAGE_LABELS[agentContext?.stage || ""] || agentContext?.stage || "—";
-  const nbaWhyLine = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}${agentContext?.decision_window ? ` · décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : ""}`;
+  const nbaWhyLine = (() => {
+    let line = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}`;
+    if (agentContext?.decision_window) {
+      try {
+        const d = new Date(agentContext.decision_window);
+        if (!isNaN(d.getTime())) line += ` · décision ${format(d, "d MMMM", { locale: fr })}`;
+      } catch { /* ignore invalid date */ }
+    }
+    return line;
+  })();
   const nbaCtaLabel = (recAction?.cta as string) || "Lancer l'action";
 
   // Signal banner — strict 48h condition
