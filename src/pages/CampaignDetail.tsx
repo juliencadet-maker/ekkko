@@ -993,14 +993,7 @@ export default function CampaignDetail() {
     : desValue >= 40 ? "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))]"
     : "bg-destructive/15 text-destructive";
 
-  // Mock timeline events
-  const mockTimelineEvents = [
-    { id: "1", type: "view", label: "Claire Martin a ouvert le deck pricing", detail: "se.com · desktop · 3 min", time: "il y a 2h" },
-    { id: "2", type: "share", label: "Claire Martin a partagé le lien", detail: "1 nouveau viewer détecté", time: "il y a 1j" },
-    { id: "3", type: "cta_click", label: "Lucas Perrin a cliqué le CTA", detail: "Réserver une démo", time: "il y a 3j" },
-    { id: "4", type: "view", label: "Nathalie Roy a ouvert la vidéo exec", detail: "se.com · mobile · 45s", time: "il y a 5j" },
-    { id: "5", type: "declared", label: "Call positif enregistré", detail: "Déclaré par l'AE", time: "il y a 7j" },
-  ];
+  // B3 — mockTimelineEvents removed, using displayEvents from real data
 
   // Contact badge helper
   const getContactBadge = (status: string) => {
