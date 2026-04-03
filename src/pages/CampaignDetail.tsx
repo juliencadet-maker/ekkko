@@ -846,12 +846,7 @@ export default function CampaignDetail() {
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
   return (
     <AppLayout>
-      {/* First action spotlight banner — only if signal < 48h */}
-      {showSignalBanner && (
-        <div className="mb-4 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-lg border border-accent/20">
-          Signal détecté — 1 action disponible maintenant
-        </div>
-      )}
+      {/* Signal banner removed — replaced by inline badge in deal list */}
 
       {/* Snoozed banner */}
       {isSnoozed && (
