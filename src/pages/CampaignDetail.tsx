@@ -807,7 +807,7 @@ export default function CampaignDetail() {
               <h1 className="text-2xl font-bold text-[#0D1B2A]">{campaign.name}</h1>
               {dealValue && <span className="text-lg font-semibold text-muted-foreground">{(dealValue / 1000).toFixed(0)}k€</span>}
               {agentContext?.stage && (
-                <Badge variant="outline" className="text-xs">{stageLabel}</Badge>
+                <Badge variant="outline" className="text-xs text-muted-foreground border-border bg-muted/40">{stageLabel}</Badge>
               )}
               {(() => {
                 const rl = (campaign as any).deal_risk_level || dealScore?.risk_level || "healthy";
@@ -824,21 +824,31 @@ export default function CampaignDetail() {
                   </Badge>
                 );
               })()}
-              <span className={cn("px-3 py-1.5 rounded-full text-sm font-bold shadow-sm", desClass)}>
-                DES {desValue ?? "—"}
-              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className={cn("px-3 py-1.5 rounded-full text-sm font-bold shadow-sm cursor-default", desClass)}>
+                      {desValue == null ? "DES —" : desValue < 40 ? "DES faible" : desValue <= 70 ? "DES moyen" : "DES fort"}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs text-muted-foreground">Score : {desValue ?? "—"}/100</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
+            <button
+              onClick={() => navigate(`/app/campaigns/${id}/quick`)}
+              className="text-xs text-[#0D1B2A] underline hover:text-foreground mt-1 inline-flex items-center gap-1"
+            >
+              → Vue rapide
+            </button>
             <p className="mt-1 text-sm text-muted-foreground">
               Dernière activité : {lastUpdate}
             </p>
             <p className="text-[11px] text-muted-foreground/60">
               Analyse mise à jour {lastUpdate}
             </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate(`/app/campaigns/${id}/quick`)}>
-              Vue rapide →
-            </Button>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
