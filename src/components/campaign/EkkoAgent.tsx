@@ -12,6 +12,29 @@ import {
 } from "lucide-react";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
+const BADGE_PATTERNS = [
+  { pattern: /^\[FAIT\]\s*/, type: "fact" as const },
+  { pattern: /^\[INFÉRENCE ≈?\]\s*/, type: "inference" as const },
+  { pattern: /^\[CONTEXTE AE\]\s*/, type: "declared" as const },
+];
+
+const BADGE_STYLE = {
+  fact: { label: "FAIT", bg: "#F7F6F3", color: "#0D1B2A", border: "#D1D5DB" },
+  inference: { label: "INFÉRENCE ≈", bg: "#FAEEDA", color: "#E8A838", border: "#F5D08A" },
+  declared: { label: "CONTEXTE AE", bg: "#E6F1FB", color: "#3B82F6", border: "#BFDBFE" },
+} as const;
+
+function parseAgentMessage(content: string): Array<{ badge: keyof typeof BADGE_STYLE | null; text: string }> {
+  return content.split("\n").map(line => {
+    for (const { pattern, type } of BADGE_PATTERNS) {
+      if (pattern.test(line)) {
+        return { badge: type, text: line.replace(pattern, "") };
+      }
+    }
+    return { badge: null, text: line };
+  });
+}
+
 interface EkkoAgentProps {
   campaignId: string;
   campaignName: string;
