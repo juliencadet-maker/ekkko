@@ -67,7 +67,7 @@ export default function AgentPage() {
     <AppLayout>
       <PageHeader
         title="Agent Ekko"
-        description="Analysez n'importe quel deal. L'agent a accès à tous les signaux."
+        description="Posez vos questions sur n'importe quel deal. L'agent a accès à tous les signaux."
         actions={
           <Select value={selectedId || ""} onValueChange={handleSelect}>
             <SelectTrigger className="w-[280px]">
