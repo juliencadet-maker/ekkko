@@ -1035,7 +1035,7 @@ export default function CampaignDetail() {
                 </div>
                 <div className="flex items-start gap-2">
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
-                  <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${agentContext?.incumbent_type === "competitor_named" ? "concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${agentContext?.competitive_situation || "—"}`}</p>
+                  <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${safeAgentContext.incumbent_type === "competitor_named" ? "concurrent identifié" : safeAgentContext.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${safeAgentContext.competitive_situation || "—"}`}</p>
                 </div>
               </div>
             </div>
