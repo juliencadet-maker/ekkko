@@ -812,9 +812,9 @@ export default function CampaignDetail() {
               {(() => {
                 const rl = (campaign as any).deal_risk_level || dealScore?.risk_level || "healthy";
                 const riskCfg: Record<string, { label: string; cls: string }> = {
-                  high_risk: { label: "Risque eleve", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
-                  critical: { label: "Risque eleve", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
-                  watch: { label: "A surveiller", cls: "bg-[#FAEEDA] text-[#E8A838] border-[#E8A838]/30" },
+                  high_risk: { label: "Risque élevé", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
+                  critical: { label: "Risque élevé", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
+                  watch: { label: "À surveiller", cls: "bg-[#FAEEDA] text-[#E8A838] border-[#E8A838]/30" },
                   healthy: { label: "Sain", cls: "bg-[#D0FAE8] text-[#1AE08A] border-[#1AE08A]/30" },
                 };
                 const cfg = riskCfg[rl] || riskCfg.healthy;
