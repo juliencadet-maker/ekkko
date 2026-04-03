@@ -1074,7 +1074,8 @@ export default function CampaignDetail() {
                     <div className="w-px h-6 bg-[#D5D2CB]/30" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour révéler la carte politique réelle</p>
+                    <p className="text-sm font-medium text-foreground mb-1">Aucun écho identifié sur ce deal.</p>
+                    <p className="text-xs text-muted-foreground mb-4">Envoyez un contenu pour générer les premiers signaux.</p>
                     <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
                       <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
                     </Button>
