@@ -254,7 +254,7 @@ export default function Campaigns() {
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-foreground">{campaign.name}</h3>
                     <StatusBadge status={campaign.status} />
-                    <span className="text-xs text-muted-foreground">· Signal {getTimeSinceSignal(campaign)}</span>
+                    <span className="text-xs text-muted-foreground">· Activité {getTimeSinceSignal(campaign)}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {(campaign as any).identities?.display_name || "—"}

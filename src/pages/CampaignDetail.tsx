@@ -717,7 +717,9 @@ export default function CampaignDetail() {
   };
 
   // NBA mock data
-  const nbaFact = `${viewers.length === 0 ? "0 ouverture" : `${viewers.length} contacts`} · ${dealScore?.days_since_last_signal ?? "?"}j sans signal · ${dealValue ? `${(dealValue / 1000).toFixed(0)}k€` : "—"}`;
+  const daysSinceSignal = dealScore?.days_since_last_signal;
+  const activityLabel = daysSinceSignal === 0 ? "Aucune activité récente" : `Aucune activité depuis ${daysSinceSignal ?? "?"}j`;
+  const nbaFact = `${viewers.length === 0 ? "0 ouverture" : `${viewers.length} contacts`} · ${activityLabel} · ${dealValue ? `${(dealValue / 1000).toFixed(0)}k€` : "—"}`;
   const nbaContext = `Contexte AE : ${agentContext?.stage || "—"} · ${agentContext?.decision_window ? `décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : "—"}`;
 
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
@@ -915,7 +917,7 @@ export default function CampaignDetail() {
             <div className="space-y-1.5">
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
-                <p className="text-sm text-foreground leading-snug">{`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${dealScore?.days_since_last_signal ?? "?"}j sans signal`}</p>
+                <p className="text-sm text-foreground leading-snug">{`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${daysSinceSignal === 0 ? "aucune activité récente" : `aucune activité depuis ${daysSinceSignal ?? "?"}j`}`}</p>
               </div>
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
