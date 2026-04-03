@@ -171,6 +171,7 @@ export default function CampaignDetail() {
   const [showDealClose, setShowDealClose] = useState(false);
   const [dealScore, setDealScore] = useState<any>(null);
   const [viewers, setViewers] = useState<any[]>([]);
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const [agentContext, setAgentContext] = useState<any>(null);
   const [snoozeDate, setSnoozeDate] = useState<Date | undefined>();
   // Sub-campaign analytics (for parent view)
