@@ -766,6 +766,23 @@ export default function CampaignDetail() {
     return `il y a ${Math.floor(hrs / 24)}j`;
   })();
 
+  // Stage label mapping — terrain language
+  const STAGE_LABELS: Record<string, string> = {
+    qualification: "Phase découverte",
+    rfp: "Appel d'offres en cours",
+    shortlist: "Phase finale",
+    negotiation: "Négociation active",
+    close: "Closing imminent",
+  };
+
+  // NBA data — must be before desValue
+  const safeDealScore = dealScore ?? {};
+  const safeAgentContext = agentContext ?? {};
+  const daysSinceSignal = safeDealScore.days_since_last_signal ?? undefined;
+  const recAction = (safeDealScore.recommended_action_v2 as Record<string, unknown> | null) ?? null;
+  const nbaActionLine = (recAction?.action as string) || (safeDealScore.recommended_action as any)?.label || "Définir la prochaine action";
+  const stageLabel = STAGE_LABELS[safeAgentContext.stage || ""] || safeAgentContext.stage || "—";
+
   const desValue = safeDealScore.des ?? null;
   const desClass = desValue == null ? "bg-muted text-muted-foreground"
     : desValue >= 70 ? "bg-accent/15 text-accent"
@@ -791,23 +808,6 @@ export default function CampaignDetail() {
       default: return <Badge variant="outline" className="text-[10px]">Inconnu</Badge>;
     }
   };
-
-  // Stage label mapping — terrain language
-  const STAGE_LABELS: Record<string, string> = {
-    qualification: "Phase découverte",
-    rfp: "Appel d'offres en cours",
-    shortlist: "Phase finale",
-    negotiation: "Négociation active",
-    close: "Closing imminent",
-  };
-
-  // NBA data
-  const safeDealScore = dealScore ?? {};
-  const daysSinceSignal = safeDealScore.days_since_last_signal ?? undefined;
-  const recAction = (safeDealScore.recommended_action_v2 as Record<string, unknown> | null) ?? null;
-  const nbaActionLine = (recAction?.action as string) || (safeDealScore.recommended_action as any)?.label || "Définir la prochaine action";
-  const safeAgentContext = agentContext ?? {};
-  const stageLabel = STAGE_LABELS[safeAgentContext.stage || ""] || safeAgentContext.stage || "—";
   const nbaWhyLine = (() => {
     let line = `${(viewers ?? []).length} contact${(viewers ?? []).length !== 1 ? "s" : ""} · ${stageLabel}`;
     if (safeAgentContext.decision_window) {
