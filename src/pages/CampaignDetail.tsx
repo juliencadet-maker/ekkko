@@ -1094,6 +1094,8 @@ export default function CampaignDetail() {
         .eq("failure_type", "inference_error")
         .eq("reason", contradictionId);
 
+      // SIMPLIFICATION V1 : downgrade global sur le deal, pas ciblé sur la contradiction.
+      // Jamais downgrader source='declared' — priorité absolue de l'AE.
       if ((count ?? 0) >= 2) {
         await supabase
           .from("deal_contact_roles")
@@ -1111,6 +1113,7 @@ export default function CampaignDetail() {
     if (processingAlerts.has(contradictionId)) return;
     setProcessingAlerts(prev => new Set([...prev, contradictionId]));
 
+    // NOTE: confirmedAlerts is UI-only (local). Persistence comes from upsert deal_contact_roles below.
     setConfirmedAlerts(prev => new Set([...prev, contradictionId]));
     setFeedbackMessages(prev => ({ ...prev, [contradictionId]: "confirmed" }));
 
