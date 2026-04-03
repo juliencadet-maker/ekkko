@@ -257,12 +257,31 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                         <Bot className="h-3.5 w-3.5 text-primary-foreground" />
                       </div>
                     )}
-                    <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                    <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
                       m.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
+                        ? "bg-primary text-primary-foreground rounded-br-sm whitespace-pre-wrap"
                         : "bg-muted rounded-bl-sm"
                     }`}>
-                      {m.content}
+                      {m.role === "assistant"
+                        ? <div className="space-y-1">
+                            {parseAgentMessage(m.content).map((part, j) =>
+                              part.text.trim() === "" ? null : (
+                                <div key={j} className="flex items-start gap-1.5">
+                                  {part.badge && (
+                                    <span
+                                      className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium shrink-0 mt-0.5 border"
+                                      style={{ backgroundColor: BADGE_STYLE[part.badge].bg, color: BADGE_STYLE[part.badge].color, borderColor: BADGE_STYLE[part.badge].border }}
+                                    >
+                                      {BADGE_STYLE[part.badge].label}
+                                    </span>
+                                  )}
+                                  <span className="whitespace-pre-wrap">{part.text}</span>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        : m.content
+                      }
                     </div>
                   </div>
                 ))}

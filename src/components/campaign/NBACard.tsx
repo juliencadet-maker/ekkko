@@ -60,15 +60,20 @@ export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMar
         <p className="text-base font-bold text-foreground leading-snug">{actionLine}</p>
       </div>
 
-      <div className="px-4 pb-2 flex items-center gap-2">
-        <p className="text-sm text-muted-foreground leading-snug">{whyLine}</p>
-        {freshnessBadge && (
-          <span
-            className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium shrink-0"
-            style={{ backgroundColor: freshnessBadge.bg, color: freshnessBadge.color }}
-          >
-            {freshnessBadge.text}
-          </span>
+      <div className="px-4 pb-2 space-y-1">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground leading-snug">{whyLine}</p>
+          {freshnessBadge && (
+            <span
+              className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium shrink-0"
+              style={{ backgroundColor: freshnessBadge.bg, color: freshnessBadge.color }}
+            >
+              {freshnessBadge.text}
+            </span>
+          )}
+        </div>
+        {whyLineDeclared && (
+          <p className="text-xs italic text-[#E8A838] leading-snug">{whyLineDeclared}</p>
         )}
       </div>
 
