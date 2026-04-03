@@ -222,6 +222,29 @@ export default function CampaignDetail() {
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
   >({});
 
+  // ─── B3 State ─────────────────────────────────────────────────────
+  type TimelineEventRow = {
+    id: string;
+    event_type: string;
+    event_layer: "fact" | "inference" | "declared" | null;
+    event_data: Record<string, unknown> | null;
+    created_at: string;
+  };
+
+  type DealAssetRow = {
+    id: string;
+    asset_type: string;
+    asset_purpose: string;
+    version_number: number | null;
+  };
+
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEventRow[]>([]);
+  const [dealAssets, setDealAssets] = useState<DealAssetRow[]>([]);
+  const [q3DocEvents, setQ3DocEvents] = useState<{ asset_id: string }[]>([]);
+  const [q3VideoHasEvents, setQ3VideoHasEvents] = useState<boolean>(false);
+  const [timelineLoading, setTimelineLoading] = useState(true);
+  const [q3Loading, setQ3Loading] = useState(true);
+
   const isParent = campaign && !campaign.parent_campaign_id && subCampaigns.length > 0;
 
   // Video generation polling
