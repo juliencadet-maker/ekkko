@@ -9,10 +9,9 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Search, LayoutList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import type { Campaign } from "@/types/database";
 import { DealRiskBadge } from "@/components/ui/DealRiskBadge";
 import { cn } from "@/lib/utils";
@@ -36,12 +35,46 @@ interface ViewerSummary {
   contact_score: number | null;
 }
 
+interface LastEventRow {
+  campaign_id: string;
+  event_type: string;
+}
+
+// ─── Qualified activity labels ──────────────────────────────────────
+const EVENT_LABELS: Record<string, string> = {
+  doc_page_viewed: "Pricing consulté",
+  video_watched: "Vidéo regardée",
+  share: "Partage interne détecté",
+  new_viewer: "Nouveau contact détecté",
+  declared: "Signal offline ajouté",
+};
+
+function getQualifiedActivity(eventType: string | undefined): string | null {
+  if (!eventType) return null;
+  return EVENT_LABELS[eventType] || null;
+}
+
+// ─── Status label mapping ───────────────────────────────────────────
+const STATUS_LABELS: Record<string, string> = {
+  draft: "En préparation",
+  active: "En cours",
+  observing: "Actif",
+  snoozed: "En veille",
+  closed: "Clôturé",
+  generating: "En cours",
+  pending_approval: "En cours",
+  approved: "En cours",
+  sent: "En cours",
+};
+
 export default function Campaigns() {
   const [isLoading, setIsLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [dealScores, setDealScores] = useState<Record<string, DealScoreRow>>({});
   const [viewers, setViewers] = useState<Record<string, ViewerSummary[]>>({});
+  const [lastEvents, setLastEvents] = useState<Record<string, string>>({});
+  const [pendingApprovals, setPendingApprovals] = useState<Set<string>>(new Set());
 
   const navigate = useNavigate();
   const { user, membership } = useAuthContext();
@@ -101,6 +134,33 @@ export default function Campaigns() {
             });
             setViewers(viewerMap);
           }
+
+          // Fetch last significant event per campaign
+          const { data: eventData } = await supabase
+            .from("timeline_events")
+            .select("campaign_id, event_type")
+            .in("campaign_id", campaignIds)
+            .in("event_type", Object.keys(EVENT_LABELS))
+            .order("created_at", { ascending: false });
+
+          if (eventData) {
+            const eventMap: Record<string, string> = {};
+            eventData.forEach((e: any) => {
+              if (!eventMap[e.campaign_id]) eventMap[e.campaign_id] = e.event_type;
+            });
+            setLastEvents(eventMap);
+          }
+
+          // Fetch pending approvals
+          const { data: approvalData } = await supabase
+            .from("approval_requests")
+            .select("campaign_id")
+            .in("campaign_id", campaignIds)
+            .eq("status", "pending");
+
+          if (approvalData) {
+            setPendingApprovals(new Set(approvalData.map((a: any) => a.campaign_id)));
+          }
         }
       } catch { console.error("Fetch campaigns failed"); }
       finally { setIsLoading(false); }
@@ -114,11 +174,8 @@ export default function Campaigns() {
       c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // First action spotlight: deals with no first_action_completed_at come first
+    // Sort by priority_score descending
     filtered.sort((a, b) => {
-      const aSpotlight = !(a as any).first_action_completed_at ? 1 : 0;
-      const bSpotlight = !(b as any).first_action_completed_at ? 1 : 0;
-      if (bSpotlight !== aSpotlight) return bSpotlight - aSpotlight;
       const prioA = dealScores[a.id]?.priority_score ?? 0;
       const prioB = dealScores[b.id]?.priority_score ?? 0;
       return prioB - prioA;
@@ -134,15 +191,8 @@ export default function Campaigns() {
     return "des-pill des-pill-low";
   };
 
-  const getBorderColor = (score: DealScoreRow | undefined) => {
-    if (!score?.des) return "border-l-transparent";
-    if (score.des < 40) return "border-l-destructive";
-    if (score.des >= 70) return "border-l-signal";
-    return "border-l-transparent";
-  };
-
   const getAvatarColor = (contactScore: number | null) => {
-    if (contactScore === null) return "bg-info"; // unknown = blue
+    if (contactScore === null) return "bg-info";
     if (contactScore > 70) return "bg-signal";
     if (contactScore > 30) return "bg-warning";
     return "bg-destructive";
@@ -162,12 +212,20 @@ export default function Campaigns() {
     return badges.slice(0, 3);
   };
 
-  const getTimeSinceSignal = (campaign: Campaign) => {
-    const d = new Date(campaign.updated_at);
-    if (isNaN(d.getTime())) return "—";
-    const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-    if (days === 0) return "Aujourd'hui";
-    return `il y a ${days}j`;
+  // Check if a deal qualifies for the inline "new signal" badge
+  const hasNewSignalBadge = (campaign: Campaign): boolean => {
+    const c = campaign as any;
+    if (c.first_action_completed_at) return false;
+    if (!c.first_signal_at) return false;
+    try {
+      const signalDate = new Date(c.first_signal_at);
+      if (isNaN(signalDate.getTime())) return false;
+      const updatedDate = new Date(c.updated_at);
+      const lastEventAge = !isNaN(updatedDate.getTime()) ? Date.now() - updatedDate.getTime() : Infinity;
+      const signalAge = Date.now() - signalDate.getTime();
+      const within48h = 48 * 60 * 60 * 1000;
+      return signalAge <= within48h || lastEventAge <= within48h;
+    } catch { return false; }
   };
 
   return (
@@ -221,54 +279,50 @@ export default function Campaigns() {
             const campaignViewers = viewers[campaign.id] || [];
             const signalBadges = getSignalBadges(score);
             const isTopDeal = idx === 0;
-
-            const riskBg = isTopDeal
-              ? score?.risk_level === "critical" ? "bg-[#FCEBEB]"
-              : score?.risk_level === "watch" ? "bg-[#FAEEDA]"
-              : "bg-[#D0FAE8]/30"
-              : "bg-card";
+            const showNewSignal = hasNewSignalBadge(campaign);
+            const qualifiedActivity = getQualifiedActivity(lastEvents[campaign.id]);
+            const statusLabel = STATUS_LABELS[campaign.status] || campaign.status;
+            const hasPendingApproval = pendingApprovals.has(campaign.id);
 
             return (
-              <div key={campaign.id}>
-                {/* First action spotlight banner — strict 48h condition */}
-                {(() => {
-                  const c = campaign as any;
-                  if (c.first_action_completed_at) return null;
-                  if (!c.first_signal_at) return null;
-                  const signalDate = new Date(c.first_signal_at);
-                  if (isNaN(signalDate.getTime())) return null;
-                  const signalAge = Date.now() - signalDate.getTime();
-                  const updatedDate = new Date(c.updated_at);
-                  const lastEventAge = !isNaN(updatedDate.getTime()) ? Date.now() - updatedDate.getTime() : Infinity;
-                  const within48h = 48 * 60 * 60 * 1000;
-                  if (signalAge > within48h && lastEventAge > within48h) return null;
-                  return (
-                    <div className="mb-1 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-t-lg border border-b-0 border-accent/20">
-                      Signal détecté — 1 action disponible maintenant
-                    </div>
-                  );
-                })()}
-                <div
-                  className={cn(
-                    "group flex items-center gap-4 rounded-card shadow-card cursor-pointer hover:shadow-lg transition-all",
-                    riskBg,
-                    isTopDeal ? "p-5 border-l-4" : "p-4 border-l-2",
-                    getBorderColor(score),
-                    !(campaign as any).first_action_completed_at && "border-l-accent animate-pulse-border"
-                  )}
-                  onClick={() => navigate(`/app/campaigns/${campaign.id}`)}
-                >
+              <div
+                key={campaign.id}
+                className={cn(
+                  "group flex items-center gap-4 rounded-card shadow-card cursor-pointer hover:shadow-lg transition-all bg-card",
+                  isTopDeal ? "p-5 border-l-[3px] border-l-[hsl(var(--signal))]" : "p-4 border-l-2 border-l-transparent",
+                )}
+                onClick={() => navigate(`/app/campaigns/${campaign.id}`)}
+              >
                 <DealRiskBadge
                   level={(score?.risk_level as 'healthy' | 'watch' | 'critical') || null}
                   reason={score?.risk_level === 'critical' ? 'DES critique ou silence prolongé' :
                           score?.risk_level === 'watch' ? 'Signaux à surveiller' : undefined}
                 />
+
                 {/* Deal info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-semibold text-foreground">{campaign.name}</h3>
-                    <StatusBadge status={campaign.status} />
-                    <span className="text-xs text-muted-foreground">· Activité {getTimeSinceSignal(campaign)}</span>
+                    {/* Primary status badge */}
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      {statusLabel}
+                    </Badge>
+                    {/* Secondary: pending approval micro-badge */}
+                    {hasPendingApproval && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">
+                        Approbation en attente
+                      </Badge>
+                    )}
+                    {/* Inline new signal badge */}
+                    {showNewSignal && (
+                      <Badge className="text-[10px] px-1.5 py-0 bg-accent/10 text-accent border border-accent/30">
+                        Nouveau signal · 1 action à traiter
+                      </Badge>
+                    )}
+                    {/* Qualified activity */}
+                    {qualifiedActivity && (
+                      <span className="text-xs text-muted-foreground">· {qualifiedActivity}</span>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {(campaign as any).identities?.display_name || "—"}
@@ -320,7 +374,6 @@ export default function Campaigns() {
                 >
                   Voir ↗
                 </button>
-              </div>
               </div>
             );
           })}

@@ -1,5 +1,5 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -9,9 +9,12 @@ interface NBACardProps {
   actionLine: string;
   whyLine: string;
   confidenceLabel: string;
-  ctaLabel: string;
+  ctaLabel?: string;
   riskLevel?: RiskLevel;
   onCtaClick?: () => void;
+  onMarkDone?: () => void;
+  /** Optional extra actions: e.g. "Envoyer un contenu", "Ajouter un contact" */
+  secondaryAction?: { label: string; onClick: () => void };
 }
 
 const riskStyles: Record<string, { bg: string; border: string }> = {
@@ -20,16 +23,19 @@ const riskStyles: Record<string, { bg: string; border: string }> = {
   healthy: { bg: "bg-[#D0FAE8]", border: "border-l-[3px] border-l-[#1AE08A]" },
 };
 
-export function NBACard({ actionLine, whyLine, confidenceLabel, ctaLabel, riskLevel, onCtaClick }: NBACardProps) {
+export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMarkDone, secondaryAction }: NBACardProps) {
+  const [dismissed, setDismissed] = useState(false);
   const risk = riskLevel && riskStyles[riskLevel] ? riskLevel : "healthy";
   const style = riskStyles[risk];
+
+  if (dismissed) return null;
 
   return (
     <div className={cn("rounded-lg border border-border overflow-hidden", style.bg, style.border)}>
       {/* Label */}
       <div className="px-4 pt-3 pb-1 flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Action prioritaire
+          Action recommandée
         </span>
         <TooltipProvider>
           <Tooltip>
@@ -53,14 +59,32 @@ export function NBACard({ actionLine, whyLine, confidenceLabel, ctaLabel, riskLe
         <p className="text-sm text-muted-foreground leading-snug">{whyLine}</p>
       </div>
 
-      {/* CTA */}
-      <div className="px-4 py-3 flex justify-end">
+      {/* CTAs */}
+      <div className="px-4 py-3 flex items-center justify-end gap-2 flex-wrap">
+        {secondaryAction && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-sm"
+            onClick={secondaryAction.onClick}
+          >
+            {secondaryAction.label}
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-sm border-[#0D1B2A] text-[#0D1B2A] hover:bg-[#0D1B2A]/5"
+          onClick={() => setDismissed(true)}
+        >
+          Pas maintenant
+        </Button>
         <Button
           size="lg"
           className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90 text-base font-semibold px-6"
-          onClick={onCtaClick}
+          onClick={onMarkDone}
         >
-          {ctaLabel}
+          Je l'ai fait
         </Button>
       </div>
     </div>

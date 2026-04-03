@@ -48,6 +48,7 @@ import {
   Building2,
   Layers,
   ChevronRight,
+  ChevronDown,
   Plus,
   AlertTriangle,
   Save,
@@ -816,17 +817,37 @@ export default function CampaignDetail() {
     }
     return line;
   })();
-  const nbaCtaLabel = (recAction?.cta as string) || "Lancer l'action";
+  // NBA "Je l'ai fait" handler
+  const handleNBAMarkDone = async () => {
+    if (!campaign) return;
+    try {
+      await supabase.from("campaigns").update({
+        first_action_completed_at: new Date().toISOString(),
+      }).eq("id", campaign.id);
+      setCampaign(prev => prev ? { ...prev, first_action_completed_at: new Date().toISOString() } as any : null);
+      toast.success("Action notée — Ekko surveille la suite");
+    } catch { toast.error("Erreur"); }
+  };
+
+  // NBA secondary action detection
+  const nbaSecondaryAction = (() => {
+    const actionStr = ((recAction?.action as string) || "").toLowerCase();
+    if (actionStr.includes("contenu") || actionStr.includes("envoyer") || actionStr.includes("asset")) {
+      return { label: "Envoyer un contenu", onClick: () => navigate(`/app/campaigns/${id}?tab=assets`) };
+    }
+    if (actionStr.includes("contact") || actionStr.includes("ajouter")) {
+      return { label: "Ajouter un contact", onClick: () => navigate(`/app/campaigns/${id}?tab=intelligence`) };
+    }
+    return undefined;
+  })();
+
+  // Show NBA only if first_action_completed_at is null
+  const showNBA = !(campaign as any)?.first_action_completed_at;
 
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
   return (
     <AppLayout>
-      {/* First action spotlight banner — only if signal < 48h */}
-      {showSignalBanner && (
-        <div className="mb-4 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-lg border border-accent/20">
-          Signal détecté — 1 action disponible maintenant
-        </div>
-      )}
+      {/* Signal banner removed — replaced by inline badge in deal list */}
 
       {/* Snoozed banner */}
       {isSnoozed && (
@@ -1012,17 +1033,19 @@ export default function CampaignDetail() {
 
         {/* ─── Tab 1: Résumé du deal ─── */}
         <TabsContent value="overview" className="space-y-3">
-          {/* NBA Card — first visible element */}
-          <SectionGuard name="NBACard">
-            <NBACard
-              actionLine={nbaActionLine}
-              whyLine={nbaWhyLine}
-              confidenceLabel="Confiance modérée"
-              ctaLabel={nbaCtaLabel}
-              riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
-              onCtaClick={() => setShowAgent(true)}
-            />
-          </SectionGuard>
+          {/* NBA Card — visible only if no action completed yet */}
+          {showNBA && (
+            <SectionGuard name="NBACard">
+              <NBACard
+                actionLine={nbaActionLine}
+                whyLine={nbaWhyLine}
+                confidenceLabel="Confiance modérée"
+                riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
+                onMarkDone={handleNBAMarkDone}
+                secondaryAction={nbaSecondaryAction}
+              />
+            </SectionGuard>
+          )}
 
           {/* Pourquoi — Insights compressés inline */}
           <SectionGuard name="Insights">
@@ -1052,20 +1075,26 @@ export default function CampaignDetail() {
             )}
           </SectionGuard>
 
-          {/* Timeline — collapsed by default */}
+          {/* Timeline — collapsed by default, with chevron and preview */}
           <SectionGuard name="Timeline">
             <Card className="shadow-none">
               <CardHeader className="pb-2 pt-3 px-3">
                 <button
-                  className="flex items-center justify-between w-full text-left"
+                  className="flex items-center justify-between w-full text-left cursor-pointer rounded-md px-1 py-1 hover:bg-muted/40 transition-colors"
                   onClick={() => setTimelineOpen((v) => !v)}
                 >
                   <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
-                  <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    {timelineOpen ? "Replier" : `Voir (${mockTimelineEvents.length})`}
-                  </span>
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", timelineOpen && "rotate-180")} />
                 </button>
               </CardHeader>
+              {/* Preview line when collapsed */}
+              {!timelineOpen && mockTimelineEvents.length > 0 && (
+                <CardContent className="pt-0 px-4 pb-3">
+                  <p className="text-xs text-muted-foreground truncate">
+                    {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+                  </p>
+                </CardContent>
+              )}
               {mockTimelineEvents.length > 0 ? (
                 <div
                   className={cn(
@@ -1085,22 +1114,37 @@ export default function CampaignDetail() {
             </Card>
           </SectionGuard>
 
-          {/* Signal offline — with inactivity hint */}
+          {/* Signal offline — collapsible with chevron and preview */}
           <SectionGuard name="SignalOffline">
-            {daysSinceSignal !== undefined && daysSinceSignal > 5 && (
-              <p className="text-xs text-muted-foreground px-1">
-                Aucune activité récente.{" "}
-                <button className="underline hover:text-foreground" onClick={() => {
-                  const el = document.getElementById("signal-offline-widget");
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                }}>
-                  Que s'est-il passé en dehors d'Ekko ?
+            <Card className="shadow-none">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <button
+                  className="flex items-center justify-between w-full text-left cursor-pointer rounded-md px-1 py-1 hover:bg-muted/40 transition-colors"
+                  onClick={(e) => {
+                    const content = e.currentTarget.closest('.shadow-none')?.querySelector('[data-offline-content]');
+                    const chevron = e.currentTarget.querySelector('[data-offline-chevron]');
+                    if (content) content.classList.toggle("hidden");
+                    if (chevron) chevron.classList.toggle("rotate-180");
+                  }}
+                >
+                  <CardTitle className="text-sm font-semibold">Signal offline</CardTitle>
+                  <ChevronDown data-offline-chevron className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
                 </button>
-              </p>
-            )}
-            <div id="signal-offline-widget">
-              <WhatHappenedWidget campaignId={campaign.id} />
-            </div>
+              </CardHeader>
+              {/* Preview line */}
+              <CardContent className="pt-0 px-4 pb-1">
+                <p className="text-xs text-muted-foreground">
+                  {daysSinceSignal !== undefined && daysSinceSignal > 5
+                    ? `Aucune activité depuis ${daysSinceSignal}j — que s'est-il passé ?`
+                    : "Aucun signal offline"}
+                </p>
+              </CardContent>
+              <div data-offline-content className="hidden">
+                <CardContent className="pt-0 px-3">
+                  <WhatHappenedWidget campaignId={campaign.id} />
+                </CardContent>
+              </div>
+            </Card>
           </SectionGuard>
         </TabsContent>
 
@@ -1307,6 +1351,9 @@ export default function CampaignDetail() {
                                   <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
                                 </Button>
                               </div>
+                              <p className="text-xs text-muted-foreground/70 mt-2 max-w-xs">
+                                Chaque contenu envoyé permet de détecter qui s'engage et comment.
+                              </p>
                             </>
                           )}
                         </div>
