@@ -214,22 +214,31 @@ export default function Campaigns() {
         />
       ) : (
         <div className="space-y-2">
-          {sortedCampaigns.map((campaign) => {
+          {sortedCampaigns.map((campaign, idx) => {
             const score = dealScores[campaign.id];
             const campaignViewers = viewers[campaign.id] || [];
             const signalBadges = getSignalBadges(score);
+            const isTopDeal = idx === 0;
+
+            const riskBg = isTopDeal
+              ? score?.risk_level === "critical" ? "bg-[#FCEBEB]"
+              : score?.risk_level === "watch" ? "bg-[#FAEEDA]"
+              : "bg-[#D0FAE8]/30"
+              : "bg-card";
 
             return (
               <div key={campaign.id}>
                 {/* First action spotlight banner */}
                 {!(campaign as any).first_action_completed_at && (
                   <div className="mb-1 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-t-lg border border-b-0 border-accent/20">
-                    Signal détecté — 1 action disponible maintenant
+                    Signal detecte — 1 action disponible maintenant
                   </div>
                 )}
                 <div
                   className={cn(
-                    "group flex items-center gap-4 p-4 bg-card rounded-card shadow-card border-l-4 cursor-pointer hover:shadow-lg transition-all",
+                    "group flex items-center gap-4 rounded-card shadow-card cursor-pointer hover:shadow-lg transition-all",
+                    riskBg,
+                    isTopDeal ? "p-5 border-l-[4px]" : "p-4 border-l-4",
                     getBorderColor(score),
                     !(campaign as any).first_action_completed_at && "border-l-accent animate-pulse-border"
                   )}

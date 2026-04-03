@@ -916,22 +916,22 @@ export default function CampaignDetail() {
           {/* Timeline — collapsed by default */}
           <Card>
             <CardHeader className="pb-3">
+              {/* Always-visible last signal summary */}
+              {mockTimelineEvents.length > 0 && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+                </p>
+              )}
               <button
                 className="flex items-center justify-between w-full text-left"
                 onClick={() => setTimelineOpen((v) => !v)}
               >
-                <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
+                <CardTitle className="text-sm font-semibold">Derniers evenements</CardTitle>
                 <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                  {timelineOpen ? "Replier" : `Voir les événements (${mockTimelineEvents.length})`}
+                  {timelineOpen ? "Replier" : `Voir les evenements (${mockTimelineEvents.length})`}
                 </span>
               </button>
             </CardHeader>
-            {/* Always show latest event */}
-            {!timelineOpen && mockTimelineEvents.length > 0 && (
-              <CardContent className="pt-0">
-                <DealTimeline events={[mockTimelineEvents[0]]} />
-              </CardContent>
-            )}
             {/* Expanded list with animation */}
             <div
               className={cn(
