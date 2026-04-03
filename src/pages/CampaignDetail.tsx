@@ -802,10 +802,12 @@ export default function CampaignDetail() {
   };
 
   // NBA data
-  const daysSinceSignal = dealScore?.days_since_last_signal ?? undefined;
-  const recAction = (dealScore?.recommended_action_v2 as Record<string, unknown> | null) ?? null;
-  const nbaActionLine = (recAction?.action as string) || (dealScore?.recommended_action as any)?.label || "Définir la prochaine action";
-  const stageLabel = STAGE_LABELS[agentContext?.stage || ""] || agentContext?.stage || "—";
+  const safeDealScore = dealScore ?? {};
+  const daysSinceSignal = safeDealScore.days_since_last_signal ?? undefined;
+  const recAction = (safeDealScore.recommended_action_v2 as Record<string, unknown> | null) ?? null;
+  const nbaActionLine = (recAction?.action as string) || (safeDealScore.recommended_action as any)?.label || "Définir la prochaine action";
+  const safeAgentContext = agentContext ?? {};
+  const stageLabel = STAGE_LABELS[safeAgentContext.stage || ""] || safeAgentContext.stage || "—";
   const nbaWhyLine = (() => {
     let line = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}`;
     if (agentContext?.decision_window) {
