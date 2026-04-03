@@ -755,16 +755,16 @@ export default function CampaignDetail() {
   // ─── Computed values ──────────────────────────────────────────────
   const dealValue = (campaign.metadata as any)?.deal_value;
   const isSnoozed = (campaign as any).deal_status === "snoozed" && (campaign as any).snoozed_until;
-  const lastUpdate = campaign.updated_at
-    ? (() => {
-        const mins = Math.floor((Date.now() - new Date(campaign.updated_at).getTime()) / 60000);
-        if (mins < 1) return "à l'instant";
-        if (mins < 60) return `il y a ${mins} min`;
-        const hrs = Math.floor(mins / 60);
-        if (hrs < 24) return `il y a ${hrs}h`;
-        return `il y a ${Math.floor(hrs / 24)}j`;
-      })()
-    : "";
+  const lastUpdate = (() => {
+    const d = safeDate(campaign.updated_at);
+    if (!d) return "—";
+    const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return "à l'instant";
+    if (mins < 60) return `il y a ${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `il y a ${hrs}h`;
+    return `il y a ${Math.floor(hrs / 24)}j`;
+  })();
 
   const desValue = dealScore?.des;
   const desClass = desValue == null ? "bg-muted text-muted-foreground"
