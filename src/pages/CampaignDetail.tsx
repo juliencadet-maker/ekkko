@@ -1040,8 +1040,23 @@ export default function CampaignDetail() {
           {/* Layer Coverage */}
           <div>
             <p className="text-sm font-semibold mb-2">Couverture du comité</p>
-            <LayerCoverage layers={mockLayers} />
+            <LayerCoverage layers={computedLayers} />
           </div>
+
+          {/* Ghost cards for inferred contacts not yet visible in Power Map */}
+          {ghostLayerContacts.length > 0 && (
+            <div className="space-y-1.5">
+              {ghostLayerContacts.map((l) => (
+                <div key={l.layer} className="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-border bg-muted/20">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    ~{l.current} contact{l.current > 1 ? "s" : ""} {l.layer} identifié{l.current > 1 ? "s" : ""} (estimation)
+                  </span>
+                  <Badge variant="outline" className="text-[9px] ml-auto">confiance faible</Badge>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Contact list */}
           {viewers.length > 0 && (
