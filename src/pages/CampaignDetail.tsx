@@ -505,6 +505,9 @@ export default function CampaignDetail() {
   }, [viewers]);
 
   // ─── B3 — Q2: Qui ne regarde pas ? ───────────────────────────────
+  // TEMPORAIRE B3 UNIQUEMENT — matching par mots-clés dans le frontend.
+  // Cette logique sera remplacée par le layer scoring backend (committee_layers) en C1b.
+  // NE PAS réutiliser cette logique ailleurs. NE PAS la considérer comme source moteur.
   const LAYER_KEYWORDS: Record<string, string[]> = {
     executive: ["CEO","CFO","COO","DG","PDG","Directeur Général","Directeur Financier"],
     financial: ["DAF","Contrôleur","Finance","Trésorier"],
