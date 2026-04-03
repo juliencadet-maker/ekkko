@@ -892,13 +892,13 @@ export default function CampaignDetail() {
       {/* ═══ TABS ═══ */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="overview">Vue ensemble</TabsTrigger>
+          <TabsTrigger value="overview">Résumé du deal</TabsTrigger>
           <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
           <TabsTrigger value="assets">Assets</TabsTrigger>
         </TabsList>
 
-        {/* ─── Tab 1: Vue ensemble ─── */}
-        <TabsContent value="overview" className="space-y-6">
+        {/* ─── Tab 1: Résumé du deal ─── */}
+        <TabsContent value="overview" className="space-y-3">
           {/* NBA Card — first visible element */}
           <NBACard
             factLine={nbaFact}
@@ -909,54 +909,54 @@ export default function CampaignDetail() {
             onCtaClick={() => setShowAgent(true)}
           />
 
-          {/* Insights */}
-          <div className="space-y-2">
-            <InsightCard
-              type="fact"
-              title={`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${dealScore?.days_since_last_signal ?? "?"}j depuis le dernier signal`}
-              body="Le nombre de contacts identifiés est inférieur à la taille estimée du comité d'achat. L'engagement récent est faible."
-              defaultExpanded
-            />
-            <InsightCard
-              type="inference"
-              title="Profil acheteur : remplacement d'un outil existant"
-              body={`L'incumbent est ${agentContext?.incumbent_type === "competitor_named" ? "un concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "un outil interne" : "inconnu"}. Situation compétitive : ${agentContext?.competitive_situation || "—"}.`}
-            />
+          {/* Pourquoi — Insights compressés inline */}
+          <div className="rounded-lg border border-border p-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pourquoi</p>
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
+                <p className="text-sm text-foreground leading-snug">{`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${dealScore?.days_since_last_signal ?? "?"}j sans signal`}</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
+                <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${agentContext?.incumbent_type === "competitor_named" ? "concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${agentContext?.competitive_situation || "—"}`}</p>
+              </div>
+            </div>
           </div>
 
+          {/* Dernier signal — always visible, one discreet line */}
+          {mockTimelineEvents.length > 0 && (
+            <p className="text-xs text-muted-foreground px-1">
+              Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
+            </p>
+          )}
+
           {/* Timeline — collapsed by default */}
-          <Card>
-            <CardHeader className="pb-3">
-              {/* Always-visible last signal summary */}
-              {mockTimelineEvents.length > 0 && (
-                <p className="text-xs text-muted-foreground mb-2">
-                  Dernier signal : {mockTimelineEvents[0].label} · {mockTimelineEvents[0].time}
-                </p>
-              )}
+          <Card className="shadow-none">
+            <CardHeader className="pb-2 pt-3 px-3">
               <button
                 className="flex items-center justify-between w-full text-left"
                 onClick={() => setTimelineOpen((v) => !v)}
               >
-                <CardTitle className="text-sm font-semibold">Derniers evenements</CardTitle>
+                <CardTitle className="text-sm font-semibold">Derniers événements</CardTitle>
                 <span className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                  {timelineOpen ? "Replier" : `Voir les evenements (${mockTimelineEvents.length})`}
+                  {timelineOpen ? "Replier" : `Voir (${mockTimelineEvents.length})`}
                 </span>
               </button>
             </CardHeader>
-            {/* Expanded list with animation */}
             <div
               className={cn(
                 "overflow-hidden transition-all duration-300 ease-out",
                 timelineOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
               )}
             >
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 px-3">
                 <DealTimeline events={mockTimelineEvents} />
               </CardContent>
             </div>
           </Card>
 
-          {/* What happened */}
+          {/* Signal offline — collapsed */}
           <WhatHappenedWidget campaignId={campaign.id} />
         </TabsContent>
 
