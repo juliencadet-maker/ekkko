@@ -388,6 +388,7 @@ export type Database = {
           account_id: string | null
           approved_at: string | null
           approved_by_user_id: string | null
+          committee_size_declared: number | null
           completed_at: string | null
           created_at: string
           created_by_user_id: string | null
@@ -398,6 +399,7 @@ export type Database = {
           deal_risk_level: string | null
           deal_risk_override: boolean | null
           deal_status: string | null
+          deal_value: number | null
           deleted_at: string | null
           description: string | null
           first_action_completed_at: string | null
@@ -423,6 +425,7 @@ export type Database = {
           account_id?: string | null
           approved_at?: string | null
           approved_by_user_id?: string | null
+          committee_size_declared?: number | null
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -433,6 +436,7 @@ export type Database = {
           deal_risk_level?: string | null
           deal_risk_override?: boolean | null
           deal_status?: string | null
+          deal_value?: number | null
           deleted_at?: string | null
           description?: string | null
           first_action_completed_at?: string | null
@@ -458,6 +462,7 @@ export type Database = {
           account_id?: string | null
           approved_at?: string | null
           approved_by_user_id?: string | null
+          committee_size_declared?: number | null
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -468,6 +473,7 @@ export type Database = {
           deal_risk_level?: string | null
           deal_risk_override?: boolean | null
           deal_status?: string | null
+          deal_value?: number | null
           deleted_at?: string | null
           description?: string | null
           first_action_completed_at?: string | null
