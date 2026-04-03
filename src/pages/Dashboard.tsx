@@ -107,14 +107,37 @@ export default function Dashboard() {
           dealsActifs: activeDeals || 0,
         });
 
-        // Recent campaigns
+        // Recent campaigns — fetch with deal scores for priority sorting
         const { data: campaigns } = await supabase
           .from("campaigns")
           .select("*, identities(display_name)")
           .eq("org_id", membership.org_id)
-          .order("created_at", { ascending: false })
-          .limit(5);
-        setRecentCampaigns(campaigns as Campaign[] || []);
+          .limit(20);
+
+        if (campaigns && campaigns.length > 0) {
+          const cIds = campaigns.map((c: any) => c.id);
+          const { data: pScores } = await supabase
+            .from("deal_scores")
+            .select("campaign_id, priority_deal_score")
+            .in("campaign_id", cIds)
+            .order("scored_at", { ascending: false });
+
+          const scoreMap: Record<string, number> = {};
+          pScores?.forEach((s: any) => {
+            if (!(s.campaign_id in scoreMap) && s.priority_deal_score != null) {
+              scoreMap[s.campaign_id] = s.priority_deal_score;
+            }
+          });
+
+          const sorted = [...campaigns].sort((a: any, b: any) => {
+            const sa = scoreMap[a.id] ?? 0;
+            const sb = scoreMap[b.id] ?? 0;
+            return sb - sa;
+          });
+          setRecentCampaigns(sorted.slice(0, 5) as Campaign[]);
+        } else {
+          setRecentCampaigns([]);
+        }
 
         // Pending approvals
         const { data: approvals } = await supabase
@@ -247,6 +270,25 @@ export default function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Aha moment banner — mock: unknown viewer detected */}
+      <div className="mb-6 p-4 rounded-lg border border-accent/20 bg-accent/5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-full bg-accent/10">
+            <Zap className="h-4 w-4 text-accent" />
+          </div>
+          <p className="text-sm text-foreground">
+            Quelqu'un que vous ne connaissiez pas vient de consulter votre asset.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90"
+          onClick={() => navigate("/app/deal-intelligence")}
+        >
+          Qualifier
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
