@@ -504,6 +504,45 @@ export default function CampaignDetail() {
     }
   };
 
+  // ─── HOOKS THAT MUST BE BEFORE EARLY RETURNS ──────────────────────
+  const LAYER_MAP_REF: Record<string, { label: string; estimated: number }> = {
+    executive: { label: "COMEX", estimated: 3 },
+    financial: { label: "Finance", estimated: 2 },
+    technical: { label: "Technique", estimated: 5 },
+  };
+
+  const computedLayers = useMemo(() => {
+    return Object.entries(LAYER_MAP_REF).map(([key, cfg]) => {
+      const matchingViewers = viewers.filter((v: any) => {
+        const role = (v.inferred_role || "").toLowerCase();
+        const contactType = (v.contact_type || "").toLowerCase();
+        return role.includes(key) || contactType.includes(key);
+      });
+      const hasConfirmed = matchingViewers.some(
+        (v: any) => v.identity_confidence === "high" || v.identity_confidence === "verified"
+      );
+      return {
+        layer: cfg.label,
+        current: matchingViewers.length,
+        estimated: cfg.estimated,
+        confirmed: matchingViewers.length > 0 && hasConfirmed,
+      };
+    });
+  }, [viewers]);
+
+  const ghostLayerContacts = useMemo(() => {
+    return computedLayers.filter((l) => l.current > 0 && !l.confirmed);
+  }, [computedLayers]);
+
+  const showSignalBanner = useMemo(() => {
+    if (!campaign) return false;
+    const c = campaign as any;
+    if (c.first_action_completed_at) return false;
+    if (!c.first_signal_at) return false;
+    const signalAge = Date.now() - new Date(c.first_signal_at).getTime();
+    return signalAge <= 48 * 60 * 60 * 1000;
+  }, [campaign]);
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -723,39 +762,6 @@ export default function CampaignDetail() {
     { id: "5", type: "declared", label: "Call positif enregistré", detail: "Déclaré par l'AE", time: "il y a 7j" },
   ];
 
-  // Build layer coverage from viewers (traceable to Power Map)
-  const LAYER_MAP: Record<string, { label: string; estimated: number }> = {
-    executive: { label: "COMEX", estimated: 3 },
-    financial: { label: "Finance", estimated: 2 },
-    technical: { label: "Technique", estimated: 5 },
-  };
-
-  const computedLayers = useMemo(() => {
-    return Object.entries(LAYER_MAP).map(([key, cfg]) => {
-      // Count viewers whose inferred_role or contact_type maps to this layer
-      const matchingViewers = viewers.filter((v: any) => {
-        const role = (v.inferred_role || "").toLowerCase();
-        const contactType = (v.contact_type || "").toLowerCase();
-        return role.includes(key) || contactType.includes(key);
-      });
-      // A layer is "confirmed" only if there's at least one viewer with high identity confidence
-      const hasConfirmed = matchingViewers.some(
-        (v: any) => v.identity_confidence === "high" || v.identity_confidence === "verified"
-      );
-      return {
-        layer: cfg.label,
-        current: matchingViewers.length,
-        estimated: cfg.estimated,
-        confirmed: matchingViewers.length > 0 && hasConfirmed,
-      };
-    });
-  }, [viewers]);
-
-  // Layers with inferred (non-confirmed) contacts that aren't visible in Power Map
-  const ghostLayerContacts = useMemo(() => {
-    return computedLayers.filter((l) => l.current > 0 && !l.confirmed);
-  }, [computedLayers]);
-
   // Contact badge helper
   const getContactBadge = (status: string) => {
     switch (status) {
@@ -781,17 +787,17 @@ export default function CampaignDetail() {
   const recAction = (dealScore?.recommended_action_v2 as Record<string, unknown> | null) ?? null;
   const nbaActionLine = (recAction?.action as string) || (dealScore?.recommended_action as any)?.label || "Définir la prochaine action";
   const stageLabel = STAGE_LABELS[agentContext?.stage || ""] || agentContext?.stage || "—";
-  const nbaWhyLine = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}${agentContext?.decision_window ? ` · décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : ""}`;
+  const nbaWhyLine = (() => {
+    let line = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}`;
+    if (agentContext?.decision_window) {
+      try {
+        const d = new Date(agentContext.decision_window);
+        if (!isNaN(d.getTime())) line += ` · décision ${format(d, "d MMMM", { locale: fr })}`;
+      } catch { /* ignore invalid date */ }
+    }
+    return line;
+  })();
   const nbaCtaLabel = (recAction?.cta as string) || "Lancer l'action";
-
-  // Signal banner — strict 48h condition
-  const showSignalBanner = useMemo(() => {
-    const c = campaign as any;
-    if (c.first_action_completed_at) return false;
-    if (!c.first_signal_at) return false;
-    const signalAge = Date.now() - new Date(c.first_signal_at).getTime();
-    return signalAge <= 48 * 60 * 60 * 1000;
-  }, [campaign]);
 
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
   return (
