@@ -556,7 +556,9 @@ export default function CampaignDetail() {
     const c = campaign as any;
     if (c.first_action_completed_at) return false;
     if (!c.first_signal_at) return false;
-    const signalAge = Date.now() - new Date(c.first_signal_at).getTime();
+    const d = safeDate(c.first_signal_at);
+    if (!d) return false;
+    const signalAge = Date.now() - d.getTime();
     return signalAge <= 48 * 60 * 60 * 1000;
   }, [campaign]);
 
