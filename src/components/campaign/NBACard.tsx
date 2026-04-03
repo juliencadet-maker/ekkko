@@ -29,7 +29,7 @@ const FRESHNESS_BADGE = {
   old: { text: "Ancien", bg: "#F3F4F6", color: "#6B7280" },
 } as const;
 
-export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMarkDone, secondaryAction, signalFreshness }: NBACardProps) {
+export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMarkDone, secondaryAction, signalFreshness, whyLineDeclared }: NBACardProps) {
   const [dismissed, setDismissed] = useState(false);
   const risk = riskLevel && riskStyles[riskLevel] ? riskLevel : "healthy";
   const style = riskStyles[risk];
