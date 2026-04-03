@@ -1081,110 +1081,120 @@ export default function CampaignDetail() {
 
         {/* ─── Tab 2: Deal Intelligence ─── */}
         <TabsContent value="intelligence" className="space-y-6">
-          {/* Power Map — first element */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" /> Power Map
-              </CardTitle>
-              <CardDescription>
-                {viewers.length === 0
-                  ? "Ajoutez des contacts pour visualiser le comité d'achat"
-                  : viewers.length < 3
-                    ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${agentContext?.committee_size_declared || 8} estimés`
-                    : "Cartographie du buying committee"
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {viewers.length === 0 ? (
-                <div className="py-8">
-                  {/* Ghost structure */}
-                  <div className="flex justify-center gap-8 mb-6">
-                    {["Direction", "Finance", "Metier"].map((role) => (
-                      <div key={role} className="flex flex-col items-center gap-2">
-                        <div className="w-14 h-14 rounded-full bg-[#D5D2CB]/40 border-2 border-[#D5D2CB] flex items-center justify-center">
-                          <Users className="h-5 w-5 text-[#D5D2CB]" />
-                        </div>
-                        <span className="text-xs text-[#D5D2CB] font-medium">{role}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-center gap-4 mb-6">
-                    <div className="w-px h-6 bg-[#D5D2CB]/30" />
-                    <div className="w-20 h-px bg-[#D5D2CB]/30 self-center" />
-                    <div className="w-px h-6 bg-[#D5D2CB]/30" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-foreground mb-1">Aucun écho identifié sur ce deal.</p>
-                    <p className="text-xs text-muted-foreground mb-4">Envoyez un contenu pour générer les premiers signaux.</p>
-                    <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                      <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
-                    </Button>
-                    <div className="mt-6 text-left max-w-xs mx-auto">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Contacts suggérés à identifier :</p>
-                      <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                        <li>Un décideur Finance (CFO, DAF)</li>
-                        <li>Un sponsor métier</li>
-                        <li>Un contact technique si le deal le nécessite</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Layer Coverage */}
-          <div>
-            <p className="text-sm font-semibold mb-2">Couverture du comité</p>
-            <LayerCoverage layers={computedLayers} />
-          </div>
-
-          {/* Ghost cards for inferred contacts not yet visible in Power Map */}
-          {ghostLayerContacts.length > 0 && (
-            <div className="space-y-1.5">
-              {ghostLayerContacts.map((l) => (
-                <div key={l.layer} className="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-border bg-muted/20">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    ~{l.current} contact{l.current > 1 ? "s" : ""} {l.layer} identifié{l.current > 1 ? "s" : ""} (estimation)
-                  </span>
-                  <Badge variant="outline" className="text-[9px] ml-auto">confiance faible</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Contact list */}
-          {viewers.length > 0 && (
+          <SectionGuard name="PowerMap">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Contacts identifiés</CardTitle>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Share2 className="h-5 w-5" /> Power Map
+                </CardTitle>
+                <CardDescription>
+                  {viewers.length === 0
+                    ? "Ajoutez des contacts pour visualiser le comité d'achat"
+                    : viewers.length < 3
+                      ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${agentContext?.committee_size_declared || 8} estimés`
+                      : "Cartographie du buying committee"
+                  }
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {viewers.map((v: any) => (
-                  <div key={v.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-xs font-bold text-primary">{(v.name || "?")[0].toUpperCase()}</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{v.name || "Inconnu"}</p>
-                        <p className="text-xs text-muted-foreground">{v.title || ""} {v.company ? `· ${v.company}` : ""}</p>
-                      </div>
+              <CardContent>
+                {viewers.length === 0 ? (
+                  <div className="py-8">
+                    <div className="flex justify-center gap-8 mb-6">
+                      {["Direction", "Finance", "Metier"].map((role) => (
+                        <div key={role} className="flex flex-col items-center gap-2">
+                          <div className="w-14 h-14 rounded-full bg-[#D5D2CB]/40 border-2 border-[#D5D2CB] flex items-center justify-center">
+                            <Users className="h-5 w-5 text-[#D5D2CB]" />
+                          </div>
+                          <span className="text-xs text-[#D5D2CB] font-medium">{role}</span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {getContactBadge(v.status || "inconnu")}
-                      <span className="text-xs text-muted-foreground font-mono">{v.contact_score ?? "—"}</span>
+                    <div className="flex justify-center gap-4 mb-6">
+                      <div className="w-px h-6 bg-[#D5D2CB]/30" />
+                      <div className="w-20 h-px bg-[#D5D2CB]/30 self-center" />
+                      <div className="w-px h-6 bg-[#D5D2CB]/30" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground mb-1">Aucun écho identifié sur ce deal.</p>
+                      <p className="text-xs text-muted-foreground mb-4">Envoyez un contenu pour générer les premiers signaux.</p>
+                      <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                        <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
+                      </Button>
+                      <div className="mt-6 text-left max-w-xs mx-auto">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Contacts suggérés à identifier :</p>
+                        <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                          <li>Un décideur Finance (CFO, DAF)</li>
+                          <li>Un sponsor métier</li>
+                          <li>Un contact technique si le deal le nécessite</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} />
+                )}
               </CardContent>
             </Card>
-          )}
+          </SectionGuard>
+
+          {/* Layer Coverage */}
+          <SectionGuard name="LayerCoverage">
+            {computedLayers.length > 0 ? (
+              <div>
+                <p className="text-sm font-semibold mb-2">Couverture du comité</p>
+                <LayerCoverage layers={computedLayers} />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Couverture du comité : aucune donnée.</p>
+            )}
+          </SectionGuard>
+
+          {/* Ghost cards for inferred contacts not yet visible in Power Map */}
+          <SectionGuard name="GhostContacts">
+            {ghostLayerContacts.length > 0 && (
+              <div className="space-y-1.5">
+                {ghostLayerContacts.map((l) => (
+                  <div key={l.layer} className="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-border bg-muted/20">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      ~{l.current} contact{l.current > 1 ? "s" : ""} {l.layer} identifié{l.current > 1 ? "s" : ""} (estimation)
+                    </span>
+                    <Badge variant="outline" className="text-[9px] ml-auto">confiance faible</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionGuard>
+
+          {/* Contact list */}
+          <SectionGuard name="ContactList">
+            {viewers.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Contacts identifiés</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {viewers.map((v: any) => (
+                    <div key={v.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-xs font-bold text-primary">{(v.name || "?")[0].toUpperCase()}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{v.name || "Inconnu"}</p>
+                          <p className="text-xs text-muted-foreground">{v.title || ""} {v.company ? `· ${v.company}` : ""}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getContactBadge(v.status || "inconnu")}
+                        <span className="text-xs text-muted-foreground font-mono">{v.contact_score ?? "—"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </SectionGuard>
 
           {/* No data state */}
           {!dealScore && viewers.length === 0 && (
