@@ -1025,7 +1025,7 @@ export default function CampaignDetail() {
                     <div className="w-px h-6 bg-[#D5D2CB]/30" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour reveler la carte politique reelle</p>
+                    <p className="text-sm text-muted-foreground mb-3"><p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour révéler la carte politique réelle</p></p>
                     <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
                       <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
                     </Button>
@@ -1168,7 +1168,7 @@ export default function CampaignDetail() {
                               <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un asset
                             </Button>
                             <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                              Video, document, presentation — tout asset partage devient un capteur.
+                              Vidéo, document, présentation — tout asset partagé devient un capteur.
                             </p>
                           </>
                         )}

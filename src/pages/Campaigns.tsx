@@ -231,7 +231,7 @@ export default function Campaigns() {
                 {/* First action spotlight banner */}
                 {!(campaign as any).first_action_completed_at && (
                   <div className="mb-1 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-t-lg border border-b-0 border-accent/20">
-                    Signal detecte — 1 action disponible maintenant
+                    Signal détecté — 1 action disponible maintenant
                   </div>
                 )}
                 <div
