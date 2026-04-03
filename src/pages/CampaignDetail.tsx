@@ -777,8 +777,8 @@ export default function CampaignDetail() {
   };
 
   // NBA data
-  const daysSinceSignal = dealScore?.days_since_last_signal;
-  const recAction = dealScore?.recommended_action_v2 as Record<string, unknown> | null;
+  const daysSinceSignal = dealScore?.days_since_last_signal ?? undefined;
+  const recAction = (dealScore?.recommended_action_v2 as Record<string, unknown> | null) ?? null;
   const nbaActionLine = (recAction?.action as string) || (dealScore?.recommended_action as any)?.label || "Définir la prochaine action";
   const stageLabel = STAGE_LABELS[agentContext?.stage || ""] || agentContext?.stage || "—";
   const nbaWhyLine = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}${agentContext?.decision_window ? ` · décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : ""}`;
