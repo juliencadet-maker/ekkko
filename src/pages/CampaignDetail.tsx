@@ -1239,6 +1239,7 @@ export default function CampaignDetail() {
                 riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
                 onMarkDone={handleNBAMarkDone}
                 secondaryAction={nbaSecondaryAction}
+                signalFreshness={signalFreshness}
               />
             </SectionGuard>
           )}
