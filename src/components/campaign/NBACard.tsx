@@ -15,6 +15,7 @@ interface NBACardProps {
   onMarkDone?: () => void;
   secondaryAction?: { label: string; onClick: () => void };
   signalFreshness?: "recent" | "old" | null;
+  whyLineDeclared?: string;
 }
 
 const riskStyles: Record<string, { bg: string; border: string }> = {
