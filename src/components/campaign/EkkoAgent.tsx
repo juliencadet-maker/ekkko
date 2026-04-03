@@ -12,6 +12,29 @@ import {
 } from "lucide-react";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
+const BADGE_PATTERNS = [
+  { pattern: /^\[FAIT\]\s*/, type: "fact" as const },
+  { pattern: /^\[INFÉRENCE ≈?\]\s*/, type: "inference" as const },
+  { pattern: /^\[CONTEXTE AE\]\s*/, type: "declared" as const },
+];
+
+const BADGE_STYLE = {
+  fact: { label: "FAIT", bg: "#F7F6F3", color: "#0D1B2A", border: "#D1D5DB" },
+  inference: { label: "INFÉRENCE ≈", bg: "#FAEEDA", color: "#E8A838", border: "#F5D08A" },
+  declared: { label: "CONTEXTE AE", bg: "#E6F1FB", color: "#3B82F6", border: "#BFDBFE" },
+} as const;
+
+function parseAgentMessage(content: string): Array<{ badge: keyof typeof BADGE_STYLE | null; text: string }> {
+  return content.split("\n").map(line => {
+    for (const { pattern, type } of BADGE_PATTERNS) {
+      if (pattern.test(line)) {
+        return { badge: type, text: line.replace(pattern, "") };
+      }
+    }
+    return { badge: null, text: line };
+  });
+}
+
 interface EkkoAgentProps {
   campaignId: string;
   campaignName: string;
@@ -234,12 +257,31 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                         <Bot className="h-3.5 w-3.5 text-primary-foreground" />
                       </div>
                     )}
-                    <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                    <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
                       m.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
+                        ? "bg-primary text-primary-foreground rounded-br-sm whitespace-pre-wrap"
                         : "bg-muted rounded-bl-sm"
                     }`}>
-                      {m.content}
+                      {m.role === "assistant"
+                        ? <div className="space-y-1">
+                            {parseAgentMessage(m.content).map((part, j) =>
+                              part.text.trim() === "" ? null : (
+                                <div key={j} className="flex items-start gap-1.5">
+                                  {part.badge && (
+                                    <span
+                                      className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium shrink-0 mt-0.5 border"
+                                      style={{ backgroundColor: BADGE_STYLE[part.badge].bg, color: BADGE_STYLE[part.badge].color, borderColor: BADGE_STYLE[part.badge].border }}
+                                    >
+                                      {BADGE_STYLE[part.badge].label}
+                                    </span>
+                                  )}
+                                  <span className="whitespace-pre-wrap">{part.text}</span>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        : m.content
+                      }
                     </div>
                   </div>
                 ))}

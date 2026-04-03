@@ -15,6 +15,7 @@ interface NBACardProps {
   onMarkDone?: () => void;
   secondaryAction?: { label: string; onClick: () => void };
   signalFreshness?: "recent" | "old" | null;
+  whyLineDeclared?: string;
 }
 
 const riskStyles: Record<string, { bg: string; border: string }> = {
@@ -28,7 +29,7 @@ const FRESHNESS_BADGE = {
   old: { text: "Ancien", bg: "#F3F4F6", color: "#6B7280" },
 } as const;
 
-export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMarkDone, secondaryAction, signalFreshness }: NBACardProps) {
+export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMarkDone, secondaryAction, signalFreshness, whyLineDeclared }: NBACardProps) {
   const [dismissed, setDismissed] = useState(false);
   const risk = riskLevel && riskStyles[riskLevel] ? riskLevel : "healthy";
   const style = riskStyles[risk];
@@ -59,15 +60,20 @@ export function NBACard({ actionLine, whyLine, confidenceLabel, riskLevel, onMar
         <p className="text-base font-bold text-foreground leading-snug">{actionLine}</p>
       </div>
 
-      <div className="px-4 pb-2 flex items-center gap-2">
-        <p className="text-sm text-muted-foreground leading-snug">{whyLine}</p>
-        {freshnessBadge && (
-          <span
-            className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium shrink-0"
-            style={{ backgroundColor: freshnessBadge.bg, color: freshnessBadge.color }}
-          >
-            {freshnessBadge.text}
-          </span>
+      <div className="px-4 pb-2 space-y-1">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground leading-snug">{whyLine}</p>
+          {freshnessBadge && (
+            <span
+              className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium shrink-0"
+              style={{ backgroundColor: freshnessBadge.bg, color: freshnessBadge.color }}
+            >
+              {freshnessBadge.text}
+            </span>
+          )}
+        </div>
+        {whyLineDeclared && (
+          <p className="text-xs italic text-[#E8A838] leading-snug">{whyLineDeclared}</p>
         )}
       </div>
 
