@@ -742,17 +742,37 @@ export default function CampaignDetail() {
     }
   };
 
-  // NBA mock data
+  // Stage label mapping — terrain language
+  const STAGE_LABELS: Record<string, string> = {
+    qualification: "Phase découverte",
+    rfp: "Appel d'offres en cours",
+    shortlist: "Phase finale",
+    negotiation: "Négociation active",
+    close: "Closing imminent",
+  };
+
+  // NBA data
   const daysSinceSignal = dealScore?.days_since_last_signal;
-  const activityLabel = daysSinceSignal === 0 ? "Aucune activité récente" : `Aucune activité depuis ${daysSinceSignal ?? "?"}j`;
-  const nbaFact = `${viewers.length === 0 ? "0 ouverture" : `${viewers.length} contacts`} · ${activityLabel} · ${dealValue ? `${(dealValue / 1000).toFixed(0)}k€` : "—"}`;
-  const nbaContext = `Contexte AE : ${agentContext?.stage || "—"} · ${agentContext?.decision_window ? `décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : "—"}`;
+  const recAction = dealScore?.recommended_action_v2 as Record<string, unknown> | null;
+  const nbaActionLine = (recAction?.action as string) || (dealScore?.recommended_action as any)?.label || "Définir la prochaine action";
+  const stageLabel = STAGE_LABELS[agentContext?.stage || ""] || agentContext?.stage || "—";
+  const nbaWhyLine = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}${agentContext?.decision_window ? ` · décision ${format(new Date(agentContext.decision_window), "d MMMM", { locale: fr })}` : ""}`;
+  const nbaCtaLabel = (recAction?.cta as string) || "Lancer l'action";
+
+  // Signal banner — strict 48h condition
+  const showSignalBanner = useMemo(() => {
+    const c = campaign as any;
+    if (c.first_action_completed_at) return false;
+    if (!c.first_signal_at) return false;
+    const signalAge = Date.now() - new Date(c.first_signal_at).getTime();
+    return signalAge <= 48 * 60 * 60 * 1000;
+  }, [campaign]);
 
   // ─── SUB-CAMPAIGN / STANDALONE CAMPAIGN DETAIL ─────────────────────
   return (
     <AppLayout>
-      {/* First action spotlight banner */}
-      {!(campaign as any).first_action_completed_at && (campaign as any).first_signal_at && (
+      {/* First action spotlight banner — only if signal < 48h */}
+      {showSignalBanner && (
         <div className="mb-4 px-4 py-2 text-xs font-medium text-accent bg-accent/5 rounded-lg border border-accent/20">
           Signal détecté — 1 action disponible maintenant
         </div>
@@ -787,14 +807,14 @@ export default function CampaignDetail() {
               <h1 className="text-2xl font-bold text-[#0D1B2A]">{campaign.name}</h1>
               {dealValue && <span className="text-lg font-semibold text-muted-foreground">{(dealValue / 1000).toFixed(0)}k€</span>}
               {agentContext?.stage && (
-                <Badge variant="outline" className="text-xs capitalize">{agentContext.stage}</Badge>
+                <Badge variant="outline" className="text-xs">{stageLabel}</Badge>
               )}
               {(() => {
                 const rl = (campaign as any).deal_risk_level || dealScore?.risk_level || "healthy";
                 const riskCfg: Record<string, { label: string; cls: string }> = {
-                  high_risk: { label: "Risque eleve", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
-                  critical: { label: "Risque eleve", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
-                  watch: { label: "A surveiller", cls: "bg-[#FAEEDA] text-[#E8A838] border-[#E8A838]/30" },
+                  high_risk: { label: "Risque élevé", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
+                  critical: { label: "Risque élevé", cls: "bg-[#FCEBEB] text-[#E24B4A] border-[#E24B4A]/30" },
+                  watch: { label: "À surveiller", cls: "bg-[#FAEEDA] text-[#E8A838] border-[#E8A838]/30" },
                   healthy: { label: "Sain", cls: "bg-[#D0FAE8] text-[#1AE08A] border-[#1AE08A]/30" },
                 };
                 const cfg = riskCfg[rl] || riskCfg.healthy;
@@ -809,7 +829,10 @@ export default function CampaignDetail() {
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Dernière mise à jour : {lastUpdate}
+              Dernière activité : {lastUpdate}
+            </p>
+            <p className="text-[11px] text-muted-foreground/60">
+              Analyse mise à jour {lastUpdate}
             </p>
           </div>
           <div className="flex gap-2">
@@ -929,10 +952,10 @@ export default function CampaignDetail() {
         <TabsContent value="overview" className="space-y-3">
           {/* NBA Card — first visible element */}
           <NBACard
-            factLine={nbaFact}
-            contextLine={nbaContext}
+            actionLine={nbaActionLine}
+            whyLine={nbaWhyLine}
             confidenceLabel="Confiance modérée"
-            ctaLabel={dealScore?.recommended_action?.label || "Voir les actions"}
+            ctaLabel={nbaCtaLabel}
             riskLevel={(campaign as any).deal_risk_level || dealScore?.risk_level || "healthy"}
             onCtaClick={() => setShowAgent(true)}
           />
@@ -943,7 +966,7 @@ export default function CampaignDetail() {
             <div className="space-y-1.5">
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--info))]/10 text-[hsl(var(--info))] border-[hsl(var(--info))]/30">FAIT</Badge>
-                <p className="text-sm text-foreground leading-snug">{`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${daysSinceSignal === 0 ? "aucune activité récente" : `aucune activité depuis ${daysSinceSignal ?? "?"}j`}`}</p>
+                <p className="text-sm text-foreground leading-snug">{`${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""} — ${daysSinceSignal === 0 ? "aucune activité récente" : `aucune activité depuis ${daysSinceSignal ?? "?"}j`} · ${stageLabel}`}</p>
               </div>
               <div className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
