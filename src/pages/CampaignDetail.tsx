@@ -1061,10 +1061,18 @@ export default function CampaignDetail() {
                     <div className="w-px h-6 bg-[#D5D2CB]/30" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-3"><p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour révéler la carte politique réelle</p></p>
+                    <p className="text-sm text-muted-foreground mb-3">Ajoutez des contacts pour révéler la carte politique réelle</p>
                     <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
                       <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
                     </Button>
+                    <div className="mt-6 text-left max-w-xs mx-auto">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Contacts suggérés à identifier :</p>
+                      <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                        <li>Un décideur Finance (CFO, DAF)</li>
+                        <li>Un sponsor métier</li>
+                        <li>Un contact technique si le deal le nécessite</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               ) : (
