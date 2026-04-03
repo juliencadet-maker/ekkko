@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScriptDiffDialog } from "@/components/campaign/ScriptDiffDialog";
 import { LandingPageEditor, LandingPageConfig } from "@/components/campaign/LandingPageEditor";
