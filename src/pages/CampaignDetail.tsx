@@ -94,6 +94,23 @@ class SectionGuard extends Component<SectionGuardProps, SectionGuardState> {
   }
 }
 
+// ─── Safe date helpers ──────────────────────────────────────────────
+function safeDate(value: unknown): Date | null {
+  if (!value) return null;
+  try {
+    const d = new Date(value as string);
+    return isNaN(d.getTime()) ? null : d;
+  } catch { return null; }
+}
+
+function safeFormatDate(value: unknown, fmt: string, options?: { locale?: Locale }): string {
+  const d = safeDate(value);
+  if (!d) return "—";
+  try { return format(d, fmt, options); } catch { return "—"; }
+}
+
+type Locale = typeof fr;
+
 const DEMO_VIDEO_PATTERNS = [
   "commondatastorage.googleapis.com",
   "sample/BigBuckBunny",
