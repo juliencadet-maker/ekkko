@@ -1114,22 +1114,41 @@ export default function CampaignDetail() {
             </Card>
           </SectionGuard>
 
-          {/* Signal offline — with inactivity hint */}
+          {/* Signal offline — collapsible with chevron and preview */}
           <SectionGuard name="SignalOffline">
-            {daysSinceSignal !== undefined && daysSinceSignal > 5 && (
-              <p className="text-xs text-muted-foreground px-1">
-                Aucune activité récente.{" "}
-                <button className="underline hover:text-foreground" onClick={() => {
-                  const el = document.getElementById("signal-offline-widget");
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                }}>
-                  Que s'est-il passé en dehors d'Ekko ?
+            {(() => {
+              const [offlineOpen, setOfflineOpen] = [false, () => {}]; // handled via useState above
+              return null; // placeholder — actual render below
+            })()}
+            <Card className="shadow-none">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <button
+                  className="flex items-center justify-between w-full text-left cursor-pointer rounded-md px-1 py-1 hover:bg-muted/40 transition-colors"
+                  onClick={() => {
+                    const el = document.getElementById("signal-offline-content");
+                    if (el) el.classList.toggle("hidden");
+                    const chevron = document.getElementById("signal-offline-chevron");
+                    if (chevron) chevron.classList.toggle("rotate-180");
+                  }}
+                >
+                  <CardTitle className="text-sm font-semibold">Signal offline</CardTitle>
+                  <ChevronDown id="signal-offline-chevron" className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
                 </button>
-              </p>
-            )}
-            <div id="signal-offline-widget">
-              <WhatHappenedWidget campaignId={campaign.id} />
-            </div>
+              </CardHeader>
+              {/* Preview line */}
+              <CardContent className="pt-0 px-4 pb-1">
+                <p className="text-xs text-muted-foreground">
+                  {daysSinceSignal !== undefined && daysSinceSignal > 5
+                    ? `Aucune activité depuis ${daysSinceSignal}j — que s'est-il passé ?`
+                    : "Aucun signal offline"}
+                </p>
+              </CardContent>
+              <div id="signal-offline-content" className="hidden">
+                <CardContent className="pt-0 px-3">
+                  <WhatHappenedWidget campaignId={campaign.id} />
+                </CardContent>
+              </div>
+            </Card>
           </SectionGuard>
         </TabsContent>
 
