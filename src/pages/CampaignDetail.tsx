@@ -756,12 +756,16 @@ export default function CampaignDetail() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{campaign.name}</h1>
+              <h1 className={cn("text-2xl font-bold", 
+                (campaign as any).deal_risk_level === "high_risk" ? "text-[#E24B4A]"
+                : (campaign as any).deal_risk_level === "watch" ? "text-[#E8A838]"
+                : "text-foreground"
+              )}>{campaign.name}</h1>
               {dealValue && <span className="text-lg font-semibold text-muted-foreground">{(dealValue / 1000).toFixed(0)}k€</span>}
               {agentContext?.stage && (
                 <Badge variant="outline" className="text-xs capitalize">{agentContext.stage}</Badge>
               )}
-              <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold", desClass)}>
+              <span className={cn("px-3 py-1 rounded-full text-sm font-bold", desClass)}>
                 DES {desValue ?? "—"}
               </span>
             </div>
