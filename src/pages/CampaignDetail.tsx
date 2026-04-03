@@ -1060,6 +1060,85 @@ export default function CampaignDetail() {
     } catch { toast.error("Erreur"); }
   };
 
+  // C3 — Handler correction AE ✗
+  const handleRejectInsight = async (contradictionId: string) => {
+    if (processingAlerts.has(contradictionId)) return;
+    setProcessingAlerts(prev => new Set([...prev, contradictionId]));
+
+    setPendingDismiss(prev => new Set([...prev, contradictionId]));
+    setFeedbackMessages(prev => ({ ...prev, [contradictionId]: "rejected" }));
+
+    const timer = setTimeout(() => {
+      setDismissedAlerts(prev => new Set([...prev, contradictionId]));
+      setPendingDismiss(prev => { const next = new Set(prev); next.delete(contradictionId); return next; });
+      setFeedbackMessages(prev => { const next = { ...prev }; delete next[contradictionId]; return next; });
+      setProcessingAlerts(prev => { const next = new Set(prev); next.delete(contradictionId); return next; });
+      delete dismissTimersRef.current[contradictionId];
+    }, 3000);
+    dismissTimersRef.current[contradictionId] = timer;
+
+    try {
+      if (!campaign?.id) return;
+      await supabase.from("system_failures").insert({
+        campaign_id: campaign.id,
+        failure_type: "inference_error",
+        severity: "low",
+        message: `AE a rejeté l'insight ${contradictionId}`,
+        reason: contradictionId,
+      });
+
+      const { count } = await supabase
+        .from("system_failures")
+        .select("id", { count: "exact" })
+        .eq("campaign_id", campaign.id)
+        .eq("failure_type", "inference_error")
+        .eq("reason", contradictionId);
+
+      if ((count ?? 0) >= 2) {
+        await supabase
+          .from("deal_contact_roles")
+          .update({ confidence: 0.3 })
+          .eq("campaign_id", campaign.id)
+          .neq("source", "declared");
+      }
+    } catch (err) {
+      console.error("[C3][handleRejectInsight]", err);
+    }
+  };
+
+  // C3 — Handler confirmation AE ✓
+  const handleConfirmInsight = async (contradictionId: string) => {
+    if (processingAlerts.has(contradictionId)) return;
+    setProcessingAlerts(prev => new Set([...prev, contradictionId]));
+
+    setConfirmedAlerts(prev => new Set([...prev, contradictionId]));
+    setFeedbackMessages(prev => ({ ...prev, [contradictionId]: "confirmed" }));
+
+    setTimeout(() => {
+      setFeedbackMessages(prev => { const next = { ...prev }; delete next[contradictionId]; return next; });
+      setProcessingAlerts(prev => { const next = new Set(prev); next.delete(contradictionId); return next; });
+    }, 2000);
+
+    try {
+      if (!campaign?.id) return;
+      const topViewer = viewers
+        .filter((v: any) => (v.contact_score ?? 0) > 0)
+        .sort((a: any, b: any) => (b.contact_score ?? 0) - (a.contact_score ?? 0))[0];
+
+      if (topViewer) {
+        await supabase.from("deal_contact_roles").upsert({
+          campaign_id: campaign.id,
+          viewer_id: topViewer.id,
+          source: "declared",
+          confidence: 0.95,
+          insight_reasons: JSON.stringify([`AE a confirmé l'insight ${contradictionId}`]),
+        }, { onConflict: "campaign_id,viewer_id" });
+      }
+    } catch (err) {
+      console.error("[C3][handleConfirmInsight]", err);
+    }
+  };
+
   // NBA secondary action detection
   const nbaSecondaryAction = (() => {
     const actionStr = ((recAction?.action as string) || "").toLowerCase();

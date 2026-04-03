@@ -65,7 +65,7 @@ const OUTCOME_CATEGORIES = [
   },
 ];
 
-export function DealCloseModal({ open, onOpenChange, campaignId, campaignName }: DealCloseModalProps) {
+export function DealCloseModal({ open, onOpenChange, campaignId, campaignName, dealScore }: DealCloseModalProps) {
   const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
