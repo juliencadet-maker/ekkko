@@ -1111,6 +1111,7 @@ export default function CampaignDetail() {
     if (processingAlerts.has(contradictionId)) return;
     setProcessingAlerts(prev => new Set([...prev, contradictionId]));
 
+    // NOTE: confirmedAlerts is UI-only (local). Persistence comes from upsert deal_contact_roles below.
     setConfirmedAlerts(prev => new Set([...prev, contradictionId]));
     setFeedbackMessages(prev => ({ ...prev, [contradictionId]: "confirmed" }));
 
