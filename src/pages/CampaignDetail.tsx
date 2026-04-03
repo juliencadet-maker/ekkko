@@ -94,6 +94,23 @@ class SectionGuard extends Component<SectionGuardProps, SectionGuardState> {
   }
 }
 
+// ─── Safe date helpers ──────────────────────────────────────────────
+function safeDate(value: unknown): Date | null {
+  if (!value) return null;
+  try {
+    const d = new Date(value as string);
+    return isNaN(d.getTime()) ? null : d;
+  } catch { return null; }
+}
+
+function safeFormatDate(value: unknown, fmt: string, options?: { locale?: Locale }): string {
+  const d = safeDate(value);
+  if (!d) return "—";
+  try { return format(d, fmt, options); } catch { return "—"; }
+}
+
+type Locale = typeof fr;
+
 const DEMO_VIDEO_PATTERNS = [
   "commondatastorage.googleapis.com",
   "sample/BigBuckBunny",
@@ -539,7 +556,9 @@ export default function CampaignDetail() {
     const c = campaign as any;
     if (c.first_action_completed_at) return false;
     if (!c.first_signal_at) return false;
-    const signalAge = Date.now() - new Date(c.first_signal_at).getTime();
+    const d = safeDate(c.first_signal_at);
+    if (!d) return false;
+    const signalAge = Date.now() - d.getTime();
     return signalAge <= 48 * 60 * 60 * 1000;
   }, [campaign]);
 
@@ -597,7 +616,7 @@ export default function CampaignDetail() {
                 </div>
                 <p className="mt-1 text-muted-foreground">
                   {(campaign as any).identities?.display_name || "Identité"} • Créé le{" "}
-                  {format(new Date(campaign.created_at), "d MMMM yyyy", { locale: fr })}
+                  {safeFormatDate(campaign.created_at, "d MMMM yyyy", { locale: fr })}
                 </p>
                 {campaign.description && (
                   <p className="mt-1 text-sm text-muted-foreground">{campaign.description}</p>
@@ -736,18 +755,35 @@ export default function CampaignDetail() {
   // ─── Computed values ──────────────────────────────────────────────
   const dealValue = (campaign.metadata as any)?.deal_value;
   const isSnoozed = (campaign as any).deal_status === "snoozed" && (campaign as any).snoozed_until;
-  const lastUpdate = campaign.updated_at
-    ? (() => {
-        const mins = Math.floor((Date.now() - new Date(campaign.updated_at).getTime()) / 60000);
-        if (mins < 1) return "à l'instant";
-        if (mins < 60) return `il y a ${mins} min`;
-        const hrs = Math.floor(mins / 60);
-        if (hrs < 24) return `il y a ${hrs}h`;
-        return `il y a ${Math.floor(hrs / 24)}j`;
-      })()
-    : "";
+  const lastUpdate = (() => {
+    const d = safeDate(campaign.updated_at);
+    if (!d) return "—";
+    const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return "à l'instant";
+    if (mins < 60) return `il y a ${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `il y a ${hrs}h`;
+    return `il y a ${Math.floor(hrs / 24)}j`;
+  })();
 
-  const desValue = dealScore?.des;
+  // Stage label mapping — terrain language
+  const STAGE_LABELS: Record<string, string> = {
+    qualification: "Phase découverte",
+    rfp: "Appel d'offres en cours",
+    shortlist: "Phase finale",
+    negotiation: "Négociation active",
+    close: "Closing imminent",
+  };
+
+  // NBA data — must be before desValue
+  const safeDealScore = dealScore ?? {};
+  const safeAgentContext = agentContext ?? {};
+  const daysSinceSignal = safeDealScore.days_since_last_signal ?? undefined;
+  const recAction = (safeDealScore.recommended_action_v2 as Record<string, unknown> | null) ?? null;
+  const nbaActionLine = (recAction?.action as string) || (safeDealScore.recommended_action as any)?.label || "Définir la prochaine action";
+  const stageLabel = STAGE_LABELS[safeAgentContext.stage || ""] || safeAgentContext.stage || "—";
+
+  const desValue = safeDealScore.des ?? null;
   const desClass = desValue == null ? "bg-muted text-muted-foreground"
     : desValue >= 70 ? "bg-accent/15 text-accent"
     : desValue >= 40 ? "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))]"
@@ -772,28 +808,11 @@ export default function CampaignDetail() {
       default: return <Badge variant="outline" className="text-[10px]">Inconnu</Badge>;
     }
   };
-
-  // Stage label mapping — terrain language
-  const STAGE_LABELS: Record<string, string> = {
-    qualification: "Phase découverte",
-    rfp: "Appel d'offres en cours",
-    shortlist: "Phase finale",
-    negotiation: "Négociation active",
-    close: "Closing imminent",
-  };
-
-  // NBA data
-  const daysSinceSignal = dealScore?.days_since_last_signal ?? undefined;
-  const recAction = (dealScore?.recommended_action_v2 as Record<string, unknown> | null) ?? null;
-  const nbaActionLine = (recAction?.action as string) || (dealScore?.recommended_action as any)?.label || "Définir la prochaine action";
-  const stageLabel = STAGE_LABELS[agentContext?.stage || ""] || agentContext?.stage || "—";
   const nbaWhyLine = (() => {
-    let line = `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} · ${stageLabel}`;
-    if (agentContext?.decision_window) {
-      try {
-        const d = new Date(agentContext.decision_window);
-        if (!isNaN(d.getTime())) line += ` · décision ${format(d, "d MMMM", { locale: fr })}`;
-      } catch { /* ignore invalid date */ }
+    let line = `${(viewers ?? []).length} contact${(viewers ?? []).length !== 1 ? "s" : ""} · ${stageLabel}`;
+    if (safeAgentContext.decision_window) {
+      const formatted = safeFormatDate(safeAgentContext.decision_window, "d MMMM", { locale: fr });
+      if (formatted !== "—") line += ` · décision ${formatted}`;
     }
     return line;
   })();
@@ -816,7 +835,7 @@ export default function CampaignDetail() {
             <PauseCircle className="h-4 w-4 text-[hsl(var(--warning))]" />
             <span className="text-sm">
               Deal en veille jusqu'au{" "}
-              <span className="font-medium">{format(new Date((campaign as any).snoozed_until!), "d MMMM yyyy", { locale: fr })}</span>
+              <span className="font-medium">{safeFormatDate((campaign as any).snoozed_until, "d MMMM yyyy", { locale: fr })}</span>
             </span>
           </div>
           <button className="link-action text-sm" onClick={handleReactivate}>Réactiver</button>
@@ -1016,7 +1035,7 @@ export default function CampaignDetail() {
                 </div>
                 <div className="flex items-start gap-2">
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">INFÉRENCE ≈</Badge>
-                  <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${agentContext?.incumbent_type === "competitor_named" ? "concurrent identifié" : agentContext?.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${agentContext?.competitive_situation || "—"}`}</p>
+                  <p className="text-sm text-foreground leading-snug">{`Profil acheteur : remplacement ${safeAgentContext.incumbent_type === "competitor_named" ? "concurrent identifié" : safeAgentContext.incumbent_type === "internal_tool" ? "outil interne" : "incumbent inconnu"} · ${safeAgentContext.competitive_situation || "—"}`}</p>
                 </div>
               </div>
             </div>
@@ -1097,7 +1116,7 @@ export default function CampaignDetail() {
                   {viewers.length === 0
                     ? "Ajoutez des contacts pour visualiser le comité d'achat"
                     : viewers.length < 3
-                      ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${agentContext?.committee_size_declared || 8} estimés`
+                      ? `${viewers.length} contact${viewers.length > 1 ? "s" : ""} / ~${safeAgentContext.committee_size_declared || 8} estimés`
                       : "Cartographie du buying committee"
                   }
                 </CardDescription>
