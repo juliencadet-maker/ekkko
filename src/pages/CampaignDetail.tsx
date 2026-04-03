@@ -246,6 +246,21 @@ export default function CampaignDetail() {
   const [timelineLoading, setTimelineLoading] = useState(true);
   const [q3Loading, setQ3Loading] = useState(true);
 
+  // C3 — Explainability: local states for alert feedback
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [pendingDismiss, setPendingDismiss] = useState<Set<string>>(new Set());
+  const [confirmedAlerts, setConfirmedAlerts] = useState<Set<string>>(new Set());
+  const [feedbackMessages, setFeedbackMessages] = useState<Record<string, "confirmed" | "rejected">>({});
+  const [processingAlerts, setProcessingAlerts] = useState<Set<string>>(new Set());
+  const dismissTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(dismissTimersRef.current).forEach(clearTimeout);
+    };
+  }, []);
+
   const isParent = campaign && !campaign.parent_campaign_id && subCampaigns.length > 0;
 
   // Video generation polling
