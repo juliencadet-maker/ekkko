@@ -995,9 +995,22 @@ export default function CampaignDetail() {
   // ─── Computed values ──────────────────────────────────────────────
   const dealValue = (campaign.metadata as any)?.deal_value;
   const isSnoozed = (campaign as any).deal_status === "snoozed" && (campaign as any).snoozed_until;
+  // BUG 3 fix — "Dernière activité" shows only prospect events (fact layer, no AE events)
+  const AE_EVENT_TYPES = new Set([
+    "video_generation_started", "video_generation_completed", "deal_created",
+    "campaign_created", "script_generated", "approval_sent",
+  ]);
+  const lastProspectEvent = useMemo(() => {
+    const prospectEvents = timelineEvents.filter(
+      (e) => e.event_layer === "fact" && !AE_EVENT_TYPES.has(e.event_type)
+    );
+    return prospectEvents.length > 0 ? prospectEvents[0] : null;
+  }, [timelineEvents]);
+
   const lastUpdate = (() => {
-    const d = safeDate(campaign.updated_at);
-    if (!d) return "—";
+    if (!lastProspectEvent) return null;
+    const d = safeDate(lastProspectEvent.created_at);
+    if (!d) return null;
     const mins = Math.floor((Date.now() - d.getTime()) / 60000);
     if (mins < 1) return "à l'instant";
     if (mins < 60) return `il y a ${mins} min`;
@@ -1005,6 +1018,26 @@ export default function CampaignDetail() {
     if (hrs < 24) return `il y a ${hrs}h`;
     return `il y a ${Math.floor(hrs / 24)}j`;
   })();
+
+  // BUG 4 fix — Deal master state
+  const dealMasterState = useMemo(() => {
+    if ((campaign as any).first_signal_at) return "sent";
+    const hasActiveAsset = dealAssets.length > 0;
+    const hasActiveJobs_ = hasActiveJobs || campaign.status === "generating" || campaign.status === "pending_approval";
+    if (hasActiveAsset && !hasActiveJobs_) return "ready";
+    if (hasActiveJobs_) return "preparing";
+    return "draft";
+  }, [campaign, dealAssets, hasActiveJobs]);
+
+  const DEAL_STATE_CONFIG: Record<string, { label: string; emoji: string; cls: string }> = {
+    draft: { label: "Brouillon", emoji: "⚪", cls: "bg-muted text-muted-foreground border-border" },
+    preparing: { label: "En préparation", emoji: "🟡", cls: "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30" },
+    ready: { label: "Prêt à envoyer", emoji: "🟢", cls: "bg-accent/15 text-accent border-accent/30" },
+    sent: { label: "Envoyé au prospect", emoji: "🔵", cls: "bg-[hsl(var(--info))]/15 text-[hsl(var(--info))] border-[hsl(var(--info))]/30" },
+  };
+
+  // BUG 1 fix — check if any asset is active/ready for prospect link
+  const hasReadyAsset = dealAssets.length > 0 || videos.some(v => v.is_active);
 
   // Stage label mapping — terrain language
   const STAGE_LABELS: Record<string, string> = {
