@@ -258,7 +258,7 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
 
   const [campaignRes, agentCtxRes, viewersRes, recentVideoRes, recentDocRes, prevScoreRes, dealAssetsRes] = await Promise.all([
     supabase.from("campaigns")
-      .select("org_id, deal_value, deal_status, deal_risk_override, first_signal_at, committee_size_declared, deal_owner_id")
+      .select("id, name, org_id, deal_value, deal_status, deal_risk_override, first_signal_at, committee_size_declared, deal_owner_id")
       .eq("id", campaign_id).single(),
     supabase.from("agent_context")
       .select("stage, decision_window, incumbent_present, incumbent_type, committee_size_declared")
