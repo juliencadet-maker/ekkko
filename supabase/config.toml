@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.track-document-events]
 verify_jwt = false
+
+[functions.translate-offline-signal]
+verify_jwt = false
