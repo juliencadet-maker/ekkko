@@ -220,6 +220,9 @@ export default function CampaignDetail() {
   const [agentContext, setAgentContext] = useState<any>(null);
   const [snoozeDate, setSnoozeDate] = useState<Date | undefined>();
   const [offlineSignalSent, setOfflineSignalSent] = useState(false);
+  const [freeSignalText, setFreeSignalText] = useState("");
+  const [freeSignalLoading, setFreeSignalLoading] = useState(false);
+  const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
