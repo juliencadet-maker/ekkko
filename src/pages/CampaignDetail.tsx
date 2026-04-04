@@ -1550,6 +1550,36 @@ export default function CampaignDetail() {
             )}
           </SectionGuard>
 
+          {/* Widget signal offline AE */}
+          <SectionGuard name="OfflineSignalQuick">
+            <Card className="shadow-none">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className="text-sm font-semibold">Que s'est-il passé ?</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 px-3">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "call_positive", label: "Call positif" },
+                    { key: "call_negative", label: "Call négatif" },
+                    { key: "new_contact", label: "Nouveau contact identifié" },
+                    { key: "other", label: "Autre" },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => handleOfflineSignal(key, label)}
+                      className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:border-accent/40 hover:bg-accent/5 hover:text-foreground transition-all"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {offlineSignalSent && (
+                  <p className="text-xs text-accent mt-2">Signal enregistré.</p>
+                )}
+              </CardContent>
+            </Card>
+          </SectionGuard>
+
           {/* Timeline — collapsed by default, with chevron and preview */}
           <SectionGuard name="Timeline">
             <Card className="shadow-none">
