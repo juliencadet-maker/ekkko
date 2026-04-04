@@ -139,7 +139,19 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
       });
 
       if (error) throw error;
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      const reply = data.reply as string;
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+
+      // E2 — Extract suggestion from agent response
+      const match = reply?.match(
+        /si vous devez faire une seule chose[^,]*,\s*c'est\s+(.+?)[\.\n]/i
+      );
+      if (match?.[1]) {
+        setAgentSuggestion(match[1].trim());
+        setSuggestionStatus("idle");
+      } else {
+        setAgentSuggestion(null);
+      }
     } catch (e) {
       console.error("Agent error:", e);
       setMessages((prev) => [...prev, { role: "assistant", content: "Erreur de connexion à l'agent. Réessayez." }]);
