@@ -293,6 +293,29 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
   const prevScore = (prevScoreRes.data || [])[0] ?? null;
   const dealAssets = dealAssetsRes.data || [];
 
+  // ── Declared signals E2 ──────────────────────────────────────────
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
+  const { data: declaredSignals } = await supabase
+    .from("timeline_events")
+    .select("id, event_type, created_at")
+    .eq("campaign_id", campaign_id)
+    .eq("event_layer", "declared")
+    .in("event_type", ["offline_signal", "offline_signal_translated"])
+    .gt("created_at", fourteenDaysAgo);
+
+  // Déduplication calcul uniquement : 1 signal par bucket 5min par event_type
+  // NE MODIFIE PAS timeline_events — uniquement pour le calcul du bonus
+  const buckets = new Set<string>();
+  let declaredCount = 0;
+  for (const s of (declaredSignals || [])) {
+    const bucket5min = Math.floor(new Date(s.created_at).getTime() / (5 * 60 * 1000));
+    const key = `${s.event_type}_${bucket5min}`;
+    if (!buckets.has(key)) {
+      buckets.add(key);
+      declaredCount++;
+    }
+  }
+
   if (!campaign) {
     console.error("[C1a][computeForCampaign] campaign not found:", campaign_id);
     return { campaign_id, error: "campaign not found" };
