@@ -1389,7 +1389,7 @@ export default function CampaignDetail() {
         <TabsList>
           <TabsTrigger value="overview">Résumé du deal</TabsTrigger>
           <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
-          <TabsTrigger value="assets">Contenus envoyés</TabsTrigger>
+          <TabsTrigger value="assets">{(campaign as any).first_signal_at ? "Contenus envoyés" : "Contenus du deal"}</TabsTrigger>
         </TabsList>
 
         {/* ─── Tab 1: Résumé du deal ─── */}
