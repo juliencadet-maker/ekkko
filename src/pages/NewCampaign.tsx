@@ -20,7 +20,6 @@ import { VideoImportUpload } from "@/components/campaign/VideoImportUpload";
 import {
   ArrowLeft,
   ArrowRight,
-  
   Send,
   CheckCircle2,
   AlertCircle,
@@ -35,7 +34,9 @@ import {
   Camera,
   Upload,
   Bot,
+  Eye,
 } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import type { Identity, Policy } from "@/types/database";
 
