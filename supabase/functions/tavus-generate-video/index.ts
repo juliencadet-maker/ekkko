@@ -133,12 +133,8 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (!MISTRAL_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "MISTRAL_API_KEY is not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // MISTRAL_API_KEY is optional — if missing, we fall back to Tavus native TTS
+    const voxtralAvailable = !!MISTRAL_API_KEY;
 
     // Use service client for all operations (function is protected by verify_jwt=false in config)
     const supabase = createClient(
