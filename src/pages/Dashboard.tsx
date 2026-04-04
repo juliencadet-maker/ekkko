@@ -135,7 +135,8 @@ export default function Dashboard() {
             const sb = scoreMap[b.id] ?? 0;
             return sb - sa;
           });
-          setRecentCampaigns(sorted.slice(0, 5) as Campaign[]);
+          setScoreMap(scoreMap);
+          setRecentCampaigns(sorted.slice(0, 3) as Campaign[]);
         } else {
           setRecentCampaigns([]);
         }
