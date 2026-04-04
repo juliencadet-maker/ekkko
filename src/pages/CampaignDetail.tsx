@@ -630,6 +630,26 @@ export default function CampaignDetail() {
       toast.error("Erreur lors de la sauvegarde");
     }
   };
+  const handleFreeSignal = async () => {
+    if (!id || !freeSignalText.trim()) return;
+    setFreeSignalLoading(true);
+    setFreeSignalStatus("idle");
+    try {
+      const { error } = await supabase.functions.invoke("translate-offline-signal", {
+        body: { campaign_id: id, raw_input: freeSignalText.trim() },
+      });
+      if (error) throw error;
+      setFreeSignalText("");
+      setFreeSignalStatus("success");
+    } catch (err) {
+      console.error("[free_signal]", err);
+      setFreeSignalStatus("error");
+    } finally {
+      setFreeSignalLoading(false);
+      setTimeout(() => setFreeSignalStatus("idle"), 3000);
+    }
+  };
+
   const handleOfflineSignal = async (key: string, label: string) => {
     if (!id) return;
     try {
