@@ -1278,6 +1278,11 @@ export default function CampaignDetail() {
             </p>
           </div>
           <div className="flex gap-2">
+            {/* BUG 5 — "Voir en tant que prospect" in header */}
+            <Button variant="outline" size="sm" onClick={() => window.open(`/lp/${id}?preview=true`, "_blank")}>
+              <Eye className="mr-2 h-3.5 w-3.5" />
+              Voir en tant que prospect
+            </Button>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
