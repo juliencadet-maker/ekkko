@@ -160,6 +160,29 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
+  // E2 — Suggestion action handlers
+  const handleSuggestionAction = async (action: "confirmed" | "snoozed") => {
+    if (!campaignId) return;
+    try {
+      await supabase.from("timeline_events").insert({
+        campaign_id: campaignId,
+        event_type: action === "confirmed" ? "action_confirmed" : "action_snoozed",
+        event_layer: "declared",
+        event_data: {
+          source: "ae_input",
+          ...(action === "confirmed" && agentSuggestion ? { action: agentSuggestion } : {}),
+        },
+      });
+    } catch (err) {
+      console.error("[suggestion_action]", err);
+    }
+    setSuggestionStatus("done");
+    setTimeout(() => {
+      setSuggestionStatus("idle");
+      setAgentSuggestion(null);
+    }, 3000);
+  };
+
   const getMomentumBadge = (momentum: string) => {
     if (momentum === "rising") return <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30">↑ Rising</Badge>;
     if (momentum === "declining") return <Badge className="bg-red-500/15 text-red-700 border-red-500/30">↓ Declining</Badge>;
