@@ -1022,6 +1022,60 @@ export default function NewCampaign() {
                       />
                     </div>
                   )}
+                  {/* ──── D1: Deal Room Config ──── */}
+                  {assetType && (
+                    <div className="space-y-5 pt-4 border-t border-border">
+                      <p className="text-sm font-semibold text-foreground">Deal Room</p>
+
+                      <RadioGroup value={experienceMode} onValueChange={(v) => setExperienceMode(v as "simple" | "deal_room")} className="space-y-2">
+                        {[
+                          { value: "simple", label: "Page simple", desc: "Le prospect voit directement le contenu" },
+                          { value: "deal_room", label: "Deal Room", desc: "Contexte, ressources associées, étapes de décision" },
+                        ].map((opt) => (
+                          <div key={opt.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                            <RadioGroupItem value={opt.value} id={`mode-${opt.value}`} />
+                            <Label htmlFor={`mode-${opt.value}`} className="cursor-pointer flex-1">
+                              <span className="block text-sm">{opt.label}</span>
+                              <span className="block text-xs text-muted-foreground">{opt.desc}</span>
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Message d'accompagnement</Label>
+                          <span className="text-[10px] text-muted-foreground">(optionnel)</span>
+                        </div>
+                        <Input
+                          value={prospectMessage}
+                          onChange={(e) => setProspectMessage(e.target.value.slice(0, 160))}
+                          placeholder="Ex : Suite à notre échange sur l'intégration SAP..."
+                        />
+                        <p className="text-[10px] text-muted-foreground text-right">{prospectMessage.length}/160</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Résumé pour le prospect</Label>
+                          <span className="text-[10px] text-muted-foreground">(optionnel)</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">3 points clés. Laissez vide pour un résumé généré automatiquement.</p>
+                        {[
+                          { val: summaryBullet1, set: setSummaryBullet1, ph: "Ex : Intégration SAP confirmée" },
+                          { val: summaryBullet2, set: setSummaryBullet2, ph: "Ex : Déploiement en 8 semaines" },
+                          { val: summaryBullet3, set: setSummaryBullet3, ph: "Ex : Budget estimé pour votre périmètre" },
+                        ].map(({ val, set, ph }, i) => (
+                          <Input key={i} value={val} onChange={(e) => set(e.target.value.slice(0, 80))} placeholder={ph} />
+                        ))}
+                      </div>
+
+                      <Button variant="outline" className="w-full gap-2" onClick={() => setShowPreviewSheet(true)}>
+                        <Eye className="h-4 w-4" />
+                        Prévisualiser la Deal Room
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Sticky footer with submit */}
