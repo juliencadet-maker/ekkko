@@ -192,6 +192,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       video_id,
+      asset_id: asset?.id ?? null,
       asset_type: asset?.asset_type ?? null,
       version_number: asset?.version_number ?? null,
       file_url: asset?.file_url ?? null,
