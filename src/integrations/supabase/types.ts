@@ -275,6 +275,7 @@ export type Database = {
           campaign_id: string
           created_at: string
           event_hash: string | null
+          event_type: string | null
           id: string
           identity_cluster_id: string | null
           max_scroll_pct: number | null
@@ -287,6 +288,7 @@ export type Database = {
           campaign_id: string
           created_at?: string
           event_hash?: string | null
+          event_type?: string | null
           id?: string
           identity_cluster_id?: string | null
           max_scroll_pct?: number | null
@@ -299,6 +301,7 @@ export type Database = {
           campaign_id?: string
           created_at?: string
           event_hash?: string | null
+          event_type?: string | null
           id?: string
           identity_cluster_id?: string | null
           max_scroll_pct?: number | null

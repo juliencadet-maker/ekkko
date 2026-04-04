@@ -129,6 +129,13 @@ export default function AssetLandingPage() {
   const [activeSecondaryAsset, setActiveSecondaryAsset] = useState<any | null>(null);
   const [newAssets, setNewAssets] = useState<any[]>([]);
 
+  // ─── D2 states — Document tracking ───
+  const [assetId, setAssetId] = useState<string | null>(null);
+  const docOpenedRef = useRef(false);
+  const docTimeCounterRef = useRef(0);
+  const docTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const docOpenedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ─── D1b states — Identification ───
   const [identificationStep, setIdentificationStep] = useState<"who" | "topics" | "done">("who");
   const [identifiedViewer, setIdentifiedViewer] = useState<{
@@ -268,6 +275,7 @@ export default function AssetLandingPage() {
         if (videoData?.summary_bullets) setSummaryBullets(videoData.summary_bullets);
         if (videoData?.context_bullets) setContextBullets(videoData.context_bullets);
         if (videoData?.secondary_assets) setSecondaryAssets(videoData.secondary_assets);
+        if (videoData?.asset_id) setAssetId(videoData.asset_id);
         if (videoData?.experience_mode) setExperienceMode(videoData.experience_mode as "simple" | "deal_room");
 
         // D1b: known_contacts + topics
@@ -388,6 +396,100 @@ export default function AssetLandingPage() {
       });
     } catch { /* silent */ }
   }, [videoId, referredBy, viewerName, viewerEmail]);
+
+  // ─── D2: trackDocEvent helper ───
+  const trackDocEvent = useCallback(async (
+    event_type: string,
+    extra: Record<string, unknown> = {}
+  ) => {
+    if (isPreviewMode || !campaignId || !assetId || assetType !== "document") return;
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${url}/functions/v1/track-document-events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": key },
+        body: JSON.stringify({
+          asset_id: assetId,
+          campaign_id: campaignId,
+          viewer_hash: viewerHashRef.current,
+          event_type,
+          viewer_name: viewerName || undefined,
+          referred_by_hash: referredBy || undefined,
+          ...extra,
+        }),
+      });
+    } catch { /* silent */ }
+  }, [isPreviewMode, campaignId, assetId, assetType, viewerName, referredBy]);
+
+  // ─── D2: Document tracking useEffect ───
+  useEffect(() => {
+    if (assetType !== "document" || !assetId || identificationStep !== "done") return;
+
+    // doc_return_visit
+    const storedHash = localStorage.getItem(`ekko_viewer_hash_${campaignId}`);
+    const currentHash = viewerHashRef.current.toString();
+    const isKnownDevice = storedHash === currentHash;
+    if (hasBeenSeen && isKnownDevice) {
+      trackDocEvent("doc_return_visit", {});
+    }
+    localStorage.setItem(`ekko_viewer_hash_${campaignId}`, currentHash);
+
+    // doc_opened after 5s
+    docOpenedTimerRef.current = setTimeout(() => {
+      if (!docOpenedRef.current) {
+        docOpenedRef.current = true;
+        trackDocEvent("doc_opened", { time_spent_seconds: 5 });
+      }
+    }, 5000);
+
+    // doc_time_on_page every 30s — cap 15 min
+    const MAX_DOC_TIME = 900;
+    docTimerRef.current = setInterval(() => {
+      if (docTimeCounterRef.current >= MAX_DOC_TIME) {
+        if (docTimerRef.current) clearInterval(docTimerRef.current);
+        return;
+      }
+      docTimeCounterRef.current += 30;
+      trackDocEvent("doc_time_on_page", {
+        time_spent_seconds: docTimeCounterRef.current,
+      });
+    }, 30000);
+
+    // Visibility change — pause/resume timers
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (docTimerRef.current) {
+          clearInterval(docTimerRef.current);
+          docTimerRef.current = null;
+        }
+      } else if (assetType === "document" && !docTimerRef.current) {
+        docTimerRef.current = setInterval(() => {
+          if (document.hidden) return;
+          if (docTimeCounterRef.current >= MAX_DOC_TIME) {
+            if (docTimerRef.current) clearInterval(docTimerRef.current);
+            return;
+          }
+          docTimeCounterRef.current += 30;
+          trackDocEvent("doc_time_on_page", {
+            time_spent_seconds: docTimeCounterRef.current,
+          });
+        }, 30000);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      if (docOpenedTimerRef.current) clearTimeout(docOpenedTimerRef.current);
+      if (docTimerRef.current) clearInterval(docTimerRef.current);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (!docOpenedRef.current && docTimeCounterRef.current > 1) {
+        trackDocEvent("doc_closed_without_read", {
+          time_spent_seconds: docTimeCounterRef.current,
+        });
+      }
+    };
+  }, [assetType, assetId, identificationStep, hasBeenSeen, trackDocEvent, campaignId]);
 
   // Track video progress + granular events — INTACT
   useEffect(() => {
@@ -763,7 +865,8 @@ export default function AssetLandingPage() {
           <iframe src={fileUrl} className="w-full" style={{ height: "clamp(320px, 70vh, 800px)" }} title="Document" />
           <div className="py-2 text-center border-t border-border/50">
             <a href={fileUrl} target="_blank" rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground underline transition-colors">
+              className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
+              onClick={() => trackDocEvent("doc_downloaded", {})}>
               Ouvrir dans un nouvel onglet
             </a>
           </div>
@@ -1285,7 +1388,12 @@ export default function AssetLandingPage() {
               {activeSecondaryAsset?.label_fr}
             </p>
             <a href={activeSecondaryAsset?.file_url} target="_blank" rel="noopener noreferrer"
-              className="text-xs text-muted-foreground underline hover:text-foreground">
+              className="text-xs text-muted-foreground underline hover:text-foreground"
+              onClick={() => {
+                if (activeSecondaryAsset?.asset_type === "document") {
+                  trackDocEvent("doc_downloaded", { asset_id: activeSecondaryAsset.id });
+                }
+              }}>
               Ouvrir dans un nouvel onglet
             </a>
           </div>

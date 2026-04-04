@@ -1,0 +1,1 @@
+ALTER TABLE public.asset_page_events ADD COLUMN IF NOT EXISTS event_type text NULL;
