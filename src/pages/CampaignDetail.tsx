@@ -220,6 +220,9 @@ export default function CampaignDetail() {
   const [agentContext, setAgentContext] = useState<any>(null);
   const [snoozeDate, setSnoozeDate] = useState<Date | undefined>();
   const [offlineSignalSent, setOfflineSignalSent] = useState(false);
+  const [freeSignalText, setFreeSignalText] = useState("");
+  const [freeSignalLoading, setFreeSignalLoading] = useState(false);
+  const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
@@ -627,6 +630,26 @@ export default function CampaignDetail() {
       toast.error("Erreur lors de la sauvegarde");
     }
   };
+  const handleFreeSignal = async () => {
+    if (!id || !freeSignalText.trim()) return;
+    setFreeSignalLoading(true);
+    setFreeSignalStatus("idle");
+    try {
+      const { error } = await supabase.functions.invoke("translate-offline-signal", {
+        body: { campaign_id: id, raw_input: freeSignalText.trim() },
+      });
+      if (error) throw error;
+      setFreeSignalText("");
+      setFreeSignalStatus("success");
+    } catch (err) {
+      console.error("[free_signal]", err);
+      setFreeSignalStatus("error");
+    } finally {
+      setFreeSignalLoading(false);
+      setTimeout(() => setFreeSignalStatus("idle"), 3000);
+    }
+  };
+
   const handleOfflineSignal = async (key: string, label: string) => {
     if (!id) return;
     try {
@@ -1575,6 +1598,30 @@ export default function CampaignDetail() {
                 </div>
                 {offlineSignalSent && (
                   <p className="text-xs text-accent mt-2">Signal enregistré.</p>
+                )}
+                {/* Input libre */}
+                <div className="flex gap-2 mt-3">
+                  <textarea
+                    value={freeSignalText}
+                    onChange={(e) => setFreeSignalText(e.target.value)}
+                    placeholder="Autre chose à ajouter ? (call, réunion, info reçue…)"
+                    maxLength={1000}
+                    rows={2}
+                    className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent/40"
+                  />
+                  <button
+                    onClick={handleFreeSignal}
+                    disabled={freeSignalLoading || !freeSignalText.trim()}
+                    className="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-medium disabled:opacity-40 hover:bg-accent/90 transition-all"
+                  >
+                    {freeSignalLoading ? "Traitement…" : "Enregistrer"}
+                  </button>
+                </div>
+                {freeSignalStatus === "success" && (
+                  <p className="text-[10px] text-accent mt-1">Signal enregistré.</p>
+                )}
+                {freeSignalStatus === "error" && (
+                  <p className="text-[10px] text-destructive mt-1">Erreur d'enregistrement.</p>
                 )}
               </CardContent>
             </Card>
