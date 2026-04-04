@@ -661,7 +661,26 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
       : "warm_account",
   });
 
-  // ── 14. CHURN SIGNAL ───────────────────────────────────────────────
+  // ── Trigger notify E2 — void + .catch, non-bloquant ─────────────
+  void supabase.functions.invoke("deal-trigger-notify", {
+    body: {
+      campaign_id,
+      org_id: campaign.org_id,
+      deal_name: campaign.name,
+      priority_score,
+      days_since_signal: daysSinceSignal,
+      deal_status: campaign.deal_status,
+      contradictions: activeIds,
+      ae_user_id: campaign.deal_owner_id ?? null,
+      decision_window: agentCtx?.decision_window ?? null,
+      viewer_count: viewers.length,
+      declared_count: declaredCount,
+    },
+  }).catch((e: unknown) => {
+    console.error("[compute-deal-scores] deal-trigger-notify failed:", e);
+  });
+
+
   // DÉCISION PRODUIT V1 : churn_signals = signal d'adoption org-level (pas deal-level)
   // Granularité deal-level : gérée par deal_triggers en E2
   if (daysSinceSignal > 30 && campaign.deal_status === "observing" && campaign.deal_owner_id) {
