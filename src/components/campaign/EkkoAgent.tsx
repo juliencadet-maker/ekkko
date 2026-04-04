@@ -51,10 +51,10 @@ interface Message {
 
 const QUICK_PROMPTS = [
   { label: "Lire ce deal", prompt: "Donne-moi une lecture globale de ce deal en 5 lignes. Qu'est-ce qui se passe vraiment ?" },
-  { label: "Bloqueurs ?", prompt: "Y a-t-il des bloqueurs potentiels dans ce deal ? Qui sont-ils et pourquoi ?" },
-  { label: "Decision window ?", prompt: "Est-ce que je suis dans une fenêtre de décision ? Quels signaux me font dire oui ou non ?" },
+  { label: "Champions actifs ?", prompt: "Qui sont mes champions sur ce deal ? Sont-ils fiables ? Quels signaux le confirment ?" },
+  { label: "Fenêtre de décision ?", prompt: "Est-ce que je suis dans une fenêtre de décision ? Quels signaux me font dire oui ou non ?" },
   { label: "Prochaine action", prompt: "Quelle est ma priorité absolue sur ce deal cette semaine ? Avec quel coût d'exécution ?" },
-  { label: "Champions", prompt: "Qui sont mes champions sur ce deal ? Sont-ils fiables ? Quels signaux le confirment ?" },
+  { label: "Contexte concurrent ?", prompt: "Y a-t-il un concurrent en place ou en évaluation ? Quel est mon niveau de risque ?" },
   { label: "Comité complet ?", prompt: "Est-ce que j'ai une couverture suffisante du buying committee ? Qui me manque ?" },
 ];
 
