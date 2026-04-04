@@ -51,10 +51,10 @@ interface Message {
 
 const QUICK_PROMPTS = [
   { label: "Lire ce deal", prompt: "Donne-moi une lecture globale de ce deal en 5 lignes. Qu'est-ce qui se passe vraiment ?" },
-  { label: "Bloqueurs ?", prompt: "Y a-t-il des bloqueurs potentiels dans ce deal ? Qui sont-ils et pourquoi ?" },
-  { label: "Decision window ?", prompt: "Est-ce que je suis dans une fenêtre de décision ? Quels signaux me font dire oui ou non ?" },
+  { label: "Champions actifs ?", prompt: "Qui sont mes champions sur ce deal ? Sont-ils fiables ? Quels signaux le confirment ?" },
+  { label: "Fenêtre de décision ?", prompt: "Est-ce que je suis dans une fenêtre de décision ? Quels signaux me font dire oui ou non ?" },
   { label: "Prochaine action", prompt: "Quelle est ma priorité absolue sur ce deal cette semaine ? Avec quel coût d'exécution ?" },
-  { label: "Champions", prompt: "Qui sont mes champions sur ce deal ? Sont-ils fiables ? Quels signaux le confirment ?" },
+  { label: "Contexte concurrent ?", prompt: "Y a-t-il un concurrent en place ou en évaluation ? Quel est mon niveau de risque ?" },
   { label: "Comité complet ?", prompt: "Est-ce que j'ai une couverture suffisante du buying committee ? Qui me manque ?" },
 ];
 
@@ -80,14 +80,31 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Initial greeting
+  // Initial greeting — CAS A / CAS B
   useEffect(() => {
     const viewerCount = viewers.length || dealScore?.viewer_count || 0;
-    const des = dealScore?.des ?? "N/A";
-    setMessages([{
-      role: "assistant",
-      content: `Bonjour. Je suis l'agent Ekko sur ce deal.\n\nJ'ai accès à l'ensemble des signaux comportementaux — ${viewerCount} contacts identifiés, DES ${des}.\n\nQue veux-tu savoir ?`,
-    }]);
+    const des = dealScore?.des ?? null;
+    const daysSinceSignal = dealScore?.days_since_last_signal ?? null;
+    const firstSignalAt = (dealScore as any)?.first_signal_at ?? null;
+
+    let content: string;
+
+    if (viewerCount > 0 || firstSignalAt) {
+      // CAS A — format compact orienté action
+      const parts: string[] = [];
+      if (des !== null) parts.push(`DES ${des}`);
+      if (daysSinceSignal !== null) parts.push(`${daysSinceSignal}j sans signal`);
+      if (viewerCount > 0) parts.push(`${viewerCount} contact${viewerCount > 1 ? "s" : ""}`);
+      const header = parts.join(" · ");
+      content = header
+        ? `${header}\n\nOù en êtes-vous dans le cycle ?`
+        : "Où en êtes-vous dans le cycle ?";
+    } else {
+      // CAS B — 0 signal
+      content = "Aucun signal pour ce deal.\n\nEkko apprend dès que vous partagez un premier asset.\n\nPar quoi voulez-vous commencer ?";
+    }
+
+    setMessages([{ role: "assistant", content }]);
   }, [campaignId]);
 
   // Handle initial prompt

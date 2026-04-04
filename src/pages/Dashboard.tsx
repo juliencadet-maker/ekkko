@@ -39,6 +39,7 @@ export default function Dashboard() {
     dealsActifs: 0,
   });
   const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
+  const [scoreMap, setScoreMap] = useState<Record<string, number>>({});
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
@@ -134,7 +135,8 @@ export default function Dashboard() {
             const sb = scoreMap[b.id] ?? 0;
             return sb - sa;
           });
-          setRecentCampaigns(sorted.slice(0, 5) as Campaign[]);
+          setScoreMap(scoreMap);
+          setRecentCampaigns(sorted.slice(0, 3) as Campaign[]);
         } else {
           setRecentCampaigns([]);
         }
@@ -322,7 +324,14 @@ export default function Dashboard() {
                         {(campaign as any).identities?.display_name}
                       </p>
                     </div>
-                    <StatusBadge status={campaign.status} />
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={campaign.status} />
+                      {scoreMap[campaign.id] != null && (
+                        <span className="text-xs text-muted-foreground">
+                          {Math.round(scoreMap[campaign.id])}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -219,6 +219,7 @@ export default function CampaignDetail() {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [agentContext, setAgentContext] = useState<any>(null);
   const [snoozeDate, setSnoozeDate] = useState<Date | undefined>();
+  const [offlineSignalSent, setOfflineSignalSent] = useState(false);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
@@ -624,6 +625,21 @@ export default function CampaignDetail() {
     } catch {
       console.error("Save landing page config failed");
       toast.error("Erreur lors de la sauvegarde");
+    }
+  };
+  const handleOfflineSignal = async (key: string, label: string) => {
+    if (!id) return;
+    try {
+      await supabase.from("timeline_events").insert({
+        campaign_id: id,
+        event_type: "offline_signal",
+        event_layer: "declared",
+        event_data: { signal: key, label, source: "ae_input" },
+      });
+      setOfflineSignalSent(true);
+      setTimeout(() => setOfflineSignalSent(false), 3000);
+    } catch (err) {
+      console.error("[offline_signal]", err);
     }
   };
 
@@ -1532,6 +1548,36 @@ export default function CampaignDetail() {
             ) : (
               <p className="text-xs text-muted-foreground px-1">Aucun signal reçu.</p>
             )}
+          </SectionGuard>
+
+          {/* Widget signal offline AE */}
+          <SectionGuard name="OfflineSignalQuick">
+            <Card className="shadow-none">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className="text-sm font-semibold">Que s'est-il passé ?</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 px-3">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "call_positive", label: "Call positif" },
+                    { key: "call_negative", label: "Call négatif" },
+                    { key: "new_contact", label: "Nouveau contact identifié" },
+                    { key: "other", label: "Autre" },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => handleOfflineSignal(key, label)}
+                      className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:border-accent/40 hover:bg-accent/5 hover:text-foreground transition-all"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {offlineSignalSent && (
+                  <p className="text-xs text-accent mt-2">Signal enregistré.</p>
+                )}
+              </CardContent>
+            </Card>
           </SectionGuard>
 
           {/* Timeline — collapsed by default, with chevron and preview */}

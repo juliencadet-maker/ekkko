@@ -147,6 +147,7 @@ serve(async (req) => {
       <a href="${reviewUrl}" style="display:inline-block;background:#1a2744;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Relire et répondre</a>
     </div>
     <p style="color:#999;font-size:12px;text-align:center;">Approuver, modifier ou refuser en un tap.</p>
+    <p style="color:#bbb;font-size:11px;text-align:center;margin-top:4px;">Vous pouvez aussi approuver en répondant à votre notification Slack avec "ok" ou "approuvé".</p>
   </div>
 </body></html>`;
 

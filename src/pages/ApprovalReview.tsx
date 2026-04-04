@@ -297,6 +297,11 @@ export default function ApprovalReview() {
           )}
         </div>
 
+        {/* Slack mention */}
+        <p className="text-[11px] text-center text-muted-foreground pb-2">
+          Vous pouvez aussi approuver en répondant à votre notification Slack.
+        </p>
+
         {/* Trust */}
         <p className="text-[11px] text-center text-muted-foreground flex items-center justify-center gap-1.5 pb-4">
           <ShieldCheck className="h-3 w-3" />
