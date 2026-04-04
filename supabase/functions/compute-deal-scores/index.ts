@@ -258,7 +258,7 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
 
   const [campaignRes, agentCtxRes, viewersRes, recentVideoRes, recentDocRes, prevScoreRes, dealAssetsRes] = await Promise.all([
     supabase.from("campaigns")
-      .select("org_id, deal_value, deal_status, deal_risk_override, first_signal_at, committee_size_declared, deal_owner_id")
+      .select("id, name, org_id, deal_value, deal_status, deal_risk_override, first_signal_at, committee_size_declared, deal_owner_id")
       .eq("id", campaign_id).single(),
     supabase.from("agent_context")
       .select("stage, decision_window, incumbent_present, incumbent_type, committee_size_declared")
@@ -292,6 +292,29 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
   const recentDoc = recentDocRes.data || [];
   const prevScore = (prevScoreRes.data || [])[0] ?? null;
   const dealAssets = dealAssetsRes.data || [];
+
+  // ── Declared signals E2 ──────────────────────────────────────────
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
+  const { data: declaredSignals } = await supabase
+    .from("timeline_events")
+    .select("id, event_type, created_at")
+    .eq("campaign_id", campaign_id)
+    .eq("event_layer", "declared")
+    .in("event_type", ["offline_signal", "offline_signal_translated"])
+    .gt("created_at", fourteenDaysAgo);
+
+  // Déduplication calcul uniquement : 1 signal par bucket 5min par event_type
+  // NE MODIFIE PAS timeline_events — uniquement pour le calcul du bonus
+  const buckets = new Set<string>();
+  let declaredCount = 0;
+  for (const s of (declaredSignals || [])) {
+    const bucket5min = Math.floor(new Date(s.created_at).getTime() / (5 * 60 * 1000));
+    const key = `${s.event_type}_${bucket5min}`;
+    if (!buckets.has(key)) {
+      buckets.add(key);
+      declaredCount++;
+    }
+  }
 
   if (!campaign) {
     console.error("[C1a][computeForCampaign] campaign not found:", campaign_id);
@@ -333,6 +356,16 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
   ).length;
   const eventVelocity = qualifiedVideoCount + qualifiedDocCount;
 
+  // Bonus declared E2 — affecte uniquement l'input velocity
+  // DOCTRINE : les declared enrichissent la lecture, ne la remplacent pas.
+  // N'affecte PAS : contradiction scores, priority_score, deal_risk_level.
+  const adjustedVelocity = declaredCount > 0
+    ? Math.min(
+        eventVelocity * (1 + 0.6 * Math.min(declaredCount, 3) / 3),
+        eventVelocity * 1.6
+      )
+    : eventVelocity;
+
   // ── 5. DES STAGE-AWARE ─────────────────────────────────────────────
   // Priorité committee_size : agent_context (déclaratif AE) → campaigns (fallback) → 6 (défaut)
   const committeeSize = agentCtx?.committee_size_declared ?? campaign.committee_size_declared ?? 6;
@@ -346,7 +379,7 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
     ? viewers.reduce((s: number, v: any) => s + (v.total_watch_depth ?? 0), 0) / viewers.length
     : 0;
   const depth = avgWatchDepth / 100;
-  const velocity = Math.min(eventVelocity / 10, 1.0);
+  const velocity = Math.min(adjustedVelocity / 10, 1.0);
 
   const lambda = stage === "Late" ? 0.08 : stage === "Mid" ? 0.04 : 0.02;
   const recency = Math.exp(-lambda * daysSinceSignal);
@@ -628,7 +661,26 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
       : "warm_account",
   });
 
-  // ── 14. CHURN SIGNAL ───────────────────────────────────────────────
+  // ── Trigger notify E2 — void + .catch, non-bloquant ─────────────
+  void supabase.functions.invoke("deal-trigger-notify", {
+    body: {
+      campaign_id,
+      org_id: campaign.org_id,
+      deal_name: campaign.name,
+      priority_score,
+      days_since_signal: daysSinceSignal,
+      deal_status: campaign.deal_status,
+      contradictions: activeIds,
+      ae_user_id: campaign.deal_owner_id ?? null,
+      decision_window: agentCtx?.decision_window ?? null,
+      viewer_count: viewers.length,
+      declared_count: declaredCount,
+    },
+  }).catch((e: unknown) => {
+    console.error("[compute-deal-scores] deal-trigger-notify failed:", e);
+  });
+
+
   // DÉCISION PRODUIT V1 : churn_signals = signal d'adoption org-level (pas deal-level)
   // Granularité deal-level : gérée par deal_triggers en E2
   if (daysSinceSignal > 30 && campaign.deal_status === "observing" && campaign.deal_owner_id) {

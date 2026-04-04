@@ -79,6 +79,9 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
   const [selectedViewer, setSelectedViewer] = useState<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // E2 — Suggestion + feedback
+  const [agentSuggestion, setAgentSuggestion] = useState<string | null>(null);
+  const [suggestionStatus, setSuggestionStatus] = useState<"idle" | "done">("idle");
 
   // Initial greeting — CAS A / CAS B
   useEffect(() => {
@@ -136,13 +139,48 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
       });
 
       if (error) throw error;
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      const reply = data.reply as string;
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+
+      // E2 — Extract suggestion from agent response
+      const match = reply?.match(
+        /si vous devez faire une seule chose[^,]*,\s*c'est\s+(.+?)[\.\n]/i
+      );
+      if (match?.[1]) {
+        setAgentSuggestion(match[1].trim());
+        setSuggestionStatus("idle");
+      } else {
+        setAgentSuggestion(null);
+      }
     } catch (e) {
       console.error("Agent error:", e);
       setMessages((prev) => [...prev, { role: "assistant", content: "Erreur de connexion à l'agent. Réessayez." }]);
     }
     setLoading(false);
     setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  // E2 — Suggestion action handlers
+  const handleSuggestionAction = async (action: "confirmed" | "snoozed") => {
+    if (!campaignId) return;
+    try {
+      await supabase.from("timeline_events").insert({
+        campaign_id: campaignId,
+        event_type: action === "confirmed" ? "action_confirmed" : "action_snoozed",
+        event_layer: "declared",
+        event_data: {
+          source: "ae_input",
+          ...(action === "confirmed" && agentSuggestion ? { action: agentSuggestion } : {}),
+        },
+      });
+    } catch (err) {
+      console.error("[suggestion_action]", err);
+    }
+    setSuggestionStatus("done");
+    setTimeout(() => {
+      setSuggestionStatus("idle");
+      setAgentSuggestion(null);
+    }, 3000);
   };
 
   const getMomentumBadge = (momentum: string) => {
@@ -312,6 +350,31 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                       <span className="text-xs text-muted-foreground ml-1.5">Analyse en cours...</span>
                     </div>
                   </div>
+                )}
+                {/* E2 — Suggestion block */}
+                {agentSuggestion && suggestionStatus === "idle" && (
+                  <div className="mx-1 p-3 rounded-lg border border-border bg-muted/30">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Suggestion :</p>
+                    <p className="text-sm text-foreground mb-2">{agentSuggestion}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSuggestionAction("confirmed")}
+                        className="px-3 py-1.5 rounded-lg border text-xs transition-all hover:bg-accent/5"
+                        style={{ borderColor: "rgba(26, 224, 138, 0.4)", color: "#1AE08A" }}
+                      >
+                        Je l'ai fait
+                      </button>
+                      <button
+                        onClick={() => handleSuggestionAction("snoozed")}
+                        className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted transition-all"
+                      >
+                        Je le ferai plus tard
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {suggestionStatus === "done" && (
+                  <p className="text-xs text-muted-foreground text-center py-2">Enregistré.</p>
                 )}
                 <div ref={chatEndRef} />
               </div>

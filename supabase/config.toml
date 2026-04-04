@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.translate-offline-signal]
 verify_jwt = false
+
+[functions.deal-trigger-notify]
+verify_jwt = false

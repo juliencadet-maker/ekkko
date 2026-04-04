@@ -223,6 +223,9 @@ export default function CampaignDetail() {
   const [freeSignalText, setFreeSignalText] = useState("");
   const [freeSignalLoading, setFreeSignalLoading] = useState(false);
   const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
+  // E2 — Contextual toast for silent deals
+  const [showContextualToast, setShowContextualToast] = useState(false);
+  const [contextualDealName, setContextualDealName] = useState<string | null>(null);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
@@ -475,6 +478,41 @@ export default function CampaignDetail() {
 
     fetchCampaign();
   }, [id, membership?.org_id]);
+
+  // ── E2 — Contextual toast for silent deals ─────────────────────────
+  useEffect(() => {
+    const sessionKey = "ekko_contextual_toast_shown";
+    if (sessionStorage.getItem(sessionKey)) return;
+    if (!membership?.org_id || !id) return;
+
+    const checkSilentDeals = async () => {
+      const { data: orgCampaigns } = await supabase
+        .from("campaigns")
+        .select("id, name")
+        .eq("org_id", membership.org_id)
+        .neq("id", id)
+        .limit(20);
+      const otherIds = (orgCampaigns || []).map((c: any) => c.id);
+      if (otherIds.length === 0) return;
+
+      const { data: silentScore } = await supabase
+        .from("deal_scores")
+        .select("campaign_id, days_since_last_signal")
+        .in("campaign_id", otherIds)
+        .gt("days_since_last_signal", 7)
+        .order("days_since_last_signal", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (silentScore) {
+        const found = orgCampaigns?.find((c: any) => c.id === silentScore.campaign_id);
+        setContextualDealName(found?.name || "un deal");
+        setShowContextualToast(true);
+        sessionStorage.setItem(sessionKey, "1");
+      }
+    };
+    checkSilentDeals();
+  }, [membership?.org_id, id]);
 
   const kpis = useMemo(() => computeKpis(viewEvents, watchProgress), [viewEvents, watchProgress]);
 
@@ -1697,7 +1735,7 @@ export default function CampaignDetail() {
                     : "Aucun signal offline"}
                 </p>
               </CardContent>
-              <div data-offline-content className="hidden">
+              <div id="offline-signal-widget" data-offline-content className="hidden">
                 <CardContent className="pt-0 px-3">
                   <WhatHappenedWidget campaignId={campaign.id} />
                 </CardContent>
@@ -2079,6 +2117,37 @@ export default function CampaignDetail() {
         initialConfig={landingPageConfig as unknown as LandingPageConfig | undefined}
         onSave={(config) => handleSaveLandingPageConfig(config as unknown as Record<string, unknown>)}
       />
+
+      {/* E2 — Contextual toast for silent deals */}
+      {showContextualToast && contextualDealName && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-xs animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="flex items-start gap-3 bg-card border border-border rounded-xl shadow-lg px-4 py-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                Des news sur{" "}
+                <span className="font-semibold">{contextualDealName}</span> ?
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Aucun signal depuis +7j.</p>
+            </div>
+            <button
+              onClick={() => setShowContextualToast(false)}
+              className="text-muted-foreground hover:text-foreground shrink-0 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setShowContextualToast(false);
+              document.getElementById("offline-signal-widget")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="mt-2 text-xs hover:underline"
+            style={{ color: "#1AE08A" }}
+          >
+            Mettre à jour →
+          </button>
+        </div>
+      )}
     </AppLayout>
   );
 }
