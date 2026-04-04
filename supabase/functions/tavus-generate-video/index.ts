@@ -9,10 +9,16 @@ const corsHeaders = {
 const TAVUS_API_URL = "https://tavusapi.com";
 const MISTRAL_API_URL = "https://api.mistral.ai/v1/audio/speech";
 
+const VOXTRAL_MAX_RETRIES = 3;
+const VOXTRAL_BACKOFF_MS = [2000, 4000, 8000];
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
- * Generate voice-cloned audio via Voxtral TTS (Mistral AI).
- * Downloads the identity's reference video, sends it as a voice prompt,
- * stores the result, and returns a signed URL for Tavus.
+ * Generate voice-cloned audio via Voxtral TTS (Mistral AI) with retry + exponential backoff.
+ * 3 attempts: 2s, 4s, 8s. Returns audioUrl or throws on total failure.
  */
 async function generateVoxtralAudio(
   serviceClient: ReturnType<typeof createClient>,
@@ -21,7 +27,7 @@ async function generateVoxtralAudio(
   personalizedScript: string,
   campaignId: string,
   recipientId: string,
-): Promise<{ audioUrl: string; error?: string }> {
+): Promise<{ audioUrl: string }> {
   // Prefer dedicated voice reference, fall back to reference video
   const voiceReferencePath = (identity.metadata?.voice_reference_path as string) || identity.reference_video_path;
 
@@ -31,16 +37,15 @@ async function generateVoxtralAudio(
     .createSignedUrl(voiceReferencePath, 3600);
 
   if (signedUrlError || !signedUrlData?.signedUrl) {
-    return { audioUrl: "", error: "Failed to get reference video URL" };
+    throw new Error("Failed to get reference video URL");
   }
 
   // Download reference video
   const refResponse = await fetch(signedUrlData.signedUrl);
   if (!refResponse.ok) {
-    return { audioUrl: "", error: "Failed to download reference video" };
+    throw new Error("Failed to download reference video");
   }
   const refBytes = await refResponse.arrayBuffer();
-  // Chunk-based base64 encoding to avoid stack overflow on large files
   const uint8 = new Uint8Array(refBytes);
   let refBase64 = "";
   const chunkSize = 8192;
@@ -50,71 +55,88 @@ async function generateVoxtralAudio(
   }
   refBase64 = btoa(refBase64);
 
-  const ext = voiceReferencePath.split('.').pop()?.toLowerCase() || 'webm';
-  const mimeMap: Record<string, string> = {
-    'webm': 'audio/webm', 'mp4': 'video/mp4', 'wav': 'audio/wav',
-    'mp3': 'audio/mp3', 'm4a': 'audio/m4a',
-  };
-  const mimeType = mimeMap[ext] || 'audio/webm';
+  // Retry loop for Voxtral TTS call
+  let lastError = "";
+  for (let attempt = 0; attempt < VOXTRAL_MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const delay = VOXTRAL_BACKOFF_MS[attempt - 1];
+      console.log(`[Voxtral] Retry ${attempt}/${VOXTRAL_MAX_RETRIES} after ${delay}ms...`);
+      await sleep(delay);
+    }
 
-  // Call Voxtral TTS
-  const ttsResponse = await fetch(MISTRAL_API_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${mistralApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "voxtral-mini-tts-2603",
-      input: personalizedScript,
-      ref_audio: refBase64,
-      response_format: "wav",
-    }),
-  });
+    try {
+      const ttsResponse = await fetch(MISTRAL_API_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${mistralApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "voxtral-mini-tts-2603",
+          input: personalizedScript,
+          ref_audio: refBase64,
+          response_format: "wav",
+        }),
+      });
 
-  if (!ttsResponse.ok) {
-    const errText = await ttsResponse.text();
-    console.error("Voxtral TTS error:", ttsResponse.status, errText);
-    return { audioUrl: "", error: `Voxtral TTS error: ${errText}` };
+      if (!ttsResponse.ok) {
+        const errText = await ttsResponse.text();
+        lastError = `Voxtral TTS HTTP ${ttsResponse.status}: ${errText}`;
+        console.error(`[Voxtral] Attempt ${attempt + 1} failed:`, lastError);
+        continue;
+      }
+
+      const ttsJson = await ttsResponse.json();
+      const audioBase64 = ttsJson.audio_data;
+      if (!audioBase64) {
+        lastError = "Voxtral TTS returned no audio_data";
+        console.error(`[Voxtral] Attempt ${attempt + 1} failed:`, lastError);
+        continue;
+      }
+
+      // Decode base64 to binary
+      const binaryStr = atob(audioBase64);
+      const audioBytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        audioBytes[i] = binaryStr.charCodeAt(i);
+      }
+
+      // Store audio
+      const audioPath = `generated_audio/${campaignId}/${recipientId}/${Date.now()}.wav`;
+      const { error: uploadError } = await serviceClient.storage
+        .from("generated_videos")
+        .upload(audioPath, audioBytes.buffer, { contentType: "audio/wav", upsert: true });
+
+      if (uploadError) {
+        throw new Error(`Failed to store generated audio: ${uploadError.message}`);
+      }
+
+      // Signed URL for Tavus to consume
+      const { data: audioUrlData, error: audioUrlError } = await serviceClient.storage
+        .from("generated_videos")
+        .createSignedUrl(audioPath, 7200);
+
+      if (audioUrlError || !audioUrlData?.signedUrl) {
+        throw new Error("Failed to generate audio signed URL");
+      }
+
+      console.log(`[Voxtral] Success on attempt ${attempt + 1}`);
+      return { audioUrl: audioUrlData.signedUrl };
+    } catch (e) {
+      // Network-level errors (not HTTP errors) — retry
+      if (e instanceof Error && e.message.startsWith("Failed to store")) {
+        throw e; // Storage errors are not transient, don't retry
+      }
+      if (e instanceof Error && e.message === "Failed to generate audio signed URL") {
+        throw e;
+      }
+      lastError = e instanceof Error ? e.message : String(e);
+      console.error(`[Voxtral] Attempt ${attempt + 1} exception:`, lastError);
+    }
   }
 
-  // Parse JSON response — Voxtral returns { audio_data: "<base64>" }
-  const ttsJson = await ttsResponse.json();
-  const audioBase64 = ttsJson.audio_data;
-  if (!audioBase64) {
-    console.error("Voxtral TTS: no audio_data in response", Object.keys(ttsJson));
-    return { audioUrl: "", error: "Voxtral TTS returned no audio data" };
-  }
-
-  // Decode base64 to binary
-  const binaryStr = atob(audioBase64);
-  const audioBytes = new Uint8Array(binaryStr.length);
-  for (let i = 0; i < binaryStr.length; i++) {
-    audioBytes[i] = binaryStr.charCodeAt(i);
-  }
-
-  // Store audio
-  const audioPath = `generated_audio/${campaignId}/${recipientId}/${Date.now()}.wav`;
-
-  const { error: uploadError } = await serviceClient.storage
-    .from("generated_videos")
-    .upload(audioPath, audioBytes.buffer, { contentType: "audio/wav", upsert: true });
-
-  if (uploadError) {
-    console.error("Audio upload error:", uploadError);
-    return { audioUrl: "", error: "Failed to store generated audio" };
-  }
-
-  // Signed URL for Tavus to consume
-  const { data: audioUrlData, error: audioUrlError } = await serviceClient.storage
-    .from("generated_videos")
-    .createSignedUrl(audioPath, 7200);
-
-  if (audioUrlError || !audioUrlData?.signedUrl) {
-    return { audioUrl: "", error: "Failed to generate audio signed URL" };
-  }
-
-  return { audioUrl: audioUrlData.signedUrl };
+  // All retries exhausted
+  throw new Error(`Voxtral TTS failed after ${VOXTRAL_MAX_RETRIES} attempts: ${lastError}`);
 }
 
 serve(async (req) => {
@@ -133,10 +155,14 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    // MISTRAL_API_KEY is optional — if missing, we fall back to Tavus native TTS
-    const voxtralAvailable = !!MISTRAL_API_KEY;
 
-    // Use service client for all operations (function is protected by verify_jwt=false in config)
+    if (!MISTRAL_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "MISTRAL_API_KEY is not configured — Voxtral TTS is required" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -151,7 +177,7 @@ serve(async (req) => {
       );
     }
 
-    // Fetch campaign with identity (include script_oral)
+    // Fetch campaign with identity
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
       .select("*, identities(id, provider_identity_id, display_name, metadata, reference_video_path)")
@@ -206,10 +232,8 @@ serve(async (req) => {
     const results = [];
 
     for (const recipient of (recipients || [])) {
-      // Use script_oral (spoken version) if available, otherwise fall back to original script
       const baseScript = (campaign as any).script_oral || campaign.script;
 
-      // Personalize script
       let personalizedScript = baseScript;
       if (recipient.first_name) {
         personalizedScript = personalizedScript.replace(/\{prénom\}/gi, recipient.first_name);
@@ -222,48 +246,48 @@ serve(async (req) => {
         personalizedScript = personalizedScript.replace(/\{entreprise\}/gi, recipient.company);
       }
 
-      // Step 1: Try Voxtral TTS, fallback to Tavus native TTS
-      let audioUrl: string | null = null;
-      let usedFallback = false;
-
-      if (voxtralAvailable) {
-        console.log(`[${recipient.email}] Step 1: Generating Voxtral TTS audio...`);
+      // Step 1: Voxtral TTS (mandatory, with retry 3x backoff 2s/4s/8s)
+      let audioUrl: string;
+      try {
+        console.log(`[${recipient.email}] Generating Voxtral TTS audio (up to ${VOXTRAL_MAX_RETRIES} attempts)...`);
         const voxtralResult = await generateVoxtralAudio(
           serviceClient,
-          MISTRAL_API_KEY!,
+          MISTRAL_API_KEY,
           identity,
           personalizedScript,
           campaign_id,
           recipient.id,
         );
+        audioUrl = voxtralResult.audioUrl;
+      } catch (ttsError) {
+        const errMsg = ttsError instanceof Error ? ttsError.message : String(ttsError);
+        console.error(`[${recipient.email}] Voxtral TTS FAILED after all retries:`, errMsg);
 
-        if (voxtralResult.error || !voxtralResult.audioUrl) {
-          console.warn(`[${recipient.email}] Voxtral TTS failed: ${voxtralResult.error} — falling back to Tavus native TTS`);
-          usedFallback = true;
-        } else {
-          audioUrl = voxtralResult.audioUrl;
-        }
-      } else {
-        console.log(`[${recipient.email}] MISTRAL_API_KEY not set — using Tavus native TTS`);
-        usedFallback = true;
+        // Log to system_failures
+        await serviceClient.from("system_failures").insert({
+          campaign_id,
+          failure_type: "tts_unavailable",
+          message: `Voxtral TTS failed for recipient ${recipient.email} after ${VOXTRAL_MAX_RETRIES} retries: ${errMsg}`,
+          severity: "high",
+        });
+
+        results.push({
+          recipient_id: recipient.id,
+          success: false,
+          error: `Voice generation unavailable: ${errMsg}`,
+        });
+        continue;
       }
 
-      // Step 2: Generate video via Tavus
-      const tavusBody: Record<string, unknown> = {
+      // Step 2: Generate video via Tavus (lip-sync with Voxtral audio)
+      const tavusBody = {
         replica_id: replicaId,
         video_name: `${campaign.name} - ${recipient.first_name || recipient.email}`,
         callback_url: callbackUrl,
+        audio_url: audioUrl,
       };
 
-      if (audioUrl) {
-        // Voxtral succeeded: send audio for lip-sync only
-        tavusBody.audio_url = audioUrl;
-        console.log(`[${recipient.email}] Step 2: Sending to Tavus with audio_url for lip-sync...`);
-      } else {
-        // Fallback: let Tavus handle TTS with its own replica voice
-        tavusBody.script = personalizedScript;
-        console.log(`[${recipient.email}] Step 2: Sending to Tavus with script (native TTS fallback)...`);
-      }
+      console.log(`[${recipient.email}] Sending to Tavus with audio_url for lip-sync...`);
 
       const tavusResponse = await fetch(`${TAVUS_API_URL}/v2/videos`, {
         method: "POST",
@@ -327,7 +351,7 @@ serve(async (req) => {
         success: true,
         tavus_video_id: tavusVideoId,
         status: "queued",
-        tts_source: usedFallback ? "tavus_native" : "voxtral",
+        tts_source: "voxtral",
       });
     }
 
