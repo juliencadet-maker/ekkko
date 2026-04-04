@@ -129,6 +129,13 @@ export default function AssetLandingPage() {
   const [activeSecondaryAsset, setActiveSecondaryAsset] = useState<any | null>(null);
   const [newAssets, setNewAssets] = useState<any[]>([]);
 
+  // ─── D2 states — Document tracking ───
+  const [assetId, setAssetId] = useState<string | null>(null);
+  const docOpenedRef = useRef(false);
+  const docTimeCounterRef = useRef(0);
+  const docTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const docOpenedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ─── D1b states — Identification ───
   const [identificationStep, setIdentificationStep] = useState<"who" | "topics" | "done">("who");
   const [identifiedViewer, setIdentifiedViewer] = useState<{
