@@ -865,7 +865,8 @@ export default function AssetLandingPage() {
           <iframe src={fileUrl} className="w-full" style={{ height: "clamp(320px, 70vh, 800px)" }} title="Document" />
           <div className="py-2 text-center border-t border-border/50">
             <a href={fileUrl} target="_blank" rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground underline transition-colors">
+              className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
+              onClick={() => trackDocEvent("doc_downloaded", {})}>
               Ouvrir dans un nouvel onglet
             </a>
           </div>
