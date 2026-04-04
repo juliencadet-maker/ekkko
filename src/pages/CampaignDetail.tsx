@@ -2117,6 +2117,37 @@ export default function CampaignDetail() {
         initialConfig={landingPageConfig as unknown as LandingPageConfig | undefined}
         onSave={(config) => handleSaveLandingPageConfig(config as unknown as Record<string, unknown>)}
       />
+
+      {/* E2 — Contextual toast for silent deals */}
+      {showContextualToast && contextualDealName && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-xs animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="flex items-start gap-3 bg-card border border-border rounded-xl shadow-lg px-4 py-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                Des news sur{" "}
+                <span className="font-semibold">{contextualDealName}</span> ?
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Aucun signal depuis +7j.</p>
+            </div>
+            <button
+              onClick={() => setShowContextualToast(false)}
+              className="text-muted-foreground hover:text-foreground shrink-0 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setShowContextualToast(false);
+              document.getElementById("offline-signal-widget")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="mt-2 text-xs hover:underline"
+            style={{ color: "#1AE08A" }}
+          >
+            Mettre à jour →
+          </button>
+        </div>
+      )}
     </AppLayout>
   );
 }

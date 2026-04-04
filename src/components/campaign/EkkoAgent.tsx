@@ -79,6 +79,9 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
   const [selectedViewer, setSelectedViewer] = useState<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // E2 — Suggestion + feedback
+  const [agentSuggestion, setAgentSuggestion] = useState<string | null>(null);
+  const [suggestionStatus, setSuggestionStatus] = useState<"idle" | "done">("idle");
 
   // Initial greeting — CAS A / CAS B
   useEffect(() => {
