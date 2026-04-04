@@ -223,6 +223,9 @@ export default function CampaignDetail() {
   const [freeSignalText, setFreeSignalText] = useState("");
   const [freeSignalLoading, setFreeSignalLoading] = useState(false);
   const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
+  // E2 — Contextual toast for silent deals
+  const [showContextualToast, setShowContextualToast] = useState(false);
+  const [contextualDealName, setContextualDealName] = useState<string | null>(null);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>
