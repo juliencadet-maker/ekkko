@@ -1889,7 +1889,43 @@ export default function CampaignDetail() {
                               <p className="text-xs text-muted-foreground">Vidéo · Ouvert</p>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1.5">
+                            {/* BUG 1 — Prévisualiser */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="outline" size="sm" onClick={() => window.open(`/lp/${id}?preview=true`, "_blank")}>
+                                    <Eye className="h-3.5 w-3.5 mr-1" /> Prévisualiser
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Ouvrir la landing page en mode prévisualisation</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            {/* BUG 1 — Copier le lien prospect */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!hasReadyAsset}
+                                    className={cn(!hasReadyAsset && "opacity-50 cursor-not-allowed")}
+                                    onClick={() => {
+                                      if (hasReadyAsset) {
+                                        navigator.clipboard.writeText(`${window.location.origin}/lp/${id}`);
+                                        toast.success("Lien copié");
+                                      }
+                                    }}
+                                  >
+                                    <Link className="h-3.5 w-3.5 mr-1" /> Copier le lien prospect
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {hasReadyAsset ? "Copier le lien de la landing page prospect" : "Ajoutez au moins un contenu prêt pour partager le lien"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            {/* Actions existantes conservées */}
                             <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}>
                               <ExternalLink className="h-3.5 w-3.5" />
                             </Button>
