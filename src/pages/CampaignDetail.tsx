@@ -1271,7 +1271,7 @@ export default function CampaignDetail() {
               → Vue rapide
             </button>
             <p className="mt-1 text-sm text-muted-foreground">
-              Dernière activité : {lastUpdate}
+              {lastUpdate ? `Dernière activité : ${lastUpdate}` : "Aucune activité prospect"}
             </p>
             <p className="text-[11px] text-muted-foreground/60">
               Analyse mise à jour {lastUpdate}
