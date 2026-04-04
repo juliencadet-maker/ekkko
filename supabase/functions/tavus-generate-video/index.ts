@@ -133,12 +133,8 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (!MISTRAL_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "MISTRAL_API_KEY is not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // MISTRAL_API_KEY is optional — if missing, we fall back to Tavus native TTS
+    const voxtralAvailable = !!MISTRAL_API_KEY;
 
     // Use service client for all operations (function is protected by verify_jwt=false in config)
     const supabase = createClient(
@@ -226,43 +222,56 @@ serve(async (req) => {
         personalizedScript = personalizedScript.replace(/\{entreprise\}/gi, recipient.company);
       }
 
-      console.log(`[${recipient.email}] Step 1: Generating Voxtral TTS audio...`);
+      // Step 1: Try Voxtral TTS, fallback to Tavus native TTS
+      let audioUrl: string | null = null;
+      let usedFallback = false;
 
-      // Step 1: Generate voice-cloned audio via Voxtral
-      const { audioUrl, error: audioError } = await generateVoxtralAudio(
-        serviceClient,
-        MISTRAL_API_KEY,
-        identity,
-        personalizedScript,
-        campaign_id,
-        recipient.id,
-      );
+      if (voxtralAvailable) {
+        console.log(`[${recipient.email}] Step 1: Generating Voxtral TTS audio...`);
+        const voxtralResult = await generateVoxtralAudio(
+          serviceClient,
+          MISTRAL_API_KEY!,
+          identity,
+          personalizedScript,
+          campaign_id,
+          recipient.id,
+        );
 
-      if (audioError || !audioUrl) {
-        console.error(`[${recipient.email}] Voxtral TTS failed:`, audioError);
-        results.push({
-          recipient_id: recipient.id,
-          success: false,
-          error: audioError || "Voice generation failed",
-        });
-        continue;
+        if (voxtralResult.error || !voxtralResult.audioUrl) {
+          console.warn(`[${recipient.email}] Voxtral TTS failed: ${voxtralResult.error} — falling back to Tavus native TTS`);
+          usedFallback = true;
+        } else {
+          audioUrl = voxtralResult.audioUrl;
+        }
+      } else {
+        console.log(`[${recipient.email}] MISTRAL_API_KEY not set — using Tavus native TTS`);
+        usedFallback = true;
       }
 
-      console.log(`[${recipient.email}] Step 2: Sending to Tavus with audio_url for lip-sync...`);
+      // Step 2: Generate video via Tavus
+      const tavusBody: Record<string, unknown> = {
+        replica_id: replicaId,
+        video_name: `${campaign.name} - ${recipient.first_name || recipient.email}`,
+        callback_url: callbackUrl,
+      };
 
-      // Step 2: Generate video via Tavus with audio injection (lip-sync)
+      if (audioUrl) {
+        // Voxtral succeeded: send audio for lip-sync only
+        tavusBody.audio_url = audioUrl;
+        console.log(`[${recipient.email}] Step 2: Sending to Tavus with audio_url for lip-sync...`);
+      } else {
+        // Fallback: let Tavus handle TTS with its own replica voice
+        tavusBody.script = personalizedScript;
+        console.log(`[${recipient.email}] Step 2: Sending to Tavus with script (native TTS fallback)...`);
+      }
+
       const tavusResponse = await fetch(`${TAVUS_API_URL}/v2/videos`, {
         method: "POST",
         headers: {
           "x-api-key": TAVUS_API_KEY,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          replica_id: replicaId,
-          audio_url: audioUrl, // Voxtral-generated audio for lip-sync (no script when audio_url is provided)
-          video_name: `${campaign.name} - ${recipient.first_name || recipient.email}`,
-          callback_url: callbackUrl,
-        }),
+        body: JSON.stringify(tavusBody),
       });
 
       const tavusData = await tavusResponse.json();
@@ -318,6 +327,7 @@ serve(async (req) => {
         success: true,
         tavus_video_id: tavusVideoId,
         status: "queued",
+        tts_source: usedFallback ? "tavus_native" : "voxtral",
       });
     }
 
