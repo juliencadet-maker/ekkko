@@ -20,7 +20,6 @@ import { VideoImportUpload } from "@/components/campaign/VideoImportUpload";
 import {
   ArrowLeft,
   ArrowRight,
-  
   Send,
   CheckCircle2,
   AlertCircle,
@@ -35,7 +34,9 @@ import {
   Camera,
   Upload,
   Bot,
+  Eye,
 } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import type { Identity, Policy } from "@/types/database";
 
@@ -103,6 +104,14 @@ export default function NewCampaign() {
   const [facecamBlob, setFacecamBlob] = useState<Blob | null>(null);
   const [importedFile, setImportedFile] = useState<File | null>(null);
 
+  // D1 — Deal Room config
+  const [experienceMode, setExperienceMode] = useState<"simple" | "deal_room">("deal_room");
+  const [prospectMessage, setProspectMessage] = useState("");
+  const [summaryBullet1, setSummaryBullet1] = useState("");
+  const [summaryBullet2, setSummaryBullet2] = useState("");
+  const [summaryBullet3, setSummaryBullet3] = useState("");
+  const [showPreviewSheet, setShowPreviewSheet] = useState(false);
+
   // Facecam phases
   const [facecamPhase, setFacecamPhase] = useState<"script" | "naturalizing" | "review" | "recording">("script");
   const [facecamScript, setFacecamScript] = useState("");
@@ -150,6 +159,11 @@ export default function NewCampaign() {
       setFacecamScript(generateFacecamScript("intro", prospectCompany, contacts[0]?.firstName || ""));
     }
   }, [videoMode, facecamScript, prospectCompany, contacts]);
+
+  // D1: Auto-set experience mode when asset type changes
+  useEffect(() => {
+    setExperienceMode(assetType === "document" ? "simple" : "deal_room");
+  }, [assetType]);
 
   const handleCompanyBlur = async () => {
     if (!prospectCompany.trim() || !membership?.org_id) return;
@@ -345,12 +359,15 @@ export default function NewCampaign() {
           approved_by_user_id: !needsApproval && isExecVideo ? user.id : null,
           account_id: accountId,
           crm_stage: dealStage || null,
-          deal_experience_mode: assetType === "document" ? "pull_only" : "push_only",
+          deal_experience_mode: experienceMode,
+          description: prospectMessage || null,
           metadata: {
             stage: dealStage || null,
             deal_value: dealValue ? parseFloat(dealValue) * 1000 : null,
             asset_type: assetType,
             video_mode: assetType === "video" ? videoMode : null,
+            prospect_message: prospectMessage || null,
+            summary_bullets: [summaryBullet1, summaryBullet2, summaryBullet3].filter(Boolean),
           },
         })
         .select()
@@ -1005,6 +1022,60 @@ export default function NewCampaign() {
                       />
                     </div>
                   )}
+                  {/* ──── D1: Deal Room Config ──── */}
+                  {assetType && (
+                    <div className="space-y-5 pt-4 border-t border-border">
+                      <p className="text-sm font-semibold text-foreground">Deal Room</p>
+
+                      <RadioGroup value={experienceMode} onValueChange={(v) => setExperienceMode(v as "simple" | "deal_room")} className="space-y-2">
+                        {[
+                          { value: "simple", label: "Page simple", desc: "Le prospect voit directement le contenu" },
+                          { value: "deal_room", label: "Deal Room", desc: "Contexte, ressources associées, étapes de décision" },
+                        ].map((opt) => (
+                          <div key={opt.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                            <RadioGroupItem value={opt.value} id={`mode-${opt.value}`} />
+                            <Label htmlFor={`mode-${opt.value}`} className="cursor-pointer flex-1">
+                              <span className="block text-sm">{opt.label}</span>
+                              <span className="block text-xs text-muted-foreground">{opt.desc}</span>
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Message d'accompagnement</Label>
+                          <span className="text-[10px] text-muted-foreground">(optionnel)</span>
+                        </div>
+                        <Input
+                          value={prospectMessage}
+                          onChange={(e) => setProspectMessage(e.target.value.slice(0, 160))}
+                          placeholder="Ex : Suite à notre échange sur l'intégration SAP..."
+                        />
+                        <p className="text-[10px] text-muted-foreground text-right">{prospectMessage.length}/160</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Résumé pour le prospect</Label>
+                          <span className="text-[10px] text-muted-foreground">(optionnel)</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">3 points clés. Laissez vide pour un résumé généré automatiquement.</p>
+                        {[
+                          { val: summaryBullet1, set: setSummaryBullet1, ph: "Ex : Intégration SAP confirmée" },
+                          { val: summaryBullet2, set: setSummaryBullet2, ph: "Ex : Déploiement en 8 semaines" },
+                          { val: summaryBullet3, set: setSummaryBullet3, ph: "Ex : Budget estimé pour votre périmètre" },
+                        ].map(({ val, set, ph }, i) => (
+                          <Input key={i} value={val} onChange={(e) => set(e.target.value.slice(0, 80))} placeholder={ph} />
+                        ))}
+                      </div>
+
+                      <Button variant="outline" className="w-full gap-2" onClick={() => setShowPreviewSheet(true)}>
+                        <Eye className="h-4 w-4" />
+                        Prévisualiser la Deal Room
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Sticky footer with submit */}
@@ -1050,6 +1121,23 @@ export default function NewCampaign() {
           )}
         </div>
       )}
+
+      {/* D1: Preview Sheet */}
+      <Sheet open={showPreviewSheet} onOpenChange={setShowPreviewSheet}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
+          <div className="bg-[#0D1B2A] text-white text-xs py-2 px-4 text-center shrink-0">
+            Mode prévisualisation · Vos modifications s'affichent ici
+          </div>
+          <div className="flex-1 overflow-hidden flex flex-col items-center justify-center gap-3 p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Créez d'abord le deal pour prévisualiser.
+            </p>
+            <Button size="sm" variant="outline" onClick={() => setShowPreviewSheet(false)}>
+              Continuer
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </AppLayout>
   );
 }

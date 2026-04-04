@@ -22,7 +22,7 @@ import Audit from "./pages/Audit";
 import Governance from "./pages/Governance";
 import Settings from "./pages/Settings";
 import UserApprovals from "./pages/UserApprovals";
-import VideoLandingPage from "./pages/VideoLandingPage";
+import AssetLandingPage from "./pages/AssetLandingPage";
 import DealIntelligence from "./pages/DealIntelligence";
 import NotFound from "./pages/NotFound";
 
@@ -39,7 +39,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/demo" element={<AuthDemo />} />
-            <Route path="/lp/:campaignId" element={<VideoLandingPage />} />
+            <Route path="/lp/:campaignId" element={<AssetLandingPage />} />
             <Route path="/approve/:token" element={<ApprovalReview />} />
             <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
             <Route path="/app/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
