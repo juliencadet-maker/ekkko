@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Pause, ExternalLink, Send, Share2, Lock, Mail, UserPlus, ChevronRight } from "lucide-react";
+import { Play, Pause, ExternalLink, Send, Share2, UserPlus, ChevronRight } from "lucide-react";
 import { useVideoEventTracker } from "@/hooks/useVideoEventTracker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { toast } from "sonner";
@@ -47,6 +46,31 @@ function generateViewerHash(): string {
   return Math.abs(hash).toString(36);
 }
 
+const TOPIC_LABELS: Record<string, string> = {
+  pricing: "Budget et ROI",
+  technical: "Intégration technique",
+  deployment: "Déploiement",
+  governance: "Sécurité et gouvernance",
+};
+
+const LAYER_LABELS: Record<string, string> = {
+  financial: "Finance",
+  executive: "Direction",
+  technical: "Technique",
+  operational: "Opérations",
+  procurement: "Achats",
+  legal: "Juridique",
+};
+
+const layerTopicMap: Record<string, string> = {
+  financial: "pricing",
+  executive: "pricing",
+  technical: "technical",
+  operational: "deployment",
+  procurement: "pricing",
+  legal: "governance",
+};
+
 export default function AssetLandingPage() {
   const { campaignId } = useParams<{ campaignId: string }>();
   const [searchParams] = useSearchParams();
@@ -61,13 +85,9 @@ export default function AssetLandingPage() {
   const [videoId, setVideoId] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
-  // Access gate
+  // Access gate (states conservés, gate UI supprimée en D1b)
   const [isGated, setIsGated] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
-  const [gateEmail, setGateEmail] = useState("");
-  const [gateName, setGateName] = useState("");
-  const [gateChecking, setGateChecking] = useState(false);
-  const [gateError, setGateError] = useState<string | null>(null);
 
   // Viewer identity
   const [viewerName, setViewerName] = useState("");
@@ -108,6 +128,23 @@ export default function AssetLandingPage() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [activeSecondaryAsset, setActiveSecondaryAsset] = useState<any | null>(null);
   const [newAssets, setNewAssets] = useState<any[]>([]);
+
+  // ─── D1b states — Identification ───
+  const [identificationStep, setIdentificationStep] = useState<"who" | "topics" | "done">("who");
+  const [identifiedViewer, setIdentifiedViewer] = useState<{
+    id: string; name: string; title?: string | null; email?: string | null;
+  } | null>(null);
+  const [knownContacts, setKnownContacts] = useState<{
+    id: string; name: string; title?: string | null; layer?: string | null;
+  }[]>([]);
+  const [showSelfRegister, setShowSelfRegister] = useState(false);
+  const [selfRegisterName, setSelfRegisterName] = useState("");
+  const [selfRegisterEmail, setSelfRegisterEmail] = useState("");
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [suggestedTopic, setSuggestedTopic] = useState<string | null>(null);
+  const [topicsEnabled, setTopicsEnabled] = useState<string[]>(
+    ["pricing", "technical", "deployment", "governance"]
+  );
 
   const signalCooldownRef = useRef<Record<string, number>>({});
   const level1TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -213,7 +250,10 @@ export default function AssetLandingPage() {
         const videoRes = await fetch(`${supabaseUrl}/functions/v1/get-public-video`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "apikey": supabaseKey },
-          body: JSON.stringify({ campaign_id: campaignId }),
+          body: JSON.stringify({
+            campaign_id: campaignId,
+            viewer_hash: referredBy || undefined,
+          }),
         });
         const videoData = await videoRes.json();
 
@@ -222,7 +262,6 @@ export default function AssetLandingPage() {
         if (videoData?.asset_type) setAssetType(videoData.asset_type);
         if (videoData?.file_url) setFileUrl(videoData.file_url);
         if (videoData?.version_number) setVersionNumber(videoData.version_number);
-        // parent_asset_id ne signifie PAS que l'asset est remplacé — D2
         if (videoData?.ae_name) setAeName(videoData.ae_name);
         if (videoData?.ae_initials) setAeInitials(videoData.ae_initials);
         if (videoData?.prospect_message) setProspectMessage(videoData.prospect_message);
@@ -230,6 +269,37 @@ export default function AssetLandingPage() {
         if (videoData?.context_bullets) setContextBullets(videoData.context_bullets);
         if (videoData?.secondary_assets) setSecondaryAssets(videoData.secondary_assets);
         if (videoData?.experience_mode) setExperienceMode(videoData.experience_mode as "simple" | "deal_room");
+
+        // D1b: known_contacts + topics
+        if (videoData?.known_contacts?.length > 0) {
+          setKnownContacts(videoData.known_contacts);
+        }
+        const rawTopics = videoData?.topics_enabled;
+        if (rawTopics && rawTopics.length > 0) {
+          setTopicsEnabled(rawTopics);
+        }
+
+        // D1b: Resolve token (couche 1)
+        if (videoData?.resolved_viewer) {
+          const rv = videoData.resolved_viewer;
+          setIdentifiedViewer(rv);
+          setViewerName(rv.name || "");
+          if (rv.email) setViewerEmail(rv.email);
+          if (rv.layer) {
+            const suggested = layerTopicMap[rv.layer] || null;
+            if (suggested) setSuggestedTopic(suggested);
+          }
+          handleSignal("engagement_signal", "declared", {
+            signal: "identity_confirmed",
+            viewer_id: rv.id,
+            source: "token",
+          });
+          setIdentificationStep("topics");
+        } else if ((videoData?.known_contacts || []).length > 0) {
+          setIdentificationStep("who");
+        } else {
+          setIdentificationStep("topics");
+        }
 
         // Resolve video URL from video_id via storage_path
         if (videoData?.video_id) {
@@ -292,7 +362,7 @@ export default function AssetLandingPage() {
     };
 
     fetchCampaign();
-  }, [campaignId, isPreviewMode]);
+  }, [campaignId, isPreviewMode, referredBy]);
 
   const reportProgress = useCallback(async (percentage: number) => {
     if (!videoId) return;
@@ -319,7 +389,7 @@ export default function AssetLandingPage() {
     } catch { /* silent */ }
   }, [videoId, referredBy, viewerName, viewerEmail]);
 
-  // Track video progress + granular events — INTACT from VideoLandingPage
+  // Track video progress + granular events — INTACT
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoId) return;
@@ -509,37 +579,6 @@ export default function AssetLandingPage() {
     }
   };
 
-  const handleGateSubmit = async () => {
-    if (!gateEmail.trim() || !gateName.trim()) {
-      setGateError("Veuillez renseigner votre nom et email");
-      return;
-    }
-    setGateChecking(true);
-    setGateError(null);
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(`${supabaseUrl}/functions/v1/check-video-access`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": supabaseKey },
-        body: JSON.stringify({ campaign_id: campaignId, email: gateEmail.trim() }),
-      });
-      const data = await res.json();
-      if (data?.allowed) {
-        setAccessGranted(true);
-        setViewerName(gateName.trim());
-        setViewerEmail(gateEmail.trim());
-        reportProgress(0);
-      } else {
-        setGateError("Votre adresse email n'est pas autorisée. Vérifiez avec l'expéditeur.");
-      }
-    } catch {
-      setGateError("Erreur de vérification, veuillez réessayer");
-    } finally {
-      setGateChecking(false);
-    }
-  };
-
   // ─── D1 handlers ───
   const handleLevel1 = (answer: "yes" | "no") => {
     setLevel1Answer(answer);
@@ -575,6 +614,53 @@ export default function AssetLandingPage() {
     setFeedbackSent(true);
     setShowFeedbackInput(false);
     setFeedbackText("");
+  };
+
+  // ─── D1b handlers — Identification ───
+  const handleSelectContact = (contact: typeof knownContacts[0]) => {
+    setIdentifiedViewer(contact);
+    setViewerName(contact.name);
+    setSuggestedTopic(null);
+    const suggested = layerTopicMap[contact.layer || ""] || null;
+    if (suggested) setSuggestedTopic(suggested);
+    handleSignal("engagement_signal", "declared", {
+      signal: "identity_confirmed",
+      viewer_id: contact.id,
+      source: "who_are_you",
+    });
+    setIdentificationStep("topics");
+  };
+
+  const handleSelfRegister = () => {
+    if (!selfRegisterName.trim() || !selfRegisterEmail.trim()) return;
+    setViewerName(selfRegisterName.trim());
+    setViewerEmail(selfRegisterEmail.trim());
+    setIdentifiedViewer({ id: null as any, name: selfRegisterName.trim() });
+    handleSignal("prospect_feedback", "fact", {
+      response: "new_contact_identified",
+      name: selfRegisterName.trim(),
+      email: selfRegisterEmail.trim(),
+      source: "self_register",
+    });
+    setIdentificationStep("topics");
+  };
+
+  const toggleTopic = (topic: string) => {
+    setSelectedTopics(prev =>
+      prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
+    );
+  };
+
+  const handleTopicsSubmit = () => {
+    if (selectedTopics.length > 0) {
+      handleSignal("prospect_feedback", "declared", {
+        response: "topic_selection",
+        topics: selectedTopics,
+        viewer_id: (identifiedViewer?.id && identifiedViewer.id !== "PENDING")
+          ? identifiedViewer.id : null,
+      });
+    }
+    setIdentificationStep("done");
   };
 
   // ─── Render helpers ───
@@ -732,43 +818,6 @@ export default function AssetLandingPage() {
     );
   }
 
-  // ─── Access gate ───
-  if (isGated && !accessGranted) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <Card className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <CardContent className="pt-8 pb-6 px-6 text-center space-y-6">
-              <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-muted">
-                <Lock className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold mb-2 text-foreground">Accès requis</h2>
-                <p className="text-sm text-muted-foreground">
-                  Veuillez vous identifier pour accéder à ce contenu.
-                </p>
-              </div>
-              <div className="space-y-3 text-left">
-                <Input placeholder="Votre nom complet" value={gateName}
-                  onChange={(e) => setGateName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleGateSubmit()} />
-                <Input placeholder="Votre adresse email professionnelle" type="email" value={gateEmail}
-                  onChange={(e) => setGateEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleGateSubmit()} />
-                {gateError && <p className="text-sm text-destructive">{gateError}</p>}
-                <Button className="w-full" style={{ backgroundColor: config.brandColor, color: "white" }}
-                  onClick={handleGateSubmit} disabled={gateChecking}>
-                  {gateChecking ? "Vérification..." : "Accéder au contenu"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-        {renderFooter()}
-      </div>
-    );
-  }
-
   // ═══════════════════════════════════════════════════════════
   // RENDER PRINCIPAL
   // ═══════════════════════════════════════════════════════════
@@ -827,259 +876,404 @@ export default function AssetLandingPage() {
         </div>
       )}
 
-      {/* ─── MODE SIMPLE ─── */}
-      {experienceMode === "simple" && (
-        <>
-          {renderAssetZone()}
-          <div className="pb-5 text-center">
-            <Button variant="ghost" size="sm" className="text-muted-foreground gap-2"
-              onClick={() => setShowInviteDialog(true)}>
-              <Share2 className="h-4 w-4" />
-              Partager à un collègue
-            </Button>
-          </div>
-          {renderFooter()}
-        </>
-      )}
+      {/* ─── Pages d'identification ─── */}
+      {identificationStep !== "done" && (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
 
-      {/* ─── MODE DEAL ROOM ─── */}
-      {experienceMode === "deal_room" && (
-        <>
-          {/* Toggle scan */}
-          {summaryBullets.length > 0 && (
-            <div className="flex justify-end px-6 mb-2">
-              <div className="flex rounded-full border border-border overflow-hidden text-xs">
-                {[
-                  { label: "Résumé", value: true },
-                  { label: "Contenu complet", value: false },
-                ].map(({ label, value }) => (
-                  <button key={label}
-                    onClick={() => setScanMode(value)}
-                    className={`px-3 py-1 transition-colors ${
-                      scanMode === value
-                        ? "bg-foreground text-background"
-                        : "text-muted-foreground hover:bg-muted/50"
-                    }`}>
-                    {label}
+          {/* PAGE "QUI EST IMPLIQUÉ" */}
+          {identificationStep === "who" && (
+            <div className="w-full max-w-md">
+              <p className="text-base font-semibold text-foreground text-center mb-1">
+                Qui est impliqué dans ce sujet ?
+              </p>
+              <p className="text-xs text-muted-foreground text-center mb-3">
+                Identifiez-vous pour accéder à l'espace
+              </p>
+              {knownContacts.length > 1 && (
+                <p className="text-[11px] text-muted-foreground/70 text-center mb-5 italic">
+                  Sont aussi impliqués dans cette décision
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                {knownContacts.map(contact => (
+                  <button key={contact.id}
+                    onClick={() => handleSelectContact(contact)}
+                    className="flex flex-col items-center gap-1.5 p-4 rounded-xl
+                               border border-border hover:border-accent/40
+                               hover:bg-accent/5 transition-all text-center group">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center
+                                    justify-center text-sm font-semibold text-foreground">
+                      {contact.name.split(" ").map((w: string) => w[0] || "")
+                        .join("").toUpperCase().slice(0, 2)}
+                    </div>
+                    <span className="text-sm font-medium text-foreground
+                                     group-hover:text-accent transition-colors
+                                     leading-tight">
+                      {contact.name}
+                    </span>
+                    {contact.title && (
+                      <span className="text-[10px] text-muted-foreground leading-tight">
+                        {contact.title}
+                      </span>
+                    )}
+                    {contact.layer && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded border
+                                       border-border text-muted-foreground/60 capitalize">
+                        {LAYER_LABELS[contact.layer] || contact.layer}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
-            </div>
-          )}
 
-          {/* Résumé 3 points */}
-          {summaryBullets.length > 0 && (
-            <section className="px-6 pb-4">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                En 3 points
-              </p>
-              <div className="space-y-2">
-                {summaryBullets.map((bullet, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-accent mt-0.5 shrink-0 text-sm">✓</span>
-                    <span className="text-sm text-foreground">{bullet}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Cadre de décision */}
-          {contextBullets.length > 0 && !scanMode && (
-            <section className="px-6 pb-4">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                Pour avancer sur ce sujet
-              </p>
-              <div className="space-y-2">
-                {contextBullets.map((bullet, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-accent mt-0.5 shrink-0 text-sm">✓</span>
-                    <span className="text-sm text-foreground">{bullet}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Asset principal */}
-          {!scanMode && (
-            <main className="px-4 pb-4">
-              {versionNumber !== null && versionNumber > 1 && (
-                <div className="text-center mb-3">
-                  <span className="text-[10px] text-muted-foreground/50 px-2 py-0.5 rounded border border-border/50">
-                    Version {versionNumber}
-                  </span>
+              {!showSelfRegister ? (
+                <button
+                  onClick={() => {
+                    handleSignal("engagement_signal", "declared", {
+                      signal: "not_in_list_clicked",
+                    });
+                    setShowSelfRegister(true);
+                  }}
+                  className="w-full text-xs text-muted-foreground hover:text-foreground
+                             underline transition-colors text-center py-2">
+                  Je ne suis pas dans cette liste
+                </button>
+              ) : (
+                <div className="space-y-2 mt-2">
+                  <Input placeholder="Votre prénom"
+                    value={selfRegisterName}
+                    onChange={(e) => setSelfRegisterName(e.target.value)} />
+                  <Input type="email" placeholder="Votre email professionnel"
+                    value={selfRegisterEmail}
+                    onChange={(e) => setSelfRegisterEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSelfRegister()} />
+                  <Button size="sm" className="w-full" onClick={handleSelfRegister}
+                    disabled={!selfRegisterName.trim() || !selfRegisterEmail.trim()}>
+                    Confirmer
+                  </Button>
                 </div>
               )}
-              {renderAssetZone()}
-            </main>
-          )}
-
-          {/* NIVEAU 1 */}
-          {level1Visible && !level1Answer && (
-            <div className="px-4 pb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <div className="border border-border rounded-xl p-4 bg-card">
-                <p className="text-sm font-medium text-foreground mb-3">
-                  C'est assez clair jusqu'ici ?
-                </p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1"
-                    onClick={() => handleLevel1("yes")}>
-                    Oui
-                  </Button>
-                  <Button size="sm" variant="outline" className="flex-1"
-                    onClick={() => handleLevel1("no")}>
-                    Non, j'ai une question
-                  </Button>
-                </div>
-              </div>
             </div>
           )}
 
-          {/* CTA DISCRET niveau 2 */}
-          {engagementLevel >= 2 && config.ctaUrl && (
-            <div className="px-6 pb-2 text-center">
+          {/* PAGE TOPICS */}
+          {identificationStep === "topics" && (
+            <div className="w-full max-w-sm">
+              {identifiedViewer && (
+                <p className="text-sm font-medium text-foreground text-center mb-1">
+                  Bonjour {identifiedViewer.name.split(" ")[0] || identifiedViewer.name},
+                </p>
+              )}
+              <p className="text-base font-semibold text-foreground text-center mb-1">
+                {knownContacts.length === 0
+                  ? "Identifiez ce qui compte pour vous"
+                  : "Qu'est-ce qui compte le plus pour vous ?"}
+              </p>
+              <p className="text-xs text-muted-foreground text-center mb-4">
+                Sélectionnez un ou plusieurs sujets
+              </p>
+              {suggestedTopic && (
+                <p className="text-[10px] text-accent/80 text-center mb-3">
+                  Souvent pertinent pour votre rôle
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {topicsEnabled.map(topic => (
+                  <button key={topic}
+                    onClick={() => toggleTopic(topic)}
+                    className={`px-4 py-3 rounded-xl border text-sm font-medium
+                      transition-all text-left ${
+                        selectedTopics.includes(topic)
+                          ? "border-accent bg-accent/10 text-accent"
+                          : suggestedTopic === topic
+                            ? "border-accent/40 bg-accent/5 text-foreground"
+                            : "border-border text-muted-foreground hover:border-accent/30 hover:bg-muted/30"
+                      }`}>
+                    {TOPIC_LABELS[topic] || topic}
+                  </button>
+                ))}
+              </div>
+
+              <Button className="w-full" onClick={handleTopicsSubmit}
+                disabled={selectedTopics.length === 0}
+                style={{ backgroundColor: config.brandColor, color: "white" }}>
+                Continuer
+              </Button>
+
               <button
                 onClick={() => {
-                  trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
-                    event_data: { cta_type: "early_exit", position: "level_2" } });
-                  window.open(config.ctaUrl, "_blank");
+                  handleSignal("prospect_feedback", "declared", { response: "skip_topics" });
+                  setIdentificationStep("done");
                 }}
-                className="text-xs text-muted-foreground underline hover:text-foreground transition-colors">
-                Planifier un échange →
+                className="w-full text-xs text-muted-foreground hover:text-foreground
+                           underline transition-colors text-center py-3 mt-1">
+                Passer
               </button>
             </div>
           )}
+        </div>
+      )}
 
-          {/* NIVEAU 2 — Assets secondaires */}
-          {engagementLevel >= 2 && secondaryAssets.length > 0 && (
-            <section className="px-6 pb-5 animate-in fade-in duration-500">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                Pour approfondir
-              </p>
-              <div className="space-y-2">
-                {secondaryAssets.map((asset: any) => (
-                  <button key={asset.id}
-                    onClick={() => handleSecondaryAssetClick(asset)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/30 hover:bg-accent/5 transition-all text-left group">
-                    <span className="text-base shrink-0">
-                      {asset.asset_type === "video" ? "🎥" : "📄"}
-                    </span>
-                    <span className="text-sm text-foreground group-hover:text-accent transition-colors flex-1">
-                      {asset.label_fr}
-                    </span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+      {/* Contenu principal — visible uniquement si identification terminée */}
+      {identificationStep === "done" && (
+        <>
+          {/* ─── MODE SIMPLE ─── */}
+          {experienceMode === "simple" && (
+            <>
+              {renderAssetZone()}
+              <div className="pb-5 text-center">
+                <Button variant="ghost" size="sm" className="text-muted-foreground gap-2"
+                  onClick={() => setShowInviteDialog(true)}>
+                  <Share2 className="h-4 w-4" />
+                  Partager à un collègue
+                </Button>
+              </div>
+              {renderFooter()}
+            </>
+          )}
+
+          {/* ─── MODE DEAL ROOM ─── */}
+          {experienceMode === "deal_room" && (
+            <>
+              {/* Toggle scan */}
+              {summaryBullets.length > 0 && (
+                <div className="flex justify-end px-6 mb-2">
+                  <div className="flex rounded-full border border-border overflow-hidden text-xs">
+                    {[
+                      { label: "Résumé", value: true },
+                      { label: "Contenu complet", value: false },
+                    ].map(({ label, value }) => (
+                      <button key={label}
+                        onClick={() => setScanMode(value)}
+                        className={`px-3 py-1 transition-colors ${
+                          scanMode === value
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:bg-muted/50"
+                        }`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Résumé 3 points */}
+              {summaryBullets.length > 0 && (
+                <section className="px-6 pb-4">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                    En 3 points
+                  </p>
+                  <div className="space-y-2">
+                    {summaryBullets.map((bullet, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-accent mt-0.5 shrink-0 text-sm">✓</span>
+                        <span className="text-sm text-foreground">{bullet}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Cadre de décision */}
+              {contextBullets.length > 0 && !scanMode && (
+                <section className="px-6 pb-4">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                    Pour avancer sur ce sujet
+                  </p>
+                  <div className="space-y-2">
+                    {contextBullets.map((bullet, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-accent mt-0.5 shrink-0 text-sm">✓</span>
+                        <span className="text-sm text-foreground">{bullet}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Asset principal */}
+              {!scanMode && (
+                <main className="px-4 pb-4">
+                  {versionNumber !== null && versionNumber > 1 && (
+                    <div className="text-center mb-3">
+                      <span className="text-[10px] text-muted-foreground/50 px-2 py-0.5 rounded border border-border/50">
+                        Version {versionNumber}
+                      </span>
+                    </div>
+                  )}
+                  {renderAssetZone()}
+                </main>
+              )}
+
+              {/* NIVEAU 1 */}
+              {level1Visible && !level1Answer && (
+                <div className="px-4 pb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="border border-border rounded-xl p-4 bg-card">
+                    <p className="text-sm font-medium text-foreground mb-3">
+                      C'est assez clair jusqu'ici ?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex-1"
+                        onClick={() => handleLevel1("yes")}>
+                        Oui
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1"
+                        onClick={() => handleLevel1("no")}>
+                        Non, j'ai une question
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CTA DISCRET niveau 2 */}
+              {engagementLevel >= 2 && config.ctaUrl && (
+                <div className="px-6 pb-2 text-center">
+                  <button
+                    onClick={() => {
+                      trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
+                        event_data: { cta_type: "early_exit", position: "level_2" } });
+                      window.open(config.ctaUrl, "_blank");
+                    }}
+                    className="text-xs text-muted-foreground underline hover:text-foreground transition-colors">
+                    Planifier un échange →
                   </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Réduction du risque */}
-          {engagementLevel >= 1 && (
-            <section className="mx-4 mb-5 px-5 py-4 bg-muted/30 rounded-xl animate-in fade-in duration-500">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                À savoir
-              </p>
-              {[
-                "Déjà déployé dans des environnements similaires",
-                "Sans impact sur vos systèmes existants",
-                "Approche progressive possible",
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2 mb-1.5 last:mb-0">
-                  <span className="text-muted-foreground/50 shrink-0 mt-0.5 text-xs">•</span>
-                  <span className="text-sm text-muted-foreground">{item}</span>
                 </div>
-              ))}
-            </section>
-          )}
+              )}
 
-          {/* NIVEAU 3 — Moment de bascule */}
-          {engagementLevel >= 3 && (
-            <section className="px-6 py-6 text-center animate-in fade-in duration-500">
-              <p className="text-sm font-medium text-foreground mb-5">
-                Ces éléments répondent-ils à votre besoin ?
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  onClick={() => {
-                    handleSignal("prospect_feedback", "declared", { response: "yes" });
-                    trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
-                      event_data: { cta_type: "oui_avançons" } });
-                    if (config.ctaUrl) window.open(config.ctaUrl, "_blank");
-                  }}
-                  className="px-6 font-medium"
-                  style={{ backgroundColor: config.brandColor, color: "white" }}>
-                  Oui, avançons
-                </Button>
-                <Button variant="outline" className="px-6"
-                  onClick={() => setShowFeedbackInput(true)}>
-                  Un point me semble flou
-                </Button>
-                <Button variant="ghost" className="px-6 text-muted-foreground"
-                  onClick={() => {
-                    handleSignal("prospect_feedback", "declared", { response: "not_now" });
-                    setFeedbackSent(true);
-                  }}>
-                  Intéressé, pas maintenant
-                </Button>
-              </div>
+              {/* NIVEAU 2 — Assets secondaires */}
+              {engagementLevel >= 2 && secondaryAssets.length > 0 && (
+                <section className="px-6 pb-5 animate-in fade-in duration-500">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                    Pour approfondir
+                  </p>
+                  <div className="space-y-2">
+                    {secondaryAssets.map((asset: any) => (
+                      <button key={asset.id}
+                        onClick={() => handleSecondaryAssetClick(asset)}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/30 hover:bg-accent/5 transition-all text-left group">
+                        <span className="text-base shrink-0">
+                          {asset.asset_type === "video" ? "🎥" : "📄"}
+                        </span>
+                        <span className="text-sm text-foreground group-hover:text-accent transition-colors flex-1">
+                          {asset.label_fr}
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
 
-              {showFeedbackInput && !feedbackSent && (
-                <div className="mt-5 max-w-sm mx-auto space-y-2">
-                  <Textarea
-                    placeholder="Votre question ou point de blocage..."
-                    value={feedbackText}
-                    onChange={(e) => setFeedbackText(e.target.value.slice(0, 300))}
-                    rows={3}
-                    className="resize-none"
-                  />
-                  <Button size="sm" className="w-full"
-                    onClick={handleFeedbackSubmit}
-                    disabled={!feedbackText.trim()}>
-                    Envoyer
+              {/* Réduction du risque */}
+              {engagementLevel >= 1 && (
+                <section className="mx-4 mb-5 px-5 py-4 bg-muted/30 rounded-xl animate-in fade-in duration-500">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                    À savoir
+                  </p>
+                  {[
+                    "Déjà déployé dans des environnements similaires",
+                    "Sans impact sur vos systèmes existants",
+                    "Approche progressive possible",
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-2 mb-1.5 last:mb-0">
+                      <span className="text-muted-foreground/50 shrink-0 mt-0.5 text-xs">•</span>
+                      <span className="text-sm text-muted-foreground">{item}</span>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {/* NIVEAU 3 — Moment de bascule */}
+              {engagementLevel >= 3 && (
+                <section className="px-6 py-6 text-center animate-in fade-in duration-500">
+                  <p className="text-sm font-medium text-foreground mb-5">
+                    Ces éléments répondent-ils à votre besoin ?
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button
+                      onClick={() => {
+                        handleSignal("prospect_feedback", "declared", { response: "yes" });
+                        trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
+                          event_data: { cta_type: "oui_avançons" } });
+                        if (config.ctaUrl) window.open(config.ctaUrl, "_blank");
+                      }}
+                      className="px-6 font-medium"
+                      style={{ backgroundColor: config.brandColor, color: "white" }}>
+                      Oui, avançons
+                    </Button>
+                    <Button variant="outline" className="px-6"
+                      onClick={() => setShowFeedbackInput(true)}>
+                      Un point me semble flou
+                    </Button>
+                    <Button variant="ghost" className="px-6 text-muted-foreground"
+                      onClick={() => {
+                        handleSignal("prospect_feedback", "declared", { response: "not_now" });
+                        setFeedbackSent(true);
+                      }}>
+                      Intéressé, pas maintenant
+                    </Button>
+                  </div>
+
+                  {showFeedbackInput && !feedbackSent && (
+                    <div className="mt-5 max-w-sm mx-auto space-y-2">
+                      <Textarea
+                        placeholder="Votre question ou point de blocage..."
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value.slice(0, 300))}
+                        rows={3}
+                        className="resize-none"
+                      />
+                      <Button size="sm" className="w-full"
+                        onClick={handleFeedbackSubmit}
+                        disabled={!feedbackText.trim()}>
+                        Envoyer
+                      </Button>
+                    </div>
+                  )}
+
+                  {feedbackSent && (
+                    <p className="text-xs text-muted-foreground mt-4">
+                      Reçu.{" "}
+                      {aeName.split(" ")[0] || "Votre interlocuteur"}{" "}
+                      vous répondra rapidement.
+                    </p>
+                  )}
+                </section>
+              )}
+
+              {/* CTA final */}
+              {engagementLevel >= 3 && config.ctaUrl && (
+                <section className="px-6 pb-4 text-center">
+                  <Button size="lg"
+                    className="px-8 py-6 text-base font-semibold rounded-xl transition-transform hover:scale-105 gap-2"
+                    style={{ backgroundColor: config.brandColor, color: "white" }}
+                    onClick={() => {
+                      trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
+                        event_data: { cta_type: config.ctaText } });
+                      window.open(config.ctaUrl, "_blank");
+                    }}>
+                    {config.ctaText}
+                    <ExternalLink className="h-5 w-5" />
                   </Button>
-                </div>
+                </section>
               )}
 
-              {feedbackSent && (
-                <p className="text-xs text-muted-foreground mt-4">
-                  Reçu.{" "}
-                  {aeName.split(" ")[0] || "Votre interlocuteur"}{" "}
-                  vous répondra rapidement.
-                </p>
-              )}
-            </section>
+              {/* Partage */}
+              <div className="pb-5 text-center">
+                <Button variant="ghost" size="sm"
+                  className="text-muted-foreground gap-2 hover:text-foreground"
+                  onClick={() => setShowInviteDialog(true)}>
+                  <Share2 className="h-4 w-4" />
+                  Partager à un collègue
+                </Button>
+              </div>
+
+              {renderFooter()}
+            </>
           )}
-
-          {/* CTA final */}
-          {engagementLevel >= 3 && config.ctaUrl && (
-            <section className="px-6 pb-4 text-center">
-              <Button size="lg"
-                className="px-8 py-6 text-base font-semibold rounded-xl transition-transform hover:scale-105 gap-2"
-                style={{ backgroundColor: config.brandColor, color: "white" }}
-                onClick={() => {
-                  trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
-                    event_data: { cta_type: config.ctaText } });
-                  window.open(config.ctaUrl, "_blank");
-                }}>
-                {config.ctaText}
-                <ExternalLink className="h-5 w-5" />
-              </Button>
-            </section>
-          )}
-
-          {/* Partage */}
-          <div className="pb-5 text-center">
-            <Button variant="ghost" size="sm"
-              className="text-muted-foreground gap-2 hover:text-foreground"
-              onClick={() => setShowInviteDialog(true)}>
-              <Share2 className="h-4 w-4" />
-              Partager à un collègue
-            </Button>
-          </div>
-
-          {renderFooter()}
         </>
       )}
 

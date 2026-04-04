@@ -111,6 +111,9 @@ export default function NewCampaign() {
   const [summaryBullet2, setSummaryBullet2] = useState("");
   const [summaryBullet3, setSummaryBullet3] = useState("");
   const [showPreviewSheet, setShowPreviewSheet] = useState(false);
+  const [topicsEnabled, setTopicsEnabled] = useState<string[]>(
+    ["pricing", "technical", "deployment", "governance"]
+  );
 
   // Facecam phases
   const [facecamPhase, setFacecamPhase] = useState<"script" | "naturalizing" | "review" | "recording">("script");
@@ -368,6 +371,7 @@ export default function NewCampaign() {
             video_mode: assetType === "video" ? videoMode : null,
             prospect_message: prospectMessage || null,
             summary_bullets: [summaryBullet1, summaryBullet2, summaryBullet3].filter(Boolean),
+            topics_enabled: topicsEnabled,
           },
         })
         .select()
@@ -1068,6 +1072,37 @@ export default function NewCampaign() {
                         ].map(({ val, set, ph }, i) => (
                           <Input key={i} value={val} onChange={(e) => set(e.target.value.slice(0, 80))} placeholder={ph} />
                         ))}
+                      </div>
+
+                      {/* Topics actifs */}
+                      <div className="space-y-2">
+                        <Label className="text-sm">
+                          Sujets à proposer au prospect
+                          <span className="text-muted-foreground ml-1 text-xs font-normal">(optionnel — 4 par défaut)</span>
+                        </Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Si vous ne sélectionnez rien, les 4 sujets par défaut s'affichent.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { key: "pricing", label: "Budget et ROI" },
+                            { key: "technical", label: "Intégration technique" },
+                            { key: "deployment", label: "Déploiement" },
+                            { key: "governance", label: "Sécurité et gouvernance" },
+                          ].map(({ key, label }) => (
+                            <label key={key} className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer text-sm">
+                              <input type="checkbox"
+                                checked={topicsEnabled.includes(key)}
+                                onChange={(e) => {
+                                  setTopicsEnabled(prev =>
+                                    e.target.checked ? [...prev, key] : prev.filter(k => k !== key)
+                                  );
+                                }}
+                              />
+                              {label}
+                            </label>
+                          ))}
+                        </div>
                       </div>
 
                       <Button variant="outline" className="w-full gap-2" onClick={() => setShowPreviewSheet(true)}>
