@@ -1388,7 +1388,12 @@ export default function AssetLandingPage() {
               {activeSecondaryAsset?.label_fr}
             </p>
             <a href={activeSecondaryAsset?.file_url} target="_blank" rel="noopener noreferrer"
-              className="text-xs text-muted-foreground underline hover:text-foreground">
+              className="text-xs text-muted-foreground underline hover:text-foreground"
+              onClick={() => {
+                if (activeSecondaryAsset?.asset_type === "document") {
+                  trackDocEvent("doc_downloaded", { asset_id: activeSecondaryAsset.id });
+                }
+              }}>
               Ouvrir dans un nouvel onglet
             </a>
           </div>
