@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch deal context from real data
-    const [campaignRes, viewersRes, scoresRes, eventsRes, reactionsRes] = await Promise.all([
+    const [campaignRes, viewersRes, scoresRes, eventsRes, reactionsRes, agentCtxRes] = await Promise.all([
       supabase.from("campaigns").select("*, identities(display_name, type)").eq("id", campaign_id).single(),
       supabase.from("viewers").select("*").eq("campaign_id", campaign_id).order("contact_score", { ascending: false, nullsFirst: false }),
       supabase.from("deal_scores").select("*").eq("campaign_id", campaign_id).order("scored_at", { ascending: false }).limit(1),
