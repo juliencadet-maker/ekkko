@@ -25,10 +25,19 @@ interface Notification {
   created_at: string;
 }
 
+interface DealTrigger {
+  id: string;
+  campaign_id: string;
+  campaign_name: string;
+  message_what: string;
+  created_at: string;
+}
+
 export function NotificationBell() {
-  const { user } = useAuthContext();
+  const { user, membership } = useAuthContext();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [dealTriggers, setDealTriggers] = useState<DealTrigger[]>([]);
   const [open, setOpen] = useState(false);
 
   const fetchNotifications = async () => {
@@ -40,6 +49,35 @@ export function NotificationBell() {
       .order("created_at", { ascending: false })
       .limit(20);
     setNotifications((data as Notification[]) || []);
+
+    // Fetch deal_triggers for the org
+    if (membership?.org_id) {
+      const { data: orgCampaigns } = await supabase
+        .from("campaigns")
+        .select("id, name")
+        .eq("org_id", membership.org_id)
+        .limit(50);
+      const campaignIds = (orgCampaigns || []).map((c: any) => c.id);
+      const nameMap: Record<string, string> = {};
+      (orgCampaigns || []).forEach((c: any) => { nameMap[c.id] = c.name; });
+
+      if (campaignIds.length > 0) {
+        const { data: triggers } = await supabase
+          .from("deal_triggers")
+          .select("id, campaign_id, message_what, created_at")
+          .in("campaign_id", campaignIds)
+          .not("delivered_at", "is", null)
+          .is("acted_on_at", null)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        setDealTriggers(
+          (triggers || []).map((t: any) => ({
+            ...t,
+            campaign_name: nameMap[t.campaign_id] || "Deal",
+          }))
+        );
+      }
+    }
   };
 
   useEffect(() => {
@@ -55,9 +93,10 @@ export function NotificationBell() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id]);
+  }, [user?.id, membership?.org_id]);
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  // Badge = deal_triggers count only
+  const unreadCount = dealTriggers.length;
 
   const markAsRead = async (id: string) => {
     await supabase
@@ -85,6 +124,13 @@ export function NotificationBell() {
     }
   };
 
+  const handleTriggerClick = (trigger: DealTrigger) => {
+    // Remove locally — do NOT update acted_on_at
+    setDealTriggers(prev => prev.filter(t => t.id !== trigger.id));
+    navigate(`/app/campaigns/${trigger.campaign_id}`);
+    setOpen(false);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -109,7 +155,7 @@ export function NotificationBell() {
       >
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h4 className="text-sm font-semibold">Notifications</h4>
-          {unreadCount > 0 && (
+          {notifications.filter(n => !n.is_read).length > 0 && (
             <button
               onClick={markAllRead}
               className="text-xs text-primary hover:underline"
@@ -119,7 +165,34 @@ export function NotificationBell() {
           )}
         </div>
         <ScrollArea className="max-h-80">
-          {notifications.length === 0 ? (
+          {/* Deal triggers first */}
+          {dealTriggers.length > 0 && (
+            <div className="divide-y">
+              {dealTriggers.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => handleTriggerClick(t)}
+                  className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors bg-[hsl(var(--accent))]/5"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="mt-1.5 h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: "#1AE08A" }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{t.campaign_name}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                        {t.message_what}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1">
+                        {formatDistanceToNow(new Date(t.created_at), { addSuffix: true, locale: fr })}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Regular notifications */}
+          {notifications.length === 0 && dealTriggers.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               Aucune notification
             </p>

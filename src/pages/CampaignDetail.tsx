@@ -1697,7 +1697,7 @@ export default function CampaignDetail() {
                     : "Aucun signal offline"}
                 </p>
               </CardContent>
-              <div data-offline-content className="hidden">
+              <div id="offline-signal-widget" data-offline-content className="hidden">
                 <CardContent className="pt-0 px-3">
                   <WhatHappenedWidget campaignId={campaign.id} />
                 </CardContent>
