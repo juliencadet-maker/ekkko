@@ -1221,9 +1221,18 @@ export default function CampaignDetail() {
 
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-[#0D1B2A]">{campaign.name}</h1>
               {dealValue && <span className="text-lg font-semibold text-muted-foreground">{(dealValue / 1000).toFixed(0)}k€</span>}
+              {/* BUG 4 — Deal master state badge */}
+              {(() => {
+                const stCfg = DEAL_STATE_CONFIG[dealMasterState];
+                return (
+                  <Badge variant="outline" className={cn("text-xs font-semibold border", stCfg.cls)}>
+                    {stCfg.emoji} {stCfg.label}
+                  </Badge>
+                );
+              })()}
               {agentContext?.stage && (
                 <Badge variant="outline" className="text-xs text-muted-foreground border-border bg-muted/40">{stageLabel}</Badge>
               )}
