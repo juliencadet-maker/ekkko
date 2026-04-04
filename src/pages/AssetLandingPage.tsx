@@ -397,6 +397,100 @@ export default function AssetLandingPage() {
     } catch { /* silent */ }
   }, [videoId, referredBy, viewerName, viewerEmail]);
 
+  // ─── D2: trackDocEvent helper ───
+  const trackDocEvent = useCallback(async (
+    event_type: string,
+    extra: Record<string, unknown> = {}
+  ) => {
+    if (isPreviewMode || !campaignId || !assetId || assetType !== "document") return;
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${url}/functions/v1/track-document-events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": key },
+        body: JSON.stringify({
+          asset_id: assetId,
+          campaign_id: campaignId,
+          viewer_hash: viewerHashRef.current,
+          event_type,
+          viewer_name: viewerName || undefined,
+          referred_by_hash: referredBy || undefined,
+          ...extra,
+        }),
+      });
+    } catch { /* silent */ }
+  }, [isPreviewMode, campaignId, assetId, assetType, viewerName, referredBy]);
+
+  // ─── D2: Document tracking useEffect ───
+  useEffect(() => {
+    if (assetType !== "document" || !assetId || identificationStep !== "done") return;
+
+    // doc_return_visit
+    const storedHash = localStorage.getItem(`ekko_viewer_hash_${campaignId}`);
+    const currentHash = viewerHashRef.current.toString();
+    const isKnownDevice = storedHash === currentHash;
+    if (hasBeenSeen && isKnownDevice) {
+      trackDocEvent("doc_return_visit", {});
+    }
+    localStorage.setItem(`ekko_viewer_hash_${campaignId}`, currentHash);
+
+    // doc_opened after 5s
+    docOpenedTimerRef.current = setTimeout(() => {
+      if (!docOpenedRef.current) {
+        docOpenedRef.current = true;
+        trackDocEvent("doc_opened", { time_spent_seconds: 5 });
+      }
+    }, 5000);
+
+    // doc_time_on_page every 30s — cap 15 min
+    const MAX_DOC_TIME = 900;
+    docTimerRef.current = setInterval(() => {
+      if (docTimeCounterRef.current >= MAX_DOC_TIME) {
+        if (docTimerRef.current) clearInterval(docTimerRef.current);
+        return;
+      }
+      docTimeCounterRef.current += 30;
+      trackDocEvent("doc_time_on_page", {
+        time_spent_seconds: docTimeCounterRef.current,
+      });
+    }, 30000);
+
+    // Visibility change — pause/resume timers
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (docTimerRef.current) {
+          clearInterval(docTimerRef.current);
+          docTimerRef.current = null;
+        }
+      } else if (assetType === "document" && !docTimerRef.current) {
+        docTimerRef.current = setInterval(() => {
+          if (document.hidden) return;
+          if (docTimeCounterRef.current >= MAX_DOC_TIME) {
+            if (docTimerRef.current) clearInterval(docTimerRef.current);
+            return;
+          }
+          docTimeCounterRef.current += 30;
+          trackDocEvent("doc_time_on_page", {
+            time_spent_seconds: docTimeCounterRef.current,
+          });
+        }, 30000);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      if (docOpenedTimerRef.current) clearTimeout(docOpenedTimerRef.current);
+      if (docTimerRef.current) clearInterval(docTimerRef.current);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (!docOpenedRef.current && docTimeCounterRef.current > 1) {
+        trackDocEvent("doc_closed_without_read", {
+          time_spent_seconds: docTimeCounterRef.current,
+        });
+      }
+    };
+  }, [assetType, assetId, identificationStep, hasBeenSeen, trackDocEvent, campaignId]);
+
   // Track video progress + granular events — INTACT
   useEffect(() => {
     const video = videoRef.current;
