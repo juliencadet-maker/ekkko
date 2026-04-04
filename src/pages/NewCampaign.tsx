@@ -111,6 +111,9 @@ export default function NewCampaign() {
   const [summaryBullet2, setSummaryBullet2] = useState("");
   const [summaryBullet3, setSummaryBullet3] = useState("");
   const [showPreviewSheet, setShowPreviewSheet] = useState(false);
+  const [topicsEnabled, setTopicsEnabled] = useState<string[]>(
+    ["pricing", "technical", "deployment", "governance"]
+  );
 
   // Facecam phases
   const [facecamPhase, setFacecamPhase] = useState<"script" | "naturalizing" | "review" | "recording">("script");
