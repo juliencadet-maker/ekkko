@@ -351,6 +351,31 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                     </div>
                   </div>
                 )}
+                {/* E2 — Suggestion block */}
+                {agentSuggestion && suggestionStatus === "idle" && (
+                  <div className="mx-1 p-3 rounded-lg border border-border bg-muted/30">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Suggestion :</p>
+                    <p className="text-sm text-foreground mb-2">{agentSuggestion}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSuggestionAction("confirmed")}
+                        className="px-3 py-1.5 rounded-lg border text-xs transition-all hover:bg-accent/5"
+                        style={{ borderColor: "rgba(26, 224, 138, 0.4)", color: "#1AE08A" }}
+                      >
+                        Je l'ai fait
+                      </button>
+                      <button
+                        onClick={() => handleSuggestionAction("snoozed")}
+                        className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted transition-all"
+                      >
+                        Je le ferai plus tard
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {suggestionStatus === "done" && (
+                  <p className="text-xs text-muted-foreground text-center py-2">Enregistré.</p>
+                )}
                 <div ref={chatEndRef} />
               </div>
 
