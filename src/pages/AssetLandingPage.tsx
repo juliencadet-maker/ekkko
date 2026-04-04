@@ -231,15 +231,19 @@ export default function AssetLandingPage() {
         if (videoData?.secondary_assets) setSecondaryAssets(videoData.secondary_assets);
         if (videoData?.experience_mode) setExperienceMode(videoData.experience_mode as "simple" | "deal_room");
 
-        // Resolve video URL from video_id
+        // Resolve video URL from video_id via storage_path
         if (videoData?.video_id) {
           const { data: vid } = await supabase
             .from("videos")
-            .select("download_url, hosted_url")
+            .select("storage_path")
             .eq("id", videoData.video_id)
             .maybeSingle();
-          if (vid?.download_url) setVideoUrl(vid.download_url);
-          else if (vid?.hosted_url) setVideoUrl(vid.hosted_url);
+          if (vid?.storage_path) {
+            const { data: signedData } = await supabase.storage
+              .from("generated_videos")
+              .createSignedUrl(vid.storage_path, 3600);
+            if (signedData?.signedUrl) setVideoUrl(signedData.signedUrl);
+          }
         }
 
         // Landing page config from metadata
