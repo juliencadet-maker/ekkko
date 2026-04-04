@@ -109,6 +109,10 @@ Deno.serve(async (req) => {
       supabase.from("deal_scores").select("*").eq("campaign_id", campaign_id).order("scored_at", { ascending: false }).limit(1),
       supabase.from("video_events").select("*").eq("campaign_id", campaign_id).order("created_at", { ascending: false }).limit(50),
       supabase.from("video_reactions").select("*").eq("campaign_id", campaign_id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("agent_context")
+        .select("stage, motion_type, decision_structure, decision_window, incumbent_present, incumbent_type, competitive_situation")
+        .eq("campaign_id", campaign_id)
+        .maybeSingle(),
     ]);
 
     const campaign = campaignRes.data;
