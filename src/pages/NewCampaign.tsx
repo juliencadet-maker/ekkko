@@ -104,6 +104,14 @@ export default function NewCampaign() {
   const [facecamBlob, setFacecamBlob] = useState<Blob | null>(null);
   const [importedFile, setImportedFile] = useState<File | null>(null);
 
+  // D1 — Deal Room config
+  const [experienceMode, setExperienceMode] = useState<"simple" | "deal_room">("deal_room");
+  const [prospectMessage, setProspectMessage] = useState("");
+  const [summaryBullet1, setSummaryBullet1] = useState("");
+  const [summaryBullet2, setSummaryBullet2] = useState("");
+  const [summaryBullet3, setSummaryBullet3] = useState("");
+  const [showPreviewSheet, setShowPreviewSheet] = useState(false);
+
   // Facecam phases
   const [facecamPhase, setFacecamPhase] = useState<"script" | "naturalizing" | "review" | "recording">("script");
   const [facecamScript, setFacecamScript] = useState("");
