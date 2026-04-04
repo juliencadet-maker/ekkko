@@ -371,6 +371,7 @@ export default function NewCampaign() {
             video_mode: assetType === "video" ? videoMode : null,
             prospect_message: prospectMessage || null,
             summary_bullets: [summaryBullet1, summaryBullet2, summaryBullet3].filter(Boolean),
+            topics_enabled: topicsEnabled,
           },
         })
         .select()
