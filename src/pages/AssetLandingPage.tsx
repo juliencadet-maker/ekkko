@@ -275,6 +275,7 @@ export default function AssetLandingPage() {
         if (videoData?.summary_bullets) setSummaryBullets(videoData.summary_bullets);
         if (videoData?.context_bullets) setContextBullets(videoData.context_bullets);
         if (videoData?.secondary_assets) setSecondaryAssets(videoData.secondary_assets);
+        if (videoData?.asset_id) setAssetId(videoData.asset_id);
         if (videoData?.experience_mode) setExperienceMode(videoData.experience_mode as "simple" | "deal_room");
 
         // D1b: known_contacts + topics
