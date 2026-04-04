@@ -37,6 +37,7 @@ import {
   Copy,
   ExternalLink,
   Eye,
+  Link,
   MousePointerClick,
   Clock,
   Users,
@@ -801,6 +802,32 @@ export default function CampaignDetail() {
     return signalAge <= 48 * 60 * 60 * 1000;
   }, [campaign]);
 
+  // BUG 3 fix — "Dernière activité" shows only prospect events
+  const AE_EVENT_TYPES_SET = useMemo(() => new Set([
+    "video_generation_started", "video_generation_completed", "deal_created",
+    "campaign_created", "script_generated", "approval_sent",
+  ]), []);
+  const lastProspectEvent = useMemo(() => {
+    const prospectEvents = timelineEvents.filter(
+      (e) => e.event_layer === "fact" && !AE_EVENT_TYPES_SET.has(e.event_type)
+    );
+    return prospectEvents.length > 0 ? prospectEvents[0] : null;
+  }, [timelineEvents, AE_EVENT_TYPES_SET]);
+
+  // BUG 4 fix — Deal master state
+  const dealMasterState = useMemo(() => {
+    if (!campaign) return "draft";
+    if ((campaign as any).first_signal_at) return "sent";
+    const hasActiveAsset = dealAssets.length > 0;
+    const hasActiveJobs_ = hasActiveJobs || campaign.status === "generating" || campaign.status === "pending_approval";
+    if (hasActiveAsset && !hasActiveJobs_) return "ready";
+    if (hasActiveJobs_) return "preparing";
+    return "draft";
+  }, [campaign, dealAssets, hasActiveJobs]);
+
+  // BUG 1 fix — check if any asset is active/ready for prospect link
+  const hasReadyAsset = useMemo(() => dealAssets.length > 0 || videos.some(v => v.is_active), [dealAssets, videos]);
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -995,8 +1022,9 @@ export default function CampaignDetail() {
   const dealValue = (campaign.metadata as any)?.deal_value;
   const isSnoozed = (campaign as any).deal_status === "snoozed" && (campaign as any).snoozed_until;
   const lastUpdate = (() => {
-    const d = safeDate(campaign.updated_at);
-    if (!d) return "—";
+    if (!lastProspectEvent) return null;
+    const d = safeDate(lastProspectEvent.created_at);
+    if (!d) return null;
     const mins = Math.floor((Date.now() - d.getTime()) / 60000);
     if (mins < 1) return "à l'instant";
     if (mins < 60) return `il y a ${mins} min`;
@@ -1004,6 +1032,13 @@ export default function CampaignDetail() {
     if (hrs < 24) return `il y a ${hrs}h`;
     return `il y a ${Math.floor(hrs / 24)}j`;
   })();
+
+  const DEAL_STATE_CONFIG: Record<string, { label: string; emoji: string; cls: string }> = {
+    draft: { label: "Brouillon", emoji: "⚪", cls: "bg-muted text-muted-foreground border-border" },
+    preparing: { label: "En préparation", emoji: "🟡", cls: "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30" },
+    ready: { label: "Prêt à envoyer", emoji: "🟢", cls: "bg-accent/15 text-accent border-accent/30" },
+    sent: { label: "Envoyé au prospect", emoji: "🔵", cls: "bg-[hsl(var(--info))]/15 text-[hsl(var(--info))] border-[hsl(var(--info))]/30" },
+  };
 
   // Stage label mapping — terrain language
   const STAGE_LABELS: Record<string, string> = {
@@ -1187,9 +1222,18 @@ export default function CampaignDetail() {
 
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-[#0D1B2A]">{campaign.name}</h1>
               {dealValue && <span className="text-lg font-semibold text-muted-foreground">{(dealValue / 1000).toFixed(0)}k€</span>}
+              {/* BUG 4 — Deal master state badge */}
+              {(() => {
+                const stCfg = DEAL_STATE_CONFIG[dealMasterState];
+                return (
+                  <Badge variant="outline" className={cn("text-xs font-semibold border", stCfg.cls)}>
+                    {stCfg.emoji} {stCfg.label}
+                  </Badge>
+                );
+              })()}
               {agentContext?.stage && (
                 <Badge variant="outline" className="text-xs text-muted-foreground border-border bg-muted/40">{stageLabel}</Badge>
               )}
@@ -1228,13 +1272,18 @@ export default function CampaignDetail() {
               → Vue rapide
             </button>
             <p className="mt-1 text-sm text-muted-foreground">
-              Dernière activité : {lastUpdate}
+              {lastUpdate ? `Dernière activité : ${lastUpdate}` : "Aucune activité prospect"}
             </p>
             <p className="text-[11px] text-muted-foreground/60">
               Analyse mise à jour {lastUpdate}
             </p>
           </div>
           <div className="flex gap-2">
+            {/* BUG 5 — "Voir en tant que prospect" in header */}
+            <Button variant="outline" size="sm" onClick={() => window.open(`/lp/${id}?preview=true`, "_blank")}>
+              <Eye className="mr-2 h-3.5 w-3.5" />
+              Voir en tant que prospect
+            </Button>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -1341,7 +1390,7 @@ export default function CampaignDetail() {
         <TabsList>
           <TabsTrigger value="overview">Résumé du deal</TabsTrigger>
           <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
-          <TabsTrigger value="assets">Contenus envoyés</TabsTrigger>
+          <TabsTrigger value="assets">{(campaign as any).first_signal_at ? "Contenus envoyés" : "Contenus du deal"}</TabsTrigger>
         </TabsList>
 
         {/* ─── Tab 1: Résumé du deal ─── */}
@@ -1841,7 +1890,43 @@ export default function CampaignDetail() {
                               <p className="text-xs text-muted-foreground">Vidéo · Ouvert</p>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1.5">
+                            {/* BUG 1 — Prévisualiser */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="outline" size="sm" onClick={() => window.open(`/lp/${id}?preview=true`, "_blank")}>
+                                    <Eye className="h-3.5 w-3.5 mr-1" /> Prévisualiser
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Ouvrir la landing page en mode prévisualisation</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            {/* BUG 1 — Copier le lien prospect */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!hasReadyAsset}
+                                    className={cn(!hasReadyAsset && "opacity-50 cursor-not-allowed")}
+                                    onClick={() => {
+                                      if (hasReadyAsset) {
+                                        navigator.clipboard.writeText(`${window.location.origin}/lp/${id}`);
+                                        toast.success("Lien copié");
+                                      }
+                                    }}
+                                  >
+                                    <Link className="h-3.5 w-3.5 mr-1" /> Copier le lien prospect
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {hasReadyAsset ? "Copier le lien de la landing page prospect" : "Ajoutez au moins un contenu prêt pour partager le lien"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            {/* Actions existantes conservées */}
                             <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}>
                               <ExternalLink className="h-3.5 w-3.5" />
                             </Button>
