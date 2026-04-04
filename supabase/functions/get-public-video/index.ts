@@ -23,7 +23,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { campaign_id } = body;
+    const { campaign_id, viewer_hash: incomingHash } = body;
 
     if (!campaign_id || typeof campaign_id !== "string" || !UUID_REGEX.test(campaign_id)) {
       return new Response(JSON.stringify({ error: "Valid campaign_id (UUID) required" }), {
@@ -37,7 +37,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const [assetRes, allAssetsRes, videoRes, campaignRes, agentCtxRes] =
+    const [assetRes, allAssetsRes, videoRes, campaignRes, agentCtxRes, knownViewersRes, contactRolesRes] =
       await Promise.all([
         supabase.from("deal_assets")
           .select("id, asset_type, file_url, version_number, parent_asset_id, asset_purpose")
@@ -56,6 +56,15 @@ serve(async (req) => {
         supabase.from("agent_context")
           .select("stage, decision_window, incumbent_type")
           .eq("campaign_id", campaign_id).maybeSingle(),
+        supabase.from("viewers")
+          .select("id, name, title, viewer_hash")
+          .eq("campaign_id", campaign_id)
+          .eq("is_known", true)
+          .order("contact_score", { ascending: false, nullsFirst: false })
+          .limit(8),
+        supabase.from("deal_contact_roles")
+          .select("viewer_id, layer")
+          .eq("campaign_id", campaign_id),
       ]);
 
     const asset = assetRes.data;
@@ -63,8 +72,50 @@ serve(async (req) => {
     const campaign = campaignRes.data;
     const agentCtx = agentCtxRes.data;
     const meta = (campaign?.metadata as Record<string, unknown>) || {};
+    const knownViewers = knownViewersRes.data || [];
+    const contactRoles = contactRolesRes.data || [];
 
-    // AE identity — via profiles.created_by_user_id (deal_owner_id toujours null en D1)
+    // Build role map for layers
+    const roleMap: Record<string, string> = Object.fromEntries(
+      contactRoles.map((r: any) => [r.viewer_id, r.layer])
+    );
+
+    const known_contacts = knownViewers.map((v: any) => ({
+      id: v.id,
+      name: v.name || "Contact",
+      title: v.title || null,
+      layer: roleMap[v.id] || null,
+      // email intentionally omitted for privacy
+    }));
+
+    // Resolve viewer token
+    let resolved_viewer = null;
+    if (incomingHash && typeof incomingHash === "string") {
+      const { data: rv } = await supabase
+        .from("viewers")
+        .select("id, name, email, title")
+        .eq("campaign_id", campaign_id)
+        .eq("viewer_hash", incomingHash)
+        .maybeSingle();
+      if (rv?.name) {
+        const rvRole = contactRoles.find((r: any) => r.viewer_id === rv.id);
+        resolved_viewer = {
+          id: rv.id,
+          name: rv.name,
+          title: rv.title || null,
+          email: rv.email || null,
+          layer: rvRole?.layer || null,
+        };
+      }
+    }
+
+    // topics_enabled from metadata
+    const rawTopics = meta.topics_enabled as string[] | undefined;
+    const topics_enabled = (rawTopics && rawTopics.length > 0)
+      ? rawTopics
+      : ["pricing", "technical", "deployment", "governance"];
+
+    // AE identity
     let ae_name = "", ae_initials = "";
     if (campaign?.created_by_user_id) {
       const { data: ae } = await supabase.from("profiles")
@@ -81,13 +132,13 @@ serve(async (req) => {
     const video_id = (!asset || asset.asset_type === "video")
       ? (videoRes.data?.id ?? null) : null;
 
-    // prospect_message — priorité : metadata > description > généré
+    // prospect_message
     const prospect_message =
       ((meta.prospect_message as string) || "").trim() ||
       (campaign?.description || "").trim() ||
       "J'ai rassemblé les points clés pour vous.";
 
-    // summary_bullets — priorité : AE-written > générés
+    // summary_bullets
     const purposes = allAssets.map((a: { asset_purpose: string }) => a.asset_purpose);
     let summary_bullets: string[] = [];
     const metaBullets = meta.summary_bullets as string[] | undefined;
@@ -110,7 +161,7 @@ serve(async (req) => {
       summary_bullets = gen;
     }
 
-    // context_bullets (Pour avancer sur ce sujet)
+    // context_bullets
     const context_bullets: string[] = [];
     if (agentCtx?.decision_window && context_bullets.length < 3) {
       const d = new Date(agentCtx.decision_window);
@@ -153,6 +204,9 @@ serve(async (req) => {
       ae_initials,
       secondary_assets,
       experience_mode: campaign?.deal_experience_mode || "deal_room",
+      known_contacts,
+      resolved_viewer,
+      topics_enabled,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
