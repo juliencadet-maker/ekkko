@@ -327,6 +327,7 @@ serve(async (req) => {
         success: true,
         tavus_video_id: tavusVideoId,
         status: "queued",
+        tts_source: usedFallback ? "tavus_native" : "voxtral",
       });
     }
 
