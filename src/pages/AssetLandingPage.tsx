@@ -1,0 +1,1136 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Play, Pause, ExternalLink, Send, Share2, Lock, Mail, UserPlus, ChevronRight } from "lucide-react";
+import { useVideoEventTracker } from "@/hooks/useVideoEventTracker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+interface LandingPageConfig {
+  logoUrl: string | null;
+  brandColor: string;
+  ctaText: string;
+  ctaUrl: string;
+  headline: string;
+  subheadline: string;
+}
+
+const DEFAULT_CONFIG: LandingPageConfig = {
+  logoUrl: null,
+  brandColor: "#0D1B2A",
+  ctaText: "Prendre rendez-vous",
+  ctaUrl: "https://calendly.com",
+  headline: "Un message personnalisé pour vous",
+  subheadline: "Découvrez notre vidéo exclusive",
+};
+
+function generateViewerHash(): string {
+  const nav = navigator;
+  const raw = [nav.userAgent, nav.language, screen.width, screen.height, new Date().getTimezoneOffset()].join("|");
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+export default function AssetLandingPage() {
+  const { campaignId } = useParams<{ campaignId: string }>();
+  const [searchParams] = useSearchParams();
+  const referredBy = searchParams.get("ref");
+  const isPreviewMode = searchParams.get("preview") === "true";
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [config, setConfig] = useState<LandingPageConfig>(DEFAULT_CONFIG);
+  const [campaignName, setCampaignName] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
+  // Access gate
+  const [isGated, setIsGated] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
+  const [gateEmail, setGateEmail] = useState("");
+  const [gateName, setGateName] = useState("");
+  const [gateChecking, setGateChecking] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
+
+  // Viewer identity
+  const [viewerName, setViewerName] = useState("");
+  const [viewerEmail, setViewerEmail] = useState("");
+
+  // Video ended state
+  const [videoEnded, setVideoEnded] = useState(false);
+
+  // Comment
+  const [comment, setComment] = useState("");
+  const [commentSent, setCommentSent] = useState(false);
+
+  // Invite dialog
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteSending, setInviteSending] = useState(false);
+
+  // ─── D1 states ───
+  const [assetType, setAssetType] = useState<"video" | "document" | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [versionNumber, setVersionNumber] = useState<number | null>(null);
+  const [isReplacedByNewerVersion] = useState(false);
+  const [aeInitials, setAeInitials] = useState("");
+  const [aeName, setAeName] = useState("");
+  const [prospectMessage, setProspectMessage] = useState("");
+  const [summaryBullets, setSummaryBullets] = useState<string[]>([]);
+  const [contextBullets, setContextBullets] = useState<string[]>([]);
+  const [secondaryAssets, setSecondaryAssets] = useState<any[]>([]);
+  const [experienceMode, setExperienceMode] = useState<"simple" | "deal_room">("deal_room");
+  const [scanMode, setScanMode] = useState(false);
+  const [engagementLevel, setEngagementLevel] = useState(0);
+  const [hasBeenSeen, setHasBeenSeen] = useState(false);
+  const [level1Visible, setLevel1Visible] = useState(false);
+  const [level1Answer, setLevel1Answer] = useState<string | null>(null);
+  const [showFeedbackInput, setShowFeedbackInput] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [activeSecondaryAsset, setActiveSecondaryAsset] = useState<any | null>(null);
+  const [newAssets, setNewAssets] = useState<any[]>([]);
+
+  const signalCooldownRef = useRef<Record<string, number>>({});
+  const level1TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const viewerHashRef = useRef(generateViewerHash());
+  const lastReportedRef = useRef(0);
+  const watchSecondsRef = useRef(0);
+  const lastSeekFromRef = useRef(0);
+  const segmentReplayCountRef = useRef<Record<string, number>>({});
+
+  const { trackEvent } = useVideoEventTracker();
+
+  const baseTrackParams = useCallback(() => ({
+    video_id: videoId || "",
+    campaign_id: campaignId || "",
+    viewer_hash: viewerHashRef.current,
+    viewer_email: viewerEmail || undefined,
+    viewer_name: viewerName || undefined,
+    referred_by_hash: referredBy || undefined,
+    referrer: document.referrer || undefined,
+  }), [videoId, campaignId, viewerEmail, viewerName, referredBy]);
+
+  // ─── Signal handler ───
+  const handleSignal = useCallback(async (
+    event_type: string, event_layer: string, event_data: Record<string, unknown>
+  ) => {
+    if (isPreviewMode || !campaignId) return;
+    if (event_layer !== "declared") {
+      const lastSent = signalCooldownRef.current[event_type] || 0;
+      if (Date.now() - lastSent < 10000) return;
+    }
+    signalCooldownRef.current[event_type] = Date.now();
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${url}/functions/v1/prospect-feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": key },
+        body: JSON.stringify({ campaign_id: campaignId, event_type, event_layer, event_data }),
+      });
+    } catch { /* silent */ }
+  }, [isPreviewMode, campaignId]);
+
+  // ─── Engagement level update ───
+  const updateLevel = useCallback((level: number) => {
+    setEngagementLevel(prev => {
+      const next = Math.max(prev, level);
+      if (!isPreviewMode && campaignId) {
+        try {
+          const key = `ekko_deal_${campaignId}`;
+          const existing = JSON.parse(localStorage.getItem(key) || "{}");
+          localStorage.setItem(key, JSON.stringify({
+            ...existing,
+            seen: true,
+            engagementLevel: next,
+            lastVisit: new Date().toISOString(),
+          }));
+        } catch { /* silent */ }
+      }
+      return next;
+    });
+  }, [isPreviewMode, campaignId]);
+
+  // ─── localStorage init ───
+  useEffect(() => {
+    if (!campaignId) return;
+    const key = `ekko_deal_${campaignId}`;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const data = JSON.parse(raw);
+        setHasBeenSeen(true);
+        setEngagementLevel(data.engagementLevel || 0);
+        if (data.lastVisit && !isPreviewMode) {
+          const diff = Date.now() - new Date(data.lastVisit).getTime();
+          if (diff > 60 * 60 * 1000) {
+            handleSignal("engagement_signal", "fact", { signal: "re_engagement" });
+          }
+        }
+      }
+    } catch { /* silent */ }
+  }, [campaignId, isPreviewMode, handleSignal]);
+
+  // Cleanup level1 timer
+  useEffect(() => () => {
+    if (level1TimerRef.current) clearTimeout(level1TimerRef.current);
+  }, []);
+
+  // ─── Fetch campaign data ───
+  useEffect(() => {
+    const fetchCampaign = async () => {
+      if (!campaignId) {
+        setError("Campagne non trouvée");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+        const videoRes = await fetch(`${supabaseUrl}/functions/v1/get-public-video`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+          body: JSON.stringify({ campaign_id: campaignId }),
+        });
+        const videoData = await videoRes.json();
+
+        if (videoData?.campaign_name) setCampaignName(videoData.campaign_name);
+        if (videoData?.video_id) setVideoId(videoData.video_id);
+        if (videoData?.asset_type) setAssetType(videoData.asset_type);
+        if (videoData?.file_url) setFileUrl(videoData.file_url);
+        if (videoData?.version_number) setVersionNumber(videoData.version_number);
+        // parent_asset_id ne signifie PAS que l'asset est remplacé — D2
+        if (videoData?.ae_name) setAeName(videoData.ae_name);
+        if (videoData?.ae_initials) setAeInitials(videoData.ae_initials);
+        if (videoData?.prospect_message) setProspectMessage(videoData.prospect_message);
+        if (videoData?.summary_bullets) setSummaryBullets(videoData.summary_bullets);
+        if (videoData?.context_bullets) setContextBullets(videoData.context_bullets);
+        if (videoData?.secondary_assets) setSecondaryAssets(videoData.secondary_assets);
+        if (videoData?.experience_mode) setExperienceMode(videoData.experience_mode as "simple" | "deal_room");
+
+        // Resolve video URL from video_id
+        if (videoData?.video_id) {
+          const { data: vid } = await supabase
+            .from("videos")
+            .select("download_url, hosted_url")
+            .eq("id", videoData.video_id)
+            .maybeSingle();
+          if (vid?.download_url) setVideoUrl(vid.download_url);
+          else if (vid?.hosted_url) setVideoUrl(vid.hosted_url);
+        }
+
+        // Landing page config from metadata
+        if (videoData?.landing_page_config) setConfig(videoData.landing_page_config as LandingPageConfig);
+
+        // localStorage: écrire + détecter nouveaux assets
+        if (!isPreviewMode) {
+          try {
+            const key = `ekko_deal_${campaignId}`;
+            const raw = localStorage.getItem(key);
+            const existing = raw ? JSON.parse(raw) : {};
+            const currentAssetIds = (videoData?.secondary_assets || []).map((a: any) => a.id);
+            if (existing.knownAssetIds?.length && videoData?.secondary_assets?.length) {
+              const freshAssets = (videoData.secondary_assets as any[]).filter(
+                (a: any) => !existing.knownAssetIds.includes(a.id)
+              );
+              if (freshAssets.length > 0) setNewAssets(freshAssets);
+            }
+            localStorage.setItem(key, JSON.stringify({
+              ...existing,
+              seen: true,
+              lastVisit: new Date().toISOString(),
+              knownAssetIds: currentAssetIds,
+            }));
+          } catch { /* silent */ }
+        }
+
+        // Access gate check
+        const accessRes = await fetch(`${supabaseUrl}/functions/v1/check-video-access`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+          body: JSON.stringify({ campaign_id: campaignId, email: "probe@check.access" }),
+        });
+        const accessData = await accessRes.json();
+        if (accessData?.reason !== "no_restrictions" && !accessData?.allowed) {
+          setIsGated(true);
+        } else if (accessData?.reason === "no_restrictions") {
+          setAccessGranted(true);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError("Cette page n'existe pas ou n'est plus disponible");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCampaign();
+  }, [campaignId, isPreviewMode]);
+
+  const reportProgress = useCallback(async (percentage: number) => {
+    if (!videoId) return;
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/track-watch-progress`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          video_id: videoId,
+          viewer_hash: viewerHashRef.current,
+          watch_percentage: Math.round(percentage),
+          total_watch_seconds: Math.round(watchSecondsRef.current),
+          viewer_name: viewerName || undefined,
+          viewer_email: viewerEmail || undefined,
+          referred_by_hash: referredBy || undefined,
+        }),
+      });
+    } catch { /* silent */ }
+  }, [videoId, referredBy, viewerName, viewerEmail]);
+
+  // Track video progress + granular events — INTACT from VideoLandingPage
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !videoId) return;
+
+    trackEvent({ ...baseTrackParams(), event_type: "page_landed", event_data: { referrer: document.referrer } });
+
+    const onPlay = () => {
+      if (video.currentTime < 1) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_started", position_sec: 0, event_data: { autoplay: false } });
+      }
+    };
+
+    const onTimeUpdate = () => {
+      if (!video.duration) return;
+      const percentage = (video.currentTime / video.duration) * 100;
+      watchSecondsRef.current = video.currentTime;
+      const rounded = Math.floor(percentage / 10) * 10;
+      if (rounded > lastReportedRef.current) {
+        lastReportedRef.current = rounded;
+        reportProgress(percentage);
+        trackEvent({ ...baseTrackParams(), event_type: "watch_progress", position_sec: video.currentTime, event_data: { percent: Math.round(percentage), elapsed_sec: Math.round(video.currentTime) } });
+      }
+
+      // D1: Engagement levels from video progress
+      if (video.currentTime >= 30 && engagementLevel < 1) {
+        updateLevel(1);
+        setLevel1Visible(true);
+        level1TimerRef.current = setTimeout(() => {
+          setLevel1Visible(false);
+          if (!level1Answer) setLevel1Answer("ignored");
+        }, 15000);
+      }
+      if (percentage >= 60 && engagementLevel < 2) {
+        updateLevel(2);
+        handleSignal("engagement_signal", "fact", { signal: "deep_engagement", threshold: 60 });
+      }
+    };
+
+    const onPause = () => {
+      if (!video.ended) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_paused", position_sec: video.currentTime, event_data: { duration_sec: video.duration } });
+      }
+    };
+
+    const onSeeking = () => { lastSeekFromRef.current = video.currentTime; };
+
+    const onSeeked = () => {
+      const from = lastSeekFromRef.current;
+      const to = video.currentTime;
+      const direction = to < from ? "backward" : "forward";
+      trackEvent({ ...baseTrackParams(), event_type: "video_seeked", position_sec: to, event_data: { from_sec: Math.round(from), to_sec: Math.round(to), direction } });
+      if (direction === "backward") {
+        const segKey = `${Math.floor(to / 10) * 10}`;
+        segmentReplayCountRef.current[segKey] = (segmentReplayCountRef.current[segKey] || 0) + 1;
+        if (segmentReplayCountRef.current[segKey] >= 2) {
+          trackEvent({ ...baseTrackParams(), event_type: "segment_replayed", position_sec: to, event_data: { segment_start: Math.floor(to / 10) * 10, segment_end: Math.floor(to / 10) * 10 + 10, replay_count: segmentReplayCountRef.current[segKey] } });
+        }
+      }
+    };
+
+    const onEnded = () => {
+      reportProgress(100);
+      setVideoEnded(true);
+      updateLevel(3);
+      trackEvent({ ...baseTrackParams(), event_type: "video_completed", position_sec: video.duration, event_data: { total_watch_pct: 100, total_time_sec: Math.round(video.duration) } });
+    };
+
+    const onRateChange = () => {
+      trackEvent({ ...baseTrackParams(), event_type: "speed_changed", position_sec: video.currentTime, event_data: { to_speed: video.playbackRate } });
+    };
+
+    const onFullscreenChange = () => {
+      const isFullscreen = !!document.fullscreenElement;
+      trackEvent({ ...baseTrackParams(), event_type: "fullscreen_toggled", position_sec: video.currentTime, event_data: { direction: isFullscreen ? "enter" : "exit" } });
+    };
+
+    const onVisibilityChange = () => {
+      trackEvent({ ...baseTrackParams(), event_type: "tab_visibility_changed", position_sec: video.currentTime, event_data: { state: document.hidden ? "hidden" : "visible" } });
+    };
+
+    const onBeforeUnload = () => {
+      const pct = video.duration ? (video.currentTime / video.duration) * 100 : 0;
+      if (pct > 0 && pct < 90) {
+        trackEvent({ ...baseTrackParams(), event_type: "video_dropped", position_sec: video.currentTime, event_data: { drop_pct: Math.round(pct), drop_position_sec: Math.round(video.currentTime) } });
+      }
+      trackEvent({ ...baseTrackParams(), event_type: "page_exit", event_data: { last_action: "unload" } });
+    };
+
+    video.addEventListener("play", onPlay);
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("seeking", onSeeking);
+    video.addEventListener("seeked", onSeeked);
+    video.addEventListener("ended", onEnded);
+    video.addEventListener("ratechange", onRateChange);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("beforeunload", onBeforeUnload);
+
+    return () => {
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("seeking", onSeeking);
+      video.removeEventListener("seeked", onSeeked);
+      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("ratechange", onRateChange);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [videoId, reportProgress, trackEvent, baseTrackParams, engagementLevel, level1Answer, updateLevel, handleSignal]);
+
+  const handleVideoToggle = () => {
+    const video = videoRef.current;
+    if (video) {
+      if (isPlaying) video.pause();
+      else video.play();
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!comment.trim() || !videoId || !campaignId) return;
+    trackEvent({ ...baseTrackParams(), event_type: "comment_submitted", event_data: { comment_text: comment.trim() } });
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/submit-video-reaction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+        body: JSON.stringify({
+          video_id: videoId,
+          campaign_id: campaignId,
+          viewer_hash: viewerHashRef.current,
+          viewer_name: viewerName || undefined,
+          viewer_email: viewerEmail || undefined,
+          reaction_type: "comment",
+          comment: comment.trim(),
+        }),
+      });
+      setCommentSent(true);
+      setComment("");
+      toast.success("Commentaire envoyé !");
+    } catch {
+      toast.error("Erreur, veuillez réessayer");
+    }
+  };
+
+  const handleInviteSend = async () => {
+    if (!inviteEmail.trim() || !inviteName.trim() || !videoId || !campaignId) {
+      toast.error("Veuillez remplir nom et email");
+      return;
+    }
+    setInviteSending(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/send-share-invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          video_id: videoId,
+          campaign_id: campaignId,
+          sender_name: viewerName || "Un collaborateur",
+          sender_viewer_hash: viewerHashRef.current,
+          collaborators: [{
+            first_name: inviteName.split(" ")[0]?.trim() || inviteName.trim(),
+            last_name: inviteName.split(" ").slice(1).join(" ")?.trim() || "",
+            email: inviteEmail.trim(),
+          }],
+        }),
+      });
+      trackEvent({ ...baseTrackParams(), event_type: "page_shared", event_data: { share_method: "invite_dialog", recipient_hint: inviteEmail.trim() } });
+      toast.success(`Invitation envoyée à ${inviteName}`);
+      setShowInviteDialog(false);
+      setInviteName("");
+      setInviteEmail("");
+    } catch {
+      toast.error("Erreur lors de l'envoi");
+    } finally {
+      setInviteSending(false);
+    }
+  };
+
+  const handleGateSubmit = async () => {
+    if (!gateEmail.trim() || !gateName.trim()) {
+      setGateError("Veuillez renseigner votre nom et email");
+      return;
+    }
+    setGateChecking(true);
+    setGateError(null);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/check-video-access`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": supabaseKey },
+        body: JSON.stringify({ campaign_id: campaignId, email: gateEmail.trim() }),
+      });
+      const data = await res.json();
+      if (data?.allowed) {
+        setAccessGranted(true);
+        setViewerName(gateName.trim());
+        setViewerEmail(gateEmail.trim());
+        reportProgress(0);
+      } else {
+        setGateError("Votre adresse email n'est pas autorisée. Vérifiez avec l'expéditeur.");
+      }
+    } catch {
+      setGateError("Erreur de vérification, veuillez réessayer");
+    } finally {
+      setGateChecking(false);
+    }
+  };
+
+  // ─── D1 handlers ───
+  const handleLevel1 = (answer: "yes" | "no") => {
+    setLevel1Answer(answer);
+    setLevel1Visible(false);
+    if (level1TimerRef.current) clearTimeout(level1TimerRef.current);
+    handleSignal("engagement_signal", "declared", {
+      signal: answer === "yes" ? "early_engagement" : "friction_early",
+      level: 1,
+    });
+    if (answer === "no") setShowFeedbackInput(true);
+  };
+
+  const handleSecondaryAssetClick = (asset: any) => {
+    const signalMap: Record<string, string> = {
+      pricing: "pricing_interest",
+      technical: "technical_interest",
+      intro: "early_engagement",
+      closing: "intent_to_move",
+    };
+    handleSignal("asset_click", "fact", {
+      signal: signalMap[asset.asset_purpose] || "asset_click",
+      asset_purpose: asset.asset_purpose,
+    });
+    setActiveSecondaryAsset(asset);
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackText.trim()) return;
+    await handleSignal("prospect_feedback", "declared", {
+      response: "clarification",
+      text: feedbackText.trim().slice(0, 300),
+    });
+    setFeedbackSent(true);
+    setShowFeedbackInput(false);
+    setFeedbackText("");
+  };
+
+  // ─── Render helpers ───
+  const renderAssetZone = () => {
+    if (assetType === "video" || assetType === null) {
+      return (
+        <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg mx-0 mb-5">
+          {videoUrl ? (
+            <>
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                className="w-full h-full object-cover"
+                poster="/placeholder.svg"
+                onPlay={() => { setIsPlaying(true); setVideoEnded(false); }}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => { setIsPlaying(false); setVideoEnded(true); updateLevel(3); }}
+                playsInline
+              />
+              {!videoEnded && (
+                <div
+                  className={`absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity cursor-pointer ${
+                    isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100"
+                  }`}
+                  onClick={handleVideoToggle}
+                >
+                  <div
+                    className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                    style={{ backgroundColor: config.brandColor }}
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-8 w-8 md:h-10 md:w-10 text-white" />
+                    ) : (
+                      <Play className="h-8 w-8 md:h-10 md:w-10 text-white ml-1" />
+                    )}
+                  </div>
+                </div>
+              )}
+              {videoEnded && (
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+                  <p className="text-white text-base font-medium mb-4">
+                    Un retour ou une question ?
+                  </p>
+                  {!commentSent ? (
+                    <div className="w-full max-w-sm flex gap-2">
+                      <Input
+                        placeholder="Laisser un petit mot..."
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleCommentSubmit()}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                      />
+                      <Button size="icon" onClick={handleCommentSubmit}
+                        disabled={!comment.trim()}
+                        style={{ backgroundColor: config.brandColor }}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-white/60 text-sm">Commentaire envoyé</p>
+                  )}
+                  <div className="flex gap-3 mt-4">
+                    <Button variant="outline"
+                      className="text-white border-white/30 hover:bg-white/10 gap-2"
+                      onClick={() => {
+                        const video = videoRef.current;
+                        if (video) { video.currentTime = 0; video.play(); setVideoEnded(false); }
+                      }}>
+                      <Play className="h-4 w-4" />Revoir
+                    </Button>
+                    <Button variant="outline"
+                      className="text-white border-white/30 hover:bg-white/10 gap-2"
+                      onClick={() => setShowInviteDialog(true)}>
+                      <Share2 className="h-4 w-4" />Partager à un collègue
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : assetType === null ? (
+            <div className="flex items-center justify-center h-full">
+              <EkkoLoader mode="loop" size={24} />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-2 p-8">
+              <p className="text-sm text-muted-foreground text-center">
+                Ce contenu est en cours de préparation.
+              </p>
+              <p className="text-xs text-muted-foreground/60 text-center">
+                Vous serez contacté dès qu'il est disponible.
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
+    if (assetType === "document" && fileUrl) {
+      return (
+        <div className="rounded-xl overflow-hidden border border-border shadow-md mb-5">
+          <iframe src={fileUrl} className="w-full" style={{ height: "clamp(320px, 70vh, 800px)" }} title="Document" />
+          <div className="py-2 text-center border-t border-border/50">
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground underline transition-colors">
+              Ouvrir dans un nouvel onglet
+            </a>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const renderFooter = () => (
+    <footer className="py-6 px-6 text-center space-y-1 mt-4">
+      <p className="text-[11px] text-muted-foreground/50 leading-relaxed max-w-sm mx-auto">
+        Votre interaction avec ce contenu peut être mesurée dans le cadre de cette proposition commerciale.
+      </p>
+      <p className="text-[10px] text-muted-foreground/30">
+        Propulsé par{" "}
+        <a href="/" className="hover:underline">Ekko</a>
+      </p>
+    </footer>
+  );
+
+  // ─── Loading ───
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <EkkoLoader mode="loop" size={32} />
+      </div>
+    );
+  }
+
+  // ─── Replaced version ───
+  if (isReplacedByNewerVersion) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="text-center max-w-sm space-y-3">
+          <p className="text-base font-medium text-foreground">Une version mise à jour est disponible.</p>
+          <p className="text-sm text-muted-foreground">Demandez le nouveau lien à votre interlocuteur.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Error ───
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="text-center max-w-sm space-y-3">
+          <p className="text-base font-medium text-foreground">Ce lien n'est plus disponible.</p>
+          <p className="text-sm text-muted-foreground">Contactez votre interlocuteur pour recevoir un nouveau lien.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Access gate ───
+  if (isGated && !accessGranted) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <Card className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <CardContent className="pt-8 pb-6 px-6 text-center space-y-6">
+              <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-muted">
+                <Lock className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold mb-2 text-foreground">Accès requis</h2>
+                <p className="text-sm text-muted-foreground">
+                  Veuillez vous identifier pour accéder à ce contenu.
+                </p>
+              </div>
+              <div className="space-y-3 text-left">
+                <Input placeholder="Votre nom complet" value={gateName}
+                  onChange={(e) => setGateName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGateSubmit()} />
+                <Input placeholder="Votre adresse email professionnelle" type="email" value={gateEmail}
+                  onChange={(e) => setGateEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGateSubmit()} />
+                {gateError && <p className="text-sm text-destructive">{gateError}</p>}
+                <Button className="w-full" style={{ backgroundColor: config.brandColor, color: "white" }}
+                  onClick={handleGateSubmit} disabled={gateChecking}>
+                  {gateChecking ? "Vérification..." : "Accéder au contenu"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        {renderFooter()}
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // RENDER PRINCIPAL
+  // ═══════════════════════════════════════════════════════════
+  return (
+    <div className={`min-h-screen flex flex-col bg-background ${isPreviewMode ? "pt-8" : ""}`}>
+
+      {/* Barre preview AE */}
+      {isPreviewMode && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-[#0D1B2A] text-white text-xs py-2 text-center">
+          Mode prévisualisation · Vos modifications s'affichent ici
+        </div>
+      )}
+
+      {/* HEADER HUMAIN */}
+      <header className="py-8 px-6 text-center">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3"
+          style={{ backgroundColor: config.brandColor }}>
+          {aeInitials || "?"}
+        </div>
+        <p className="text-sm font-semibold text-foreground">{aeName}</p>
+        {prospectMessage && (
+          <p className="text-xs text-muted-foreground italic mt-1 max-w-xs mx-auto leading-relaxed">
+            {prospectMessage}
+          </p>
+        )}
+        {hasBeenSeen && !isPreviewMode && (
+          <p className="text-[10px] text-muted-foreground/40 mt-2 animate-in fade-in duration-500">
+            Content de vous revoir.
+          </p>
+        )}
+        {campaignName && (
+          <p className="text-[10px] text-muted-foreground/50 mt-1">
+            Préparé pour {campaignName}
+          </p>
+        )}
+      </header>
+
+      {/* NOUVEAU DEPUIS VOTRE DERNIÈRE VISITE */}
+      {hasBeenSeen && newAssets.length > 0 && !isPreviewMode && (
+        <div className="mx-4 mb-4 px-4 py-3 bg-accent/8 border border-accent/20 rounded-xl animate-in fade-in duration-500">
+          <p className="text-xs font-medium text-accent mb-2">
+            Nouveau depuis votre dernière visite
+          </p>
+          <div className="space-y-1.5">
+            {newAssets.map((asset: any) => (
+              <button key={asset.id}
+                onClick={() => handleSecondaryAssetClick(asset)}
+                className="w-full flex items-center gap-2 text-left hover:opacity-80 transition-opacity">
+                <span className="text-sm shrink-0">
+                  {asset.asset_type === "video" ? "🎥" : "📄"}
+                </span>
+                <span className="text-xs text-foreground underline">{asset.label_fr}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODE SIMPLE ─── */}
+      {experienceMode === "simple" && (
+        <>
+          {renderAssetZone()}
+          <div className="pb-5 text-center">
+            <Button variant="ghost" size="sm" className="text-muted-foreground gap-2"
+              onClick={() => setShowInviteDialog(true)}>
+              <Share2 className="h-4 w-4" />
+              Partager à un collègue
+            </Button>
+          </div>
+          {renderFooter()}
+        </>
+      )}
+
+      {/* ─── MODE DEAL ROOM ─── */}
+      {experienceMode === "deal_room" && (
+        <>
+          {/* Toggle scan */}
+          {summaryBullets.length > 0 && (
+            <div className="flex justify-end px-6 mb-2">
+              <div className="flex rounded-full border border-border overflow-hidden text-xs">
+                {[
+                  { label: "Résumé", value: true },
+                  { label: "Contenu complet", value: false },
+                ].map(({ label, value }) => (
+                  <button key={label}
+                    onClick={() => setScanMode(value)}
+                    className={`px-3 py-1 transition-colors ${
+                      scanMode === value
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:bg-muted/50"
+                    }`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Résumé 3 points */}
+          {summaryBullets.length > 0 && (
+            <section className="px-6 pb-4">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                En 3 points
+              </p>
+              <div className="space-y-2">
+                {summaryBullets.map((bullet, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-accent mt-0.5 shrink-0 text-sm">✓</span>
+                    <span className="text-sm text-foreground">{bullet}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Cadre de décision */}
+          {contextBullets.length > 0 && !scanMode && (
+            <section className="px-6 pb-4">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                Pour avancer sur ce sujet
+              </p>
+              <div className="space-y-2">
+                {contextBullets.map((bullet, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-accent mt-0.5 shrink-0 text-sm">✓</span>
+                    <span className="text-sm text-foreground">{bullet}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Asset principal */}
+          {!scanMode && (
+            <main className="px-4 pb-4">
+              {versionNumber !== null && versionNumber > 1 && (
+                <div className="text-center mb-3">
+                  <span className="text-[10px] text-muted-foreground/50 px-2 py-0.5 rounded border border-border/50">
+                    Version {versionNumber}
+                  </span>
+                </div>
+              )}
+              {renderAssetZone()}
+            </main>
+          )}
+
+          {/* NIVEAU 1 */}
+          {level1Visible && !level1Answer && (
+            <div className="px-4 pb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="border border-border rounded-xl p-4 bg-card">
+                <p className="text-sm font-medium text-foreground mb-3">
+                  C'est assez clair jusqu'ici ?
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1"
+                    onClick={() => handleLevel1("yes")}>
+                    Oui
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1"
+                    onClick={() => handleLevel1("no")}>
+                    Non, j'ai une question
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CTA DISCRET niveau 2 */}
+          {engagementLevel >= 2 && config.ctaUrl && (
+            <div className="px-6 pb-2 text-center">
+              <button
+                onClick={() => {
+                  trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
+                    event_data: { cta_type: "early_exit", position: "level_2" } });
+                  window.open(config.ctaUrl, "_blank");
+                }}
+                className="text-xs text-muted-foreground underline hover:text-foreground transition-colors">
+                Planifier un échange →
+              </button>
+            </div>
+          )}
+
+          {/* NIVEAU 2 — Assets secondaires */}
+          {engagementLevel >= 2 && secondaryAssets.length > 0 && (
+            <section className="px-6 pb-5 animate-in fade-in duration-500">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                Pour approfondir
+              </p>
+              <div className="space-y-2">
+                {secondaryAssets.map((asset: any) => (
+                  <button key={asset.id}
+                    onClick={() => handleSecondaryAssetClick(asset)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/30 hover:bg-accent/5 transition-all text-left group">
+                    <span className="text-base shrink-0">
+                      {asset.asset_type === "video" ? "🎥" : "📄"}
+                    </span>
+                    <span className="text-sm text-foreground group-hover:text-accent transition-colors flex-1">
+                      {asset.label_fr}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Réduction du risque */}
+          {engagementLevel >= 1 && (
+            <section className="mx-4 mb-5 px-5 py-4 bg-muted/30 rounded-xl animate-in fade-in duration-500">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                À savoir
+              </p>
+              {[
+                "Déjà déployé dans des environnements similaires",
+                "Sans impact sur vos systèmes existants",
+                "Approche progressive possible",
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-2 mb-1.5 last:mb-0">
+                  <span className="text-muted-foreground/50 shrink-0 mt-0.5 text-xs">•</span>
+                  <span className="text-sm text-muted-foreground">{item}</span>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* NIVEAU 3 — Moment de bascule */}
+          {engagementLevel >= 3 && (
+            <section className="px-6 py-6 text-center animate-in fade-in duration-500">
+              <p className="text-sm font-medium text-foreground mb-5">
+                Ces éléments répondent-ils à votre besoin ?
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => {
+                    handleSignal("prospect_feedback", "declared", { response: "yes" });
+                    trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
+                      event_data: { cta_type: "oui_avançons" } });
+                    if (config.ctaUrl) window.open(config.ctaUrl, "_blank");
+                  }}
+                  className="px-6 font-medium"
+                  style={{ backgroundColor: config.brandColor, color: "white" }}>
+                  Oui, avançons
+                </Button>
+                <Button variant="outline" className="px-6"
+                  onClick={() => setShowFeedbackInput(true)}>
+                  Un point me semble flou
+                </Button>
+                <Button variant="ghost" className="px-6 text-muted-foreground"
+                  onClick={() => {
+                    handleSignal("prospect_feedback", "declared", { response: "not_now" });
+                    setFeedbackSent(true);
+                  }}>
+                  Intéressé, pas maintenant
+                </Button>
+              </div>
+
+              {showFeedbackInput && !feedbackSent && (
+                <div className="mt-5 max-w-sm mx-auto space-y-2">
+                  <Textarea
+                    placeholder="Votre question ou point de blocage..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value.slice(0, 300))}
+                    rows={3}
+                    className="resize-none"
+                  />
+                  <Button size="sm" className="w-full"
+                    onClick={handleFeedbackSubmit}
+                    disabled={!feedbackText.trim()}>
+                    Envoyer
+                  </Button>
+                </div>
+              )}
+
+              {feedbackSent && (
+                <p className="text-xs text-muted-foreground mt-4">
+                  Reçu.{" "}
+                  {aeName.split(" ")[0] || "Votre interlocuteur"}{" "}
+                  vous répondra rapidement.
+                </p>
+              )}
+            </section>
+          )}
+
+          {/* CTA final */}
+          {engagementLevel >= 3 && config.ctaUrl && (
+            <section className="px-6 pb-4 text-center">
+              <Button size="lg"
+                className="px-8 py-6 text-base font-semibold rounded-xl transition-transform hover:scale-105 gap-2"
+                style={{ backgroundColor: config.brandColor, color: "white" }}
+                onClick={() => {
+                  trackEvent({ ...baseTrackParams(), event_type: "cta_clicked",
+                    event_data: { cta_type: config.ctaText } });
+                  window.open(config.ctaUrl, "_blank");
+                }}>
+                {config.ctaText}
+                <ExternalLink className="h-5 w-5" />
+              </Button>
+            </section>
+          )}
+
+          {/* Partage */}
+          <div className="pb-5 text-center">
+            <Button variant="ghost" size="sm"
+              className="text-muted-foreground gap-2 hover:text-foreground"
+              onClick={() => setShowInviteDialog(true)}>
+              <Share2 className="h-4 w-4" />
+              Partager à un collègue
+            </Button>
+          </div>
+
+          {renderFooter()}
+        </>
+      )}
+
+      {/* Sheet asset secondaire */}
+      <Sheet open={!!activeSecondaryAsset} onOpenChange={(o) => !o && setActiveSecondaryAsset(null)}>
+        <SheetContent side="bottom" className="h-[85vh] p-0 flex flex-col rounded-t-xl">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+            <p className="text-sm font-medium text-foreground">
+              {activeSecondaryAsset?.label_fr}
+            </p>
+            <a href={activeSecondaryAsset?.file_url} target="_blank" rel="noopener noreferrer"
+              className="text-xs text-muted-foreground underline hover:text-foreground">
+              Ouvrir dans un nouvel onglet
+            </a>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            {activeSecondaryAsset?.asset_type === "document" && (
+              <iframe src={activeSecondaryAsset.file_url} className="w-full h-full border-0"
+                title={activeSecondaryAsset.label_fr} />
+            )}
+            {activeSecondaryAsset?.asset_type === "video" && (
+              <video src={activeSecondaryAsset.file_url} controls
+                className="w-full h-full object-contain bg-black" />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Dialog partage collègue */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Inviter un collègue
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Partagez ce contenu avec un collègue.
+            </p>
+            <Input placeholder="Nom du collègue" value={inviteName}
+              onChange={(e) => setInviteName(e.target.value)} />
+            <Input placeholder="Email professionnel" type="email" value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleInviteSend()} />
+            <Button className="w-full gap-2"
+              style={{ backgroundColor: config.brandColor, color: "white" }}
+              onClick={handleInviteSend} disabled={inviteSending}>
+              <Send className="h-4 w-4" />
+              {inviteSending ? "Envoi..." : "Envoyer l'invitation"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
