@@ -196,7 +196,6 @@ Deno.serve(async (req) => {
     // raw_input toujours conservé
     const eventData: Record<string, unknown> = {
       raw_input,
-      origin: "ae",
       source: "ae_input",
       ...extracted,
       ...(translationFailed ? { error: "translation_failed" } : {}),
