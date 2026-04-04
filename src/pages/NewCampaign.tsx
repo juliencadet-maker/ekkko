@@ -359,12 +359,15 @@ export default function NewCampaign() {
           approved_by_user_id: !needsApproval && isExecVideo ? user.id : null,
           account_id: accountId,
           crm_stage: dealStage || null,
-          deal_experience_mode: assetType === "document" ? "pull_only" : "push_only",
+          deal_experience_mode: experienceMode,
+          description: prospectMessage || null,
           metadata: {
             stage: dealStage || null,
             deal_value: dealValue ? parseFloat(dealValue) * 1000 : null,
             asset_type: assetType,
             video_mode: assetType === "video" ? videoMode : null,
+            prospect_message: prospectMessage || null,
+            summary_bullets: [summaryBullet1, summaryBullet2, summaryBullet3].filter(Boolean),
           },
         })
         .select()
