@@ -356,6 +356,16 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
   ).length;
   const eventVelocity = qualifiedVideoCount + qualifiedDocCount;
 
+  // Bonus declared E2 — affecte uniquement l'input velocity
+  // DOCTRINE : les declared enrichissent la lecture, ne la remplacent pas.
+  // N'affecte PAS : contradiction scores, priority_score, deal_risk_level.
+  const adjustedVelocity = declaredCount > 0
+    ? Math.min(
+        eventVelocity * (1 + 0.6 * Math.min(declaredCount, 3) / 3),
+        eventVelocity * 1.6
+      )
+    : eventVelocity;
+
   // ── 5. DES STAGE-AWARE ─────────────────────────────────────────────
   // Priorité committee_size : agent_context (déclaratif AE) → campaigns (fallback) → 6 (défaut)
   const committeeSize = agentCtx?.committee_size_declared ?? campaign.committee_size_declared ?? 6;
@@ -369,7 +379,7 @@ async function computeForCampaign(supabase: any, campaign_id: string) {
     ? viewers.reduce((s: number, v: any) => s + (v.total_watch_depth ?? 0), 0) / viewers.length
     : 0;
   const depth = avgWatchDepth / 100;
-  const velocity = Math.min(eventVelocity / 10, 1.0);
+  const velocity = Math.min(adjustedVelocity / 10, 1.0);
 
   const lambda = stage === "Late" ? 0.08 : stage === "Mid" ? 0.04 : 0.02;
   const recency = Math.exp(-lambda * daysSinceSignal);
