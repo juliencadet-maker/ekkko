@@ -80,14 +80,31 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Initial greeting
+  // Initial greeting — CAS A / CAS B
   useEffect(() => {
     const viewerCount = viewers.length || dealScore?.viewer_count || 0;
-    const des = dealScore?.des ?? "N/A";
-    setMessages([{
-      role: "assistant",
-      content: `Bonjour. Je suis l'agent Ekko sur ce deal.\n\nJ'ai accès à l'ensemble des signaux comportementaux — ${viewerCount} contacts identifiés, DES ${des}.\n\nQue veux-tu savoir ?`,
-    }]);
+    const des = dealScore?.des ?? null;
+    const daysSinceSignal = dealScore?.days_since_last_signal ?? null;
+    const firstSignalAt = (dealScore as any)?.first_signal_at ?? null;
+
+    let content: string;
+
+    if (viewerCount > 0 || firstSignalAt) {
+      // CAS A — format compact orienté action
+      const parts: string[] = [];
+      if (des !== null) parts.push(`DES ${des}`);
+      if (daysSinceSignal !== null) parts.push(`${daysSinceSignal}j sans signal`);
+      if (viewerCount > 0) parts.push(`${viewerCount} contact${viewerCount > 1 ? "s" : ""}`);
+      const header = parts.join(" · ");
+      content = header
+        ? `${header}\n\nOù en êtes-vous dans le cycle ?`
+        : "Où en êtes-vous dans le cycle ?";
+    } else {
+      // CAS B — 0 signal
+      content = "Aucun signal pour ce deal.\n\nEkko apprend dès que vous partagez un premier asset.\n\nPar quoi voulez-vous commencer ?";
+    }
+
+    setMessages([{ role: "assistant", content }]);
   }, [campaignId]);
 
   // Handle initial prompt

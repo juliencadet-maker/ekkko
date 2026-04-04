@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
     const latestScore = scoresRes.data?.[0] || null;
     const recentEvents = eventsRes.data || [];
     const reactions = reactionsRes.data || [];
+    const agentCtx = agentCtxRes.data || null;
 
     // Build deal context
     const dealContext = {
