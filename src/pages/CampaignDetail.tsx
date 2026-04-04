@@ -802,6 +802,32 @@ export default function CampaignDetail() {
     return signalAge <= 48 * 60 * 60 * 1000;
   }, [campaign]);
 
+  // BUG 3 fix — "Dernière activité" shows only prospect events
+  const AE_EVENT_TYPES_SET = useMemo(() => new Set([
+    "video_generation_started", "video_generation_completed", "deal_created",
+    "campaign_created", "script_generated", "approval_sent",
+  ]), []);
+  const lastProspectEvent = useMemo(() => {
+    const prospectEvents = timelineEvents.filter(
+      (e) => e.event_layer === "fact" && !AE_EVENT_TYPES_SET.has(e.event_type)
+    );
+    return prospectEvents.length > 0 ? prospectEvents[0] : null;
+  }, [timelineEvents, AE_EVENT_TYPES_SET]);
+
+  // BUG 4 fix — Deal master state
+  const dealMasterState = useMemo(() => {
+    if (!campaign) return "draft";
+    if ((campaign as any).first_signal_at) return "sent";
+    const hasActiveAsset = dealAssets.length > 0;
+    const hasActiveJobs_ = hasActiveJobs || campaign.status === "generating" || campaign.status === "pending_approval";
+    if (hasActiveAsset && !hasActiveJobs_) return "ready";
+    if (hasActiveJobs_) return "preparing";
+    return "draft";
+  }, [campaign, dealAssets, hasActiveJobs]);
+
+  // BUG 1 fix — check if any asset is active/ready for prospect link
+  const hasReadyAsset = useMemo(() => dealAssets.length > 0 || videos.some(v => v.is_active), [dealAssets, videos]);
+
   if (isLoading) {
     return (
       <AppLayout>
