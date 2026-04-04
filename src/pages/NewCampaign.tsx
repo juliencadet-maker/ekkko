@@ -160,6 +160,11 @@ export default function NewCampaign() {
     }
   }, [videoMode, facecamScript, prospectCompany, contacts]);
 
+  // D1: Auto-set experience mode when asset type changes
+  useEffect(() => {
+    setExperienceMode(assetType === "document" ? "simple" : "deal_room");
+  }, [assetType]);
+
   const handleCompanyBlur = async () => {
     if (!prospectCompany.trim() || !membership?.org_id) return;
     const normalized = prospectCompany.trim().toLowerCase();
