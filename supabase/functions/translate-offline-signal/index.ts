@@ -150,6 +150,25 @@ Deno.serve(async (req) => {
               .replace(/```/g, "")
               .trim();
             extracted = JSON.parse(cleaned);
+
+            // Validation serveur — liste fermée signals.type
+            const ALLOWED_SIGNAL_TYPES = [
+              "sponsor_contact",
+              "pricing_sent",
+              "meeting_done",
+              "blocker_identified",
+              "deal_advancing",
+            ];
+            if (Array.isArray(extracted.signals)) {
+              extracted.signals = (extracted.signals as any[]).filter(
+                (s: any) => typeof s.type === "string" && ALLOWED_SIGNAL_TYPES.includes(s.type)
+              );
+            }
+
+            // Garde summary — max 300 caractères
+            if (typeof extracted.summary === "string" && extracted.summary.length > 300) {
+              extracted.summary = extracted.summary.slice(0, 300);
+            }
           } catch {
             console.error("[translate-offline-signal] JSON parse failed:", rawText);
             translationFailed = true;
