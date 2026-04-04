@@ -324,7 +324,14 @@ export default function Dashboard() {
                         {(campaign as any).identities?.display_name}
                       </p>
                     </div>
-                    <StatusBadge status={campaign.status} />
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={campaign.status} />
+                      {scoreMap[campaign.id] != null && (
+                        <span className="text-xs text-muted-foreground">
+                          {Math.round(scoreMap[campaign.id])}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

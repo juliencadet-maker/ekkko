@@ -219,6 +219,7 @@ export default function CampaignDetail() {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [agentContext, setAgentContext] = useState<any>(null);
   const [snoozeDate, setSnoozeDate] = useState<Date | undefined>();
+  const [offlineSignalSent, setOfflineSignalSent] = useState(false);
   // Sub-campaign analytics (for parent view)
   const [subAnalytics, setSubAnalytics] = useState<
     Record<string, { viewEvents: ViewEvent[]; watchProgress: WatchProgressRow[] }>

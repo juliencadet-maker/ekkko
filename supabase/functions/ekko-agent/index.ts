@@ -172,6 +172,15 @@ Deno.serve(async (req) => {
         emojis: reactions.filter((r: any) => r.reaction_type === "emoji").length,
         comments: reactions.filter((r: any) => r.reaction_type === "comment").length,
       },
+      agent_context: {
+        stage: agentCtx?.stage ?? null,
+        motion_type: agentCtx?.motion_type ?? null,
+        decision_structure: agentCtx?.decision_structure ?? null,
+        decision_window: agentCtx?.decision_window ?? null,
+        incumbent_present: agentCtx?.incumbent_present ?? null,
+        incumbent_type: agentCtx?.incumbent_type ?? null,
+        competitive_situation: agentCtx?.competitive_situation ?? null,
+      },
     };
 
     const systemPrompt = SYSTEM_PROMPT_TEMPLATE.replace("{DEAL_CONTEXT}", JSON.stringify(dealContext, null, 2));
