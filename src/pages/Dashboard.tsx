@@ -39,6 +39,7 @@ export default function Dashboard() {
     dealsActifs: 0,
   });
   const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
+  const [scoreMap, setScoreMap] = useState<Record<string, number>>({});
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
