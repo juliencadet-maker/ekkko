@@ -1121,6 +1121,23 @@ export default function NewCampaign() {
           )}
         </div>
       )}
+
+      {/* D1: Preview Sheet */}
+      <Sheet open={showPreviewSheet} onOpenChange={setShowPreviewSheet}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
+          <div className="bg-[#0D1B2A] text-white text-xs py-2 px-4 text-center shrink-0">
+            Mode prévisualisation · Vos modifications s'affichent ici
+          </div>
+          <div className="flex-1 overflow-hidden flex flex-col items-center justify-center gap-3 p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Créez d'abord le deal pour prévisualiser.
+            </p>
+            <Button size="sm" variant="outline" onClick={() => setShowPreviewSheet(false)}>
+              Continuer
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </AppLayout>
   );
 }
