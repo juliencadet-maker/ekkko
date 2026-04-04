@@ -627,6 +627,21 @@ export default function CampaignDetail() {
       toast.error("Erreur lors de la sauvegarde");
     }
   };
+  const handleOfflineSignal = async (key: string, label: string) => {
+    if (!id) return;
+    try {
+      await supabase.from("timeline_events").insert({
+        campaign_id: id,
+        event_type: "offline_signal",
+        event_layer: "declared",
+        event_data: { signal: key, label, source: "ae_input" },
+      });
+      setOfflineSignalSent(true);
+      setTimeout(() => setOfflineSignalSent(false), 3000);
+    } catch (err) {
+      console.error("[offline_signal]", err);
+    }
+  };
 
   const handleSaveScript = async () => {
     if (!campaign || !membership?.org_id || !editedScript.trim()) return;
