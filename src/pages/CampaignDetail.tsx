@@ -2353,6 +2353,9 @@ export default function CampaignDetail() {
         campaignId={campaign.id}
         campaignName={campaign.name}
         dealScore={dealScore}
+        onSuccess={() => {
+          setCampaign(prev => prev ? { ...prev, deal_status: "closed" } : null);
+        }}
       />
 
       {scriptVersions.length >= 2 && (
