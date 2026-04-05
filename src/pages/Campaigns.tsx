@@ -75,6 +75,7 @@ export default function Campaigns() {
   const [viewers, setViewers] = useState<Record<string, ViewerSummary[]>>({});
   const [lastEvents, setLastEvents] = useState<Record<string, string>>({});
   const [pendingApprovals, setPendingApprovals] = useState<Set<string>>(new Set());
+  const [showClosed, setShowClosed] = useState(false);
 
   const navigate = useNavigate();
   const { user, membership } = useAuthContext();
@@ -174,6 +175,11 @@ export default function Campaigns() {
       c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Hide closed deals unless toggled
+    if (!showClosed) {
+      filtered = filtered.filter(c => (c as any).deal_status !== 'closed');
+    }
+
     // Sort by priority_score descending
     filtered.sort((a, b) => {
       const prioA = dealScores[a.id]?.priority_score ?? 0;
@@ -182,7 +188,7 @@ export default function Campaigns() {
     });
 
     return filtered;
-  }, [campaigns, searchQuery, dealScores]);
+  }, [campaigns, searchQuery, dealScores, showClosed]);
 
   const getDesClass = (des: number | null) => {
     if (des === null) return "des-pill bg-muted text-muted-foreground";
@@ -241,7 +247,7 @@ export default function Campaigns() {
         }
       />
 
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -251,6 +257,12 @@ export default function Campaigns() {
             className="pl-10"
           />
         </div>
+        <button
+          onClick={() => setShowClosed(prev => !prev)}
+          className="text-xs text-muted-foreground underline hover:text-foreground transition-colors"
+        >
+          {showClosed ? "Masquer les deals clôturés" : "Voir les deals clôturés"}
+        </button>
       </div>
 
       {isLoading ? (
