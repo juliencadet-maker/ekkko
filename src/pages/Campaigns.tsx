@@ -279,8 +279,8 @@ export default function Campaigns() {
       ) : sortedCampaigns.length === 0 ? (
         <EmptyState
           icon={LayoutList}
-          title="Aucun deal"
-          description={searchQuery ? "Aucun résultat pour cette recherche" : "Créez votre premier deal"}
+          title="Aucun deal actif"
+          description={searchQuery ? "Aucun résultat pour cette recherche" : !showClosed && campaigns.length > 0 ? "Tous vos deals sont clôturés" : "Créez votre premier deal"}
           action={searchQuery ? undefined : { label: "Créer un deal", onClick: () => navigate("/app/campaigns/new") }}
           className="py-16"
         />
