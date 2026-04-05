@@ -223,6 +223,12 @@ export default function CampaignDetail() {
   const [freeSignalText, setFreeSignalText] = useState("");
   const [freeSignalLoading, setFreeSignalLoading] = useState(false);
   const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
+  // E3 — Guardrails + execution token
+  const [guardrailBlocked, setGuardrailBlocked] = useState<string | null>(null);
+  const [reminderShown, setReminderShown] = useState(false);
+  const [tokenExpired, setTokenExpired] = useState(false);
+  const [actionConfirmed, setActionConfirmed] = useState(false);
+  const [pendingAction, setPendingAction] = useState<any>(null);
   // E2 — Contextual toast for silent deals
   const [showContextualToast, setShowContextualToast] = useState(false);
   const [contextualDealName, setContextualDealName] = useState<string | null>(null);
@@ -513,6 +519,85 @@ export default function CampaignDetail() {
     };
     checkSilentDeals();
   }, [membership?.org_id, id]);
+
+  // ── E3 — Reminder toast + token expiry check ────────────────────────
+  useEffect(() => {
+    if (!id || reminderShown) return;
+
+    const checkReminder = async () => {
+      const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: pendingAct } = await supabase
+        .from("execution_actions")
+        .select("id, created_at, reminder_sent")
+        .eq("campaign_id", id)
+        .is("acted_on_at", null)
+        .is("reminder_sent", null)
+        .lte("created_at", since48h)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingAct) {
+        const { data: scoreData } = await supabase
+          .from("deal_scores")
+          .select("priority_score")
+          .eq("campaign_id", id)
+          .order("scored_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (scoreData && (scoreData as any).priority_score > 80) {
+          setReminderShown(true);
+          toast("Vous n'avez pas encore agi sur ce signal. Voulez-vous réévaluer ?", {
+            duration: 10000,
+            action: {
+              label: "Agir maintenant",
+              onClick: () => {
+                document.querySelector('[data-nba-card]')?.scrollIntoView({ behavior: "smooth" });
+              },
+            },
+          });
+          await supabase.from("execution_actions")
+            .update({ reminder_sent: new Date().toISOString() })
+            .eq("id", pendingAct.id);
+        }
+      }
+    };
+
+    const checkTokenExpiry = async () => {
+      const { data: expiredToken } = await supabase
+        .from("execution_actions")
+        .select("id, token_expires_at")
+        .eq("campaign_id", id)
+        .is("acted_on_at", null)
+        .not("token_expires_at", "is", null)
+        .lt("token_expires_at", new Date().toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (expiredToken) setTokenExpired(true);
+    };
+
+    checkReminder();
+    checkTokenExpiry();
+  }, [id, reminderShown]);
+
+  // Fetch pending execution action for guardrails
+  useEffect(() => {
+    if (!id) return;
+    const fetchPending = async () => {
+      const { data } = await supabase
+        .from("execution_actions")
+        .select("id, execution_token, token_expires_at, contact_email, asset_id, guardrail_status, acted_on_at")
+        .eq("campaign_id", id)
+        .eq("guardrail_status", "pending")
+        .is("acted_on_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) setPendingAction(data);
+    };
+    fetchPending();
+  }, [id]);
 
   const kpis = useMemo(() => computeKpis(viewEvents, watchProgress), [viewEvents, watchProgress]);
 
@@ -1160,14 +1245,147 @@ export default function CampaignDetail() {
     }
     return line;
   })();
-  // NBA "Je l'ai fait" handler
+  // NBA "Je l'ai fait" handler — E3 guardrails
+  const checkGuardrails = async (contactEmail?: string | null): Promise<{
+    passed: boolean;
+    reason: string | null;
+    guardrail: string | null;
+  }> => {
+    if (!id) return { passed: true, reason: null, guardrail: null };
+
+    // G3 — deal_not_closed (priorité 1)
+    if ((campaign as any)?.deal_status === "closed" || (campaign as any)?.deal_status === "snoozed") {
+      return { passed: false, reason: "Ce deal est fermé ou en veille. Rouvrir le deal pour agir.", guardrail: "deal_not_closed" };
+    }
+
+    if (contactEmail) {
+      // G1 — no_recent_contact
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentContact } = await supabase
+        .from("execution_actions")
+        .select("id")
+        .eq("campaign_id", id)
+        .eq("contact_email", contactEmail)
+        .gte("acted_on_at", since24h)
+        .limit(1)
+        .maybeSingle();
+      if (recentContact) {
+        return { passed: false, reason: "Vous avez déjà contacté ce contact il y a moins de 24h.", guardrail: "no_recent_contact" };
+      }
+
+      // G2 — no_upcoming_meeting
+      const { data: agentCtxG2 } = await supabase
+        .from("agent_context")
+        .select("next_meeting_at")
+        .eq("campaign_id", id)
+        .maybeSingle();
+      if (agentCtxG2?.next_meeting_at) {
+        const meetingAt = new Date(agentCtxG2.next_meeting_at).getTime();
+        const in48h = Date.now() + 48 * 60 * 60 * 1000;
+        if (meetingAt < in48h && meetingAt > Date.now()) {
+          return { passed: false, reason: "Un appel est prévu avec ce contact dans les 48h.", guardrail: "no_upcoming_meeting" };
+        }
+      }
+
+      // G5 — asset_not_already_sent
+      const currentAssetId = pendingAction?.asset_id ?? (dealScore?.recommended_action_v2 as any)?.asset_id ?? null;
+      if (currentAssetId) {
+        const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: recentSend } = await supabase
+          .from("execution_actions")
+          .select("id")
+          .eq("campaign_id", id)
+          .eq("contact_email", contactEmail)
+          .eq("asset_id", currentAssetId)
+          .gte("acted_on_at", since7d)
+          .limit(1)
+          .maybeSingle();
+        if (recentSend) {
+          return { passed: false, reason: "Cet asset a déjà été envoyé à ce contact il y a moins de 7 jours.", guardrail: "asset_not_already_sent" };
+        }
+      }
+
+      // G4 — contact_valid
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(contactEmail)) {
+        return { passed: false, reason: "L'email de ce contact semble invalide. Vérifiez les informations.", guardrail: "contact_valid" };
+      }
+    }
+
+    return { passed: true, reason: null, guardrail: null };
+  };
+
   const handleNBAMarkDone = async () => {
-    if (!campaign) return;
+    if (!campaign || !id) return;
+
+    // Validation recommended_action
+    const recAct = (dealScore?.recommended_action_v2 as any) ?? (dealScore?.recommended_action as any);
+    if (!recAct) {
+      setGuardrailBlocked("Aucune action recommandée disponible pour ce deal.");
+      return;
+    }
+    if (!recAct.contact_email && !recAct.asset_id) {
+      setGuardrailBlocked("Identifier le contact et l'asset avant d'agir.");
+      return;
+    }
+    if (!recAct.contact_email) {
+      setGuardrailBlocked("Identifier le contact cible avant d'agir.");
+      return;
+    }
+
+    // Fetch pending execution_action (one-time token)
+    const { data: fetchedAction } = await supabase
+      .from("execution_actions")
+      .select("id, execution_token, token_expires_at, contact_email, asset_id")
+      .eq("campaign_id", id)
+      .eq("guardrail_status", "pending")
+      .is("acted_on_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const contactEmail = fetchedAction?.contact_email ?? recAct.contact_email ?? null;
+
+    // Token expired?
+    if (fetchedAction?.token_expires_at && new Date(fetchedAction.token_expires_at) < new Date()) {
+      setTokenExpired(true);
+      return;
+    }
+
+    // Run guardrails
+    const guardrailResult = await checkGuardrails(contactEmail);
+    if (!guardrailResult.passed) {
+      setGuardrailBlocked(guardrailResult.reason);
+      if (fetchedAction?.id) {
+        await supabase.from("execution_actions")
+          .update({ guardrail_status: "blocked", guardrail_reason: guardrailResult.guardrail })
+          .eq("id", fetchedAction.id);
+      }
+      return;
+    }
+
+    setGuardrailBlocked(null);
+
+    // All guardrails passed → mark as executed (UPDATE, not INSERT)
     try {
+      if (fetchedAction?.id) {
+        await supabase.from("execution_actions")
+          .update({
+            guardrail_status: "passed",
+            executed_from: "app",
+            executed_by: "ae",
+            acted_on_at: new Date().toISOString(),
+            contact_email: contactEmail,
+          })
+          .eq("id", fetchedAction.id);
+      }
+
+      // Also mark first_action_completed_at on campaign
       await supabase.from("campaigns").update({
         first_action_completed_at: new Date().toISOString(),
       }).eq("id", campaign.id);
       setCampaign(prev => prev ? { ...prev, first_action_completed_at: new Date().toISOString() } as any : null);
+      setActionConfirmed(true);
       toast.success("Action notée — Ekko surveille la suite");
     } catch { toast.error("Erreur"); }
   };
@@ -1490,6 +1708,44 @@ export default function CampaignDetail() {
                 }
               />
             </SectionGuard>
+          )}
+
+          {/* E3 — Guardrail blocked message */}
+          {guardrailBlocked && (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3">
+              <p className="text-sm text-destructive">{guardrailBlocked}</p>
+              <button
+                onClick={() => setGuardrailBlocked(null)}
+                className="text-[10px] text-muted-foreground underline mt-1"
+              >
+                Compris
+              </button>
+            </div>
+          )}
+
+          {/* E3 — Token expired */}
+          {tokenExpired && !guardrailBlocked && (
+            <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                Cette action a expiré.{" "}
+                <button
+                  onClick={async () => {
+                    await supabase.functions.invoke("deal-trigger-notify", {
+                      body: { campaign_id: id, force_refresh: true },
+                    });
+                    setTokenExpired(false);
+                  }}
+                  className="underline text-foreground"
+                >
+                  Relancer
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* E3 — Action confirmed */}
+          {actionConfirmed && (
+            <p className="text-xs text-accent px-1">Action enregistrée.</p>
           )}
 
           {/* Pourquoi — Insights compressés inline */}
