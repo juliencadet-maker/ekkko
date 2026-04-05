@@ -1175,7 +1175,7 @@ export default function CampaignDetail() {
     if (!id) return { passed: true, reason: null, guardrail: null };
 
     // G3 — deal_not_closed (priorité 1)
-    if (campaign?.deal_status === "closed" || campaign?.deal_status === "snoozed") {
+    if ((campaign as any)?.deal_status === "closed" || (campaign as any)?.deal_status === "snoozed") {
       return { passed: false, reason: "Ce deal est fermé ou en veille. Rouvrir le deal pour agir.", guardrail: "deal_not_closed" };
     }
 
