@@ -21,6 +21,7 @@ interface DealCloseModalProps {
   campaignId: string;
   campaignName: string;
   dealScore?: any;
+  onSuccess?: () => void;
 }
 
 const OUTCOME_CATEGORIES = [
@@ -65,7 +66,7 @@ const OUTCOME_CATEGORIES = [
   },
 ];
 
-export function DealCloseModal({ open, onOpenChange, campaignId, campaignName, dealScore }: DealCloseModalProps) {
+export function DealCloseModal({ open, onOpenChange, campaignId, campaignName, dealScore, onSuccess }: DealCloseModalProps) {
   const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,6 +96,7 @@ export function DealCloseModal({ open, onOpenChange, campaignId, campaignName, d
 
       toast.success(`Deal clôturé : ${selectedOutcome.replace(/_/g, " ")}`);
       onOpenChange(false);
+      onSuccess?.();
       setSelectedOutcome(null);
       setNotes("");
     } catch (err) {
