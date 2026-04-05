@@ -1710,6 +1710,44 @@ export default function CampaignDetail() {
             </SectionGuard>
           )}
 
+          {/* E3 — Guardrail blocked message */}
+          {guardrailBlocked && (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3">
+              <p className="text-sm text-destructive">{guardrailBlocked}</p>
+              <button
+                onClick={() => setGuardrailBlocked(null)}
+                className="text-[10px] text-muted-foreground underline mt-1"
+              >
+                Compris
+              </button>
+            </div>
+          )}
+
+          {/* E3 — Token expired */}
+          {tokenExpired && !guardrailBlocked && (
+            <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                Cette action a expiré.{" "}
+                <button
+                  onClick={async () => {
+                    await supabase.functions.invoke("deal-trigger-notify", {
+                      body: { campaign_id: id, force_refresh: true },
+                    });
+                    setTokenExpired(false);
+                  }}
+                  className="underline text-foreground"
+                >
+                  Relancer
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* E3 — Action confirmed */}
+          {actionConfirmed && (
+            <p className="text-xs text-accent px-1">Action enregistrée.</p>
+          )}
+
           {/* Pourquoi — Insights compressés inline */}
           <SectionGuard name="Insights">
             <div className="rounded-lg border border-border p-3">
