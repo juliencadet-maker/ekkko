@@ -236,6 +236,7 @@ Deno.serve(async (req) => {
       await supabase.from("execution_actions").insert({
         campaign_id,
         trigger_id: trigger.id,
+        action_type: selected.trigger_type,
         execution_token: crypto.randomUUID(),
         token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         token_ae_email: aeEmail,
