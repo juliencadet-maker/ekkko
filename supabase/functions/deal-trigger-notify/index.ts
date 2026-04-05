@@ -199,6 +199,58 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── A2. INSERT execution_actions (one-time token) ────────────────
+    // Modèle one-time token : 1 ligne execution_actions par trigger.
+    // L'UI fait un UPDATE de cette ligne, jamais un INSERT supplémentaire.
+    if (trigger.id) {
+      // Récupérer l'email AE owner
+      const { data: campaignData } = await supabase
+        .from("campaigns")
+        .select("created_by_user_id")
+        .eq("id", campaign_id)
+        .maybeSingle();
+
+      let aeEmail: string | null = null;
+      if (campaignData?.created_by_user_id) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("user_id", campaignData.created_by_user_id)
+          .maybeSingle();
+        aeEmail = profileData?.email ?? null;
+      }
+
+      // Récupérer contact_email et asset_id depuis le dernier deal_scores.recommended_action_v2
+      const { data: latestScore } = await supabase
+        .from("deal_scores")
+        .select("recommended_action_v2")
+        .eq("campaign_id", campaign_id)
+        .order("scored_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const recAction = (latestScore?.recommended_action_v2 as Record<string, unknown>) ?? {};
+      const contactEmail = (recAction.contact_email as string) ?? null;
+      const assetId = (recAction.asset_id as string) ?? null;
+
+      await supabase.from("execution_actions").insert({
+        campaign_id,
+        trigger_id: trigger.id,
+        execution_token: crypto.randomUUID(),
+        token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        token_ae_email: aeEmail,
+        contact_email: contactEmail,
+        asset_id: assetId,
+        guardrail_status: "pending",
+        executed_from: null,   // app | extension | email | slack | mobile
+        executed_by: null,     // ae | agent | system — V1.5 = ae uniquement
+        acted_on_at: null,
+        reminder_sent: null,
+      }).catch((e: unknown) => {
+        console.error("[deal-trigger-notify] execution_actions insert failed:", e);
+      });
+    }
+
     // ── B. Slack AE (uniquement si canal configuré) ───────────────────
     const slackMessage =
       `*${deal_name}* — ${selected.message_what}\n` +

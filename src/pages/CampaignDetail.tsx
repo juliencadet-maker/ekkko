@@ -223,6 +223,12 @@ export default function CampaignDetail() {
   const [freeSignalText, setFreeSignalText] = useState("");
   const [freeSignalLoading, setFreeSignalLoading] = useState(false);
   const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
+  // E3 — Guardrails + execution token
+  const [guardrailBlocked, setGuardrailBlocked] = useState<string | null>(null);
+  const [reminderShown, setReminderShown] = useState(false);
+  const [tokenExpired, setTokenExpired] = useState(false);
+  const [actionConfirmed, setActionConfirmed] = useState(false);
+  const [pendingAction, setPendingAction] = useState<any>(null);
   // E2 — Contextual toast for silent deals
   const [showContextualToast, setShowContextualToast] = useState(false);
   const [contextualDealName, setContextualDealName] = useState<string | null>(null);
