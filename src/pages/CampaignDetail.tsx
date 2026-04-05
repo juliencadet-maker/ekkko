@@ -520,6 +520,85 @@ export default function CampaignDetail() {
     checkSilentDeals();
   }, [membership?.org_id, id]);
 
+  // ── E3 — Reminder toast + token expiry check ────────────────────────
+  useEffect(() => {
+    if (!id || reminderShown) return;
+
+    const checkReminder = async () => {
+      const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: pendingAct } = await supabase
+        .from("execution_actions")
+        .select("id, created_at, reminder_sent")
+        .eq("campaign_id", id)
+        .is("acted_on_at", null)
+        .is("reminder_sent", null)
+        .lte("created_at", since48h)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingAct) {
+        const { data: scoreData } = await supabase
+          .from("deal_scores")
+          .select("priority_score")
+          .eq("campaign_id", id)
+          .order("scored_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (scoreData && (scoreData as any).priority_score > 80) {
+          setReminderShown(true);
+          toast("Vous n'avez pas encore agi sur ce signal. Voulez-vous réévaluer ?", {
+            duration: 10000,
+            action: {
+              label: "Agir maintenant",
+              onClick: () => {
+                document.querySelector('[data-nba-card]')?.scrollIntoView({ behavior: "smooth" });
+              },
+            },
+          });
+          await supabase.from("execution_actions")
+            .update({ reminder_sent: new Date().toISOString() })
+            .eq("id", pendingAct.id);
+        }
+      }
+    };
+
+    const checkTokenExpiry = async () => {
+      const { data: expiredToken } = await supabase
+        .from("execution_actions")
+        .select("id, token_expires_at")
+        .eq("campaign_id", id)
+        .is("acted_on_at", null)
+        .not("token_expires_at", "is", null)
+        .lt("token_expires_at", new Date().toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (expiredToken) setTokenExpired(true);
+    };
+
+    checkReminder();
+    checkTokenExpiry();
+  }, [id, reminderShown]);
+
+  // Fetch pending execution action for guardrails
+  useEffect(() => {
+    if (!id) return;
+    const fetchPending = async () => {
+      const { data } = await supabase
+        .from("execution_actions")
+        .select("id, execution_token, token_expires_at, contact_email, asset_id, guardrail_status, acted_on_at")
+        .eq("campaign_id", id)
+        .eq("guardrail_status", "pending")
+        .is("acted_on_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) setPendingAction(data);
+    };
+    fetchPending();
+  }, [id]);
+
   const kpis = useMemo(() => computeKpis(viewEvents, watchProgress), [viewEvents, watchProgress]);
 
   // ─── B3 — getSignalFreshness ──────────────────────────────────────
