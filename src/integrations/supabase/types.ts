@@ -68,6 +68,7 @@ export type Database = {
           incumbent_type: string | null
           key_contacts: Json | null
           motion_type: string | null
+          next_meeting_at: string | null
           stage: string | null
           updated_at: string
         }
@@ -83,6 +84,7 @@ export type Database = {
           incumbent_type?: string | null
           key_contacts?: Json | null
           motion_type?: string | null
+          next_meeting_at?: string | null
           stage?: string | null
           updated_at?: string
         }
@@ -98,6 +100,7 @@ export type Database = {
           incumbent_type?: string | null
           key_contacts?: Json | null
           motion_type?: string | null
+          next_meeting_at?: string | null
           stage?: string | null
           updated_at?: string
         }
@@ -1083,36 +1086,70 @@ export type Database = {
       }
       execution_actions: {
         Row: {
+          acted_on_at: string | null
           action_type: string
+          asset_id: string | null
+          campaign_id: string | null
+          contact_email: string | null
           created_at: string
           executed_at: string | null
+          executed_by: string | null
           executed_from: string | null
           execution_token: string
+          guardrail_reason: string | null
           guardrail_status: string | null
           id: string
+          reminder_sent: string | null
+          token_ae_email: string | null
+          token_expires_at: string | null
           trigger_id: string
         }
         Insert: {
+          acted_on_at?: string | null
           action_type: string
+          asset_id?: string | null
+          campaign_id?: string | null
+          contact_email?: string | null
           created_at?: string
           executed_at?: string | null
+          executed_by?: string | null
           executed_from?: string | null
           execution_token: string
+          guardrail_reason?: string | null
           guardrail_status?: string | null
           id?: string
+          reminder_sent?: string | null
+          token_ae_email?: string | null
+          token_expires_at?: string | null
           trigger_id: string
         }
         Update: {
+          acted_on_at?: string | null
           action_type?: string
+          asset_id?: string | null
+          campaign_id?: string | null
+          contact_email?: string | null
           created_at?: string
           executed_at?: string | null
+          executed_by?: string | null
           executed_from?: string | null
           execution_token?: string
+          guardrail_reason?: string | null
           guardrail_status?: string | null
           id?: string
+          reminder_sent?: string | null
+          token_ae_email?: string | null
+          token_expires_at?: string | null
           trigger_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "execution_actions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "execution_actions_trigger_id_fkey"
             columns: ["trigger_id"]
