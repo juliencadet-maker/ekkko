@@ -776,14 +776,30 @@ export default function CampaignDetail() {
   const handleOfflineSignal = async (key: string, label: string) => {
     if (!id) return;
     try {
-      await supabase.from("timeline_events").insert({
-        campaign_id: id,
-        event_type: "offline_signal",
-        event_layer: "declared",
-        event_data: { signal: key, label, source: "ae_input" },
-      });
+      const { error: invokeError } = await supabase.functions.invoke(
+        "log-offline-signal",
+        {
+          body: {
+            campaign_id: id,
+            event_type: "offline_signal",
+            event_layer: "declared",
+            event_data: { signal: key, label },
+          },
+        }
+      );
+      if (invokeError) throw invokeError;
+
       setOfflineSignalSent(true);
       setTimeout(() => setOfflineSignalSent(false), 3000);
+
+      // Refresh timeline immédiat pour que l'event apparaisse sans recharge page
+      const { data: freshTimeline } = await supabase
+        .from("timeline_events")
+        .select("id, event_type, event_layer, event_data, created_at")
+        .eq("campaign_id", id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (freshTimeline) setTimelineEvents(freshTimeline as TimelineEventRow[]);
     } catch (err) {
       console.error("[offline_signal]", err);
     }
