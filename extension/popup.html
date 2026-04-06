@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ekko</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ÉTAT : non connecté -->
+  <div id="state-auth" class="hidden">
+    <div class="header"><span class="logo">Ekko</span></div>
+    <div class="auth-message">
+      <p>Connectez-vous à Ekko pour utiliser l'extension.</p>
+      <button id="btn-login" class="btn-primary">Se connecter</button>
+    </div>
+  </div>
+
+  <!-- ÉTAT : connecté -->
+  <div id="state-main" class="hidden">
+    <div class="header">
+      <span class="logo">Ekko</span>
+      <span class="status-dot"></span>
+    </div>
+
+    <!-- Sélecteur de deal -->
+    <div class="section">
+      <label class="label" for="deal-select">Deal</label>
+      <select id="deal-select" class="select">
+        <option value="">Choisir un deal...</option>
+      </select>
+    </div>
+
+    <!-- Feature 1 : Partager avec Ekko -->
+    <div class="section">
+      <div class="section-title">Partager avec Ekko</div>
+      <select id="asset-select" class="select" disabled>
+        <option value="">Sélectionner un deal d'abord...</option>
+      </select>
+      <button id="btn-share" class="btn-primary" disabled>Générer un lien tracké</button>
+      <div id="feedback-share" class="feedback hidden"></div>
+    </div>
+
+    <!-- Feature 2 : Message prêt -->
+    <div class="section">
+      <div class="section-title">Message prêt</div>
+      <button id="btn-message" class="btn-secondary" disabled>Générer un message</button>
+      <div id="message-output" class="message-box hidden"></div>
+      <button id="btn-copy-message" class="btn-primary hidden">Copier le message</button>
+      <div id="feedback-message" class="feedback hidden"></div>
+    </div>
+
+    <!-- Feature 3 : Ajouter un signal -->
+    <div class="section">
+      <div class="section-title">Ajouter un signal</div>
+      <textarea
+        id="signal-input"
+        class="textarea"
+        placeholder="Que s'est-il passé ? (ex : call positif avec le DSI)"
+        maxlength="300"
+        rows="2"
+        disabled
+      ></textarea>
+      <button id="btn-signal" class="btn-secondary" disabled>Enregistrer</button>
+      <div id="feedback-signal" class="feedback hidden"></div>
+    </div>
+  </div>
+
+  <!-- ÉTAT : chargement -->
+  <div id="state-loading">
+    <div class="header"><span class="logo">Ekko</span></div>
+    <div class="loading">Chargement...</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

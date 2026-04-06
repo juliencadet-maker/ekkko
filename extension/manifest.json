@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Ekko",
+  "version": "1.0.0",
+  "description": "Partagez des assets trackés et ajoutez des signaux deal sans quitter Gmail.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    },
+    "default_title": "Ekko"
+  },
+  "permissions": ["storage", "clipboardWrite", "tabs"],
+  "host_permissions": [
+    "https://*.supabase.co/*",
+    "https://getekko.eu/*"
+  ],
+  "content_scripts": [{
+    "matches": ["https://getekko.eu/*"],
+    "js": ["content_script.js"],
+    "run_at": "document_idle"
+  }],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
