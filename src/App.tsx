@@ -24,6 +24,7 @@ import Settings from "./pages/Settings";
 import UserApprovals from "./pages/UserApprovals";
 import AssetLandingPage from "./pages/AssetLandingPage";
 import DealIntelligence from "./pages/DealIntelligence";
+import SharePage from "./pages/SharePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
