@@ -2310,19 +2310,43 @@ export default function CampaignDetail() {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button
+                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    disabled={!hasReadyAsset}
-                                    className={cn(!hasReadyAsset && "opacity-50 cursor-not-allowed")}
-                                    onClick={() => {
-                                      if (hasReadyAsset) {
-                                        navigator.clipboard.writeText(`${window.location.origin}/lp/${id}`);
+                                    disabled={!hasReadyAsset || isGeneratingLink}
+                                    className={cn((!hasReadyAsset || isGeneratingLink) && "opacity-50 cursor-not-allowed")}
+                                    onClick={async () => {
+                                      if (!hasReadyAsset || !id) return;
+                                      setIsGeneratingLink(true);
+                                      try {
+                                        const { data: assets } = await supabase
+                                          .from("deal_assets").select("id")
+                                          .eq("campaign_id", id).eq("asset_status", "valid")
+                                          .order("created_at", { ascending: false }).limit(1);
+                                        const primaryAsset = assets?.[0];
+                                        if (!primaryAsset) {
+                                          toast.error("Aucun asset prêt à partager sur ce deal.");
+                                          return;
+                                        }
+                                        const { data, error } = await supabase.functions.invoke("create-tracked-link", {
+                                          body: { campaign_id: id, asset_id: primaryAsset.id }
+                                        });
+                                        if (error || !data?.tracked_url) throw error;
+                                        await navigator.clipboard.writeText(data.tracked_url);
+                                        toast.success("Lien tracké copié");
+                                      } catch {
+                                        await navigator.clipboard.writeText(`${window.location.origin}/lp/${id}`);
                                         toast.success("Lien copié");
+                                      } finally {
+                                        setIsGeneratingLink(false);
                                       }
                                     }}
                                   >
-                                    <Link className="h-3.5 w-3.5 mr-1" /> Copier le lien prospect
+                                    {isGeneratingLink
+                                      ? <EkkoLoader mode="once" size={12} />
+                                      : <Link className="h-3.5 w-3.5 mr-1" />
+                                    }
+                                    {" "}Copier le lien prospect
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
