@@ -93,6 +93,15 @@ export function useAuth(): UserContext & {
         if (session?.user) {
           initialLoadDone = true;
           loadUserData(session.user.id);
+
+          // Pont extension Chrome — couvre login + session restaurée + refresh token
+          // Si l'extension est absente, postMessage est ignoré silencieusement
+          try {
+            window.postMessage(
+              { type: "EKKO_AUTH", access_token: session.access_token, user_id: session.user.id },
+              "https://getekko.eu"
+            );
+          } catch (_) { /* silencieux */ }
         } else {
           setProfile(null);
           setMembership(null);
@@ -100,6 +109,11 @@ export function useAuth(): UserContext & {
           setPolicy(null);
           setIsLoading(false);
           initialLoadDone = true;
+
+          // Déconnexion → nettoyer le JWT dans l'extension
+          try {
+            window.postMessage({ type: "EKKO_LOGOUT" }, "https://getekko.eu");
+          } catch (_) { /* silencieux */ }
         }
       }
     );
