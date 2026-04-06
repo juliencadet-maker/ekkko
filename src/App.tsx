@@ -24,6 +24,7 @@ import Settings from "./pages/Settings";
 import UserApprovals from "./pages/UserApprovals";
 import AssetLandingPage from "./pages/AssetLandingPage";
 import DealIntelligence from "./pages/DealIntelligence";
+import SharePage from "./pages/SharePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/app/governance" element={<AuthGuard><Governance /></AuthGuard>} />
             <Route path="/app/settings" element={<AuthGuard><Settings /></AuthGuard>} />
             <Route path="/app/user-approvals" element={<AuthGuard><UserApprovals /></AuthGuard>} />
+            <Route path="/app/share" element={<AuthGuard><SharePage /></AuthGuard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

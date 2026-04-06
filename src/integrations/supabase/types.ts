@@ -227,31 +227,40 @@ export type Database = {
       asset_deliveries: {
         Row: {
           asset_id: string
+          asset_purpose: string | null
           campaign_id: string
           created_at: string
           delivery_token: string
           id: string
           intended_contact_id: string | null
+          recipient_email: string | null
+          recipient_source: string | null
           sent_at: string | null
           share_mode: string | null
         }
         Insert: {
           asset_id: string
+          asset_purpose?: string | null
           campaign_id: string
           created_at?: string
           delivery_token: string
           id?: string
           intended_contact_id?: string | null
+          recipient_email?: string | null
+          recipient_source?: string | null
           sent_at?: string | null
           share_mode?: string | null
         }
         Update: {
           asset_id?: string
+          asset_purpose?: string | null
           campaign_id?: string
           created_at?: string
           delivery_token?: string
           id?: string
           intended_contact_id?: string | null
+          recipient_email?: string | null
+          recipient_source?: string | null
           sent_at?: string | null
           share_mode?: string | null
         }
