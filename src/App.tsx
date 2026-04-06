@@ -56,6 +56,7 @@ const App = () => (
             <Route path="/app/governance" element={<AuthGuard><Governance /></AuthGuard>} />
             <Route path="/app/settings" element={<AuthGuard><Settings /></AuthGuard>} />
             <Route path="/app/user-approvals" element={<AuthGuard><UserApprovals /></AuthGuard>} />
+            <Route path="/app/share" element={<AuthGuard><SharePage /></AuthGuard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

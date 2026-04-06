@@ -223,6 +223,7 @@ export default function CampaignDetail() {
   const [freeSignalText, setFreeSignalText] = useState("");
   const [freeSignalLoading, setFreeSignalLoading] = useState(false);
   const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   // E3 — Guardrails + execution token
   const [guardrailBlocked, setGuardrailBlocked] = useState<string | null>(null);
   const [reminderShown, setReminderShown] = useState(false);
