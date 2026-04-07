@@ -659,7 +659,7 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-medium text-foreground">
-                        {contact.role || "Inconnu"}
+                        {contact.insight_reasons?.label || contact.role || "Inconnu"}
                       </span>
                       <span
                         className="text-[9px] font-semibold px-1 py-0.5 rounded"
