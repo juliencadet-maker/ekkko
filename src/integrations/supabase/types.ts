@@ -2601,6 +2601,9 @@ export type Database = {
         | "approval_approved"
         | "approval_rejected"
         | "policy_updated"
+        | "link_generated"
+        | "extension_opened"
+        | "landing_opened"
       campaign_status:
         | "draft"
         | "pending_approval"
@@ -2769,6 +2772,9 @@ export const Constants = {
         "approval_approved",
         "approval_rejected",
         "policy_updated",
+        "link_generated",
+        "extension_opened",
+        "landing_opened",
       ],
       campaign_status: [
         "draft",

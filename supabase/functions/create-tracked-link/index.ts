@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     // ── Étape 4 : Vérification asset ∈ campaign ET valid ─────────────
     const { data: asset, error: assetError } = await userClient
       .from("deal_assets")
-      .select("id, asset_status, asset_purpose")
+      .select("id, asset_status, asset_purpose, asset_type")
       .eq("id", asset_id)
       .eq("campaign_id", campaign_id)
       .eq("asset_status", "valid")
@@ -183,6 +183,27 @@ Deno.serve(async (req) => {
     }
 
     const tracked_url = `${siteUrl}/lp/${campaign_id}?ref=${delivery_token}`;
+
+    // ── Phase 0 : Event tracking link_generated (fire-and-forget) ─────────
+    // Ne jamais await — ne jamais bloquer la réponse principale
+    adminClient.from("audit_logs").insert({
+      event_type: "link_generated",
+      user_id: user.id,
+      entity_id: campaign_id,
+      entity_type: "campaign",
+      org_id: campaign.org_id,
+      metadata: {
+        asset_id,
+        asset_purpose: asset.asset_purpose ?? null,
+        asset_type: asset.asset_type ?? null,
+        share_mode,
+        recipient_source: safeRecipientSource,
+        delivery_token,
+        event_category: "activation",
+      },
+    }).catch((e: unknown) => console.error("audit_log_failed:link_generated", e));
+    // ── fin Phase 0 ────────────────────────────────────────────────────────
+
     return new Response(
       JSON.stringify({ success: true, tracked_url, delivery_token }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

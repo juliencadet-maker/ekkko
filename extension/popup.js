@@ -84,6 +84,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  // ── Phase 0 : Event tracking extension_opened (fire-and-forget) ────────
+  // Anti-spam : 1 event max par 60 secondes
+  {
+    const lastOpened = await chrome.storage.local.get("last_extension_opened_at");
+    const now = Date.now();
+    const last = lastOpened.last_extension_opened_at || 0;
+    if (now - last > 60000) {
+      chrome.storage.local.set({ last_extension_opened_at: now });
+      fetch(`${SUPABASE_URL}/rest/v1/audit_logs`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${access_token}`,
+          "apikey": SUPABASE_ANON_KEY,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+        },
+        body: JSON.stringify({
+          event_type: "extension_opened",
+          user_id: user_id,
+          entity_type: "extension",
+          metadata: {
+            campaign_id: null,
+            timestamp: now,
+            event_category: "activation",
+          },
+        }),
+      }).catch((e) => console.error("audit_log_failed:extension_opened", e));
+    }
+  }
+  // ── fin Phase 0 ────────────────────────────────────────────────────────
+
   // Vérification JWT
   try {
     await apiGet(
