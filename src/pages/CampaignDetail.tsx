@@ -224,6 +224,7 @@ export default function CampaignDetail() {
   const [freeSignalLoading, setFreeSignalLoading] = useState(false);
    const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
   const [detectedContacts, setDetectedContacts] = useState<string[]>([]);
+  const [powerMapRefresh, setPowerMapRefresh] = useState(0);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   // E3 — Guardrails + execution token
   const [guardrailBlocked, setGuardrailBlocked] = useState<string | null>(null);
@@ -774,6 +775,7 @@ export default function CampaignDetail() {
         : [];
       setDetectedContacts(contacts);
       setTimeout(() => setDetectedContacts([]), 20000);
+      setPowerMapRefresh((n) => n + 1);
     } catch (err) {
       console.error("[free_signal]", err);
       setFreeSignalStatus("error");
@@ -2147,7 +2149,7 @@ export default function CampaignDetail() {
                     </div>
                   </div>
                 ) : (
-                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} viewers={viewers} committeeLayers={committeeLayers} />
+                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} viewers={viewers} committeeLayers={committeeLayers} refreshTrigger={powerMapRefresh} />
                 )}
               </CardContent>
             </Card>

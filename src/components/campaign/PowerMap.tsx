@@ -176,9 +176,10 @@ interface PowerMapProps {
   orgId: string;
   viewers: ViewerRow[];
   committeeLayers: CommitteeLayerRow[];
+  refreshTrigger?: number;
 }
 
-export function PowerMap({ campaignId, orgId, viewers, committeeLayers }: PowerMapProps) {
+export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshTrigger = 0 }: PowerMapProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterSpecial, setFilterSpecial] = useState<string>("none");
@@ -198,7 +199,7 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers }: PowerM
       .then(({ data }) => {
         if (data) setDeclaredContacts(data);
       });
-  }, [campaignId]);
+  }, [campaignId, refreshTrigger]);
 
   const handleStatClick = (status: string, special: string = "none") => {
     if (special !== "none") {
