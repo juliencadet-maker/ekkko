@@ -17,7 +17,8 @@ Retourne UNIQUEMENT un objet JSON valide, sans markdown, sans backticks, sans te
     { "type": "string", "value": "string" }
   ],
   "stage_hint": "string ou null",
-  "sentiment": "positif | neutre | negatif | null"
+  "sentiment": "positif | neutre | negatif | null",
+  "contacts_detected": ["titre ou nom de contact mentionné"]
 }
 
 Règles strictes sur signals.type — utilise UNIQUEMENT ces valeurs si applicable :
@@ -30,6 +31,7 @@ Autres règles :
 - Si mention d'envoi de document → type: "pricing_sent" si c'est un pricing, sinon ignorer
 - Si ambiguë → ne pas inclure dans signals
 - Maximum 5 signals
+- contacts_detected : liste des titres ou noms de contacts mentionnés (ex: DSI, CFO, DAF, Marc Dupont). Tableau vide si aucun.
 - summary en français, factuel, sans interprétation`;
 
 Deno.serve(async (req) => {
