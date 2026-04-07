@@ -759,12 +759,20 @@ export default function CampaignDetail() {
     setFreeSignalLoading(true);
     setFreeSignalStatus("idle");
     try {
-      const { error } = await supabase.functions.invoke("translate-offline-signal", {
+      const { data, error } = await supabase.functions.invoke("translate-offline-signal", {
         body: { campaign_id: id, raw_input: freeSignalText.trim() },
       });
       if (error) throw error;
       setFreeSignalText("");
       setFreeSignalStatus("success");
+
+      const contacts: string[] = Array.isArray(data?.extracted?.contacts_detected)
+        ? (data.extracted.contacts_detected as string[]).filter(
+            (c: string) => typeof c === "string" && c.trim().length > 0
+          )
+        : [];
+      setDetectedContacts(contacts);
+      setTimeout(() => setDetectedContacts([]), 8000);
     } catch (err) {
       console.error("[free_signal]", err);
       setFreeSignalStatus("error");
