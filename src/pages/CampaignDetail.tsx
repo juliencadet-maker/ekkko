@@ -224,6 +224,7 @@ export default function CampaignDetail() {
   const [freeSignalLoading, setFreeSignalLoading] = useState(false);
    const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
   const [detectedContacts, setDetectedContacts] = useState<string[]>([]);
+  const [powerMapRefresh, setPowerMapRefresh] = useState(0);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   // E3 — Guardrails + execution token
   const [guardrailBlocked, setGuardrailBlocked] = useState<string | null>(null);
