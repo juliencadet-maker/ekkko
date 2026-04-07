@@ -199,7 +199,7 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
       .then(({ data }) => {
         if (data) setDeclaredContacts(data);
       });
-  }, [campaignId]);
+  }, [campaignId, refreshTrigger]);
 
   const handleStatClick = (status: string, special: string = "none") => {
     if (special !== "none") {
