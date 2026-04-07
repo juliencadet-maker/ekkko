@@ -1789,8 +1789,10 @@ export default function CampaignDetail() {
                           if (v.name) reasons.push(v.name);
                           else if (v.title) reasons.push(v.title);
                         });
-                        if (daysSinceSignal !== undefined && daysSinceSignal > 0)
+                        if (daysSinceSignal !== undefined && daysSinceSignal > 0 && daysSinceSignal < 90)
                           reasons.push(`${daysSinceSignal}j sans signal`);
+                        else if (daysSinceSignal !== undefined && daysSinceSignal >= 90)
+                          reasons.push("Aucun signal reçu");
                         if ((campaign as any)?.deal_value)
                           reasons.push(`${Math.round(((campaign as any).deal_value) / 1000)}k€`);
                         const reasonsText = reasons.slice(0, 4).join(" · ");
@@ -1855,11 +1857,13 @@ export default function CampaignDetail() {
                           {viewers.length === 0
                             ? "Aucun relais interne identifié — vigilance requise"
                             : `${viewers.length} contact${viewers.length !== 1 ? "s" : ""} identifié${viewers.length !== 1 ? "s" : ""}`}
-                          {daysSinceSignal !== undefined && daysSinceSignal > 7
-                            ? ` · Deal qui refroidit — aucune activité depuis ${daysSinceSignal}j`
-                            : daysSinceSignal !== undefined && daysSinceSignal > 0
-                              ? ` · aucune activité depuis ${daysSinceSignal}j`
-                              : ""}
+                          {daysSinceSignal !== undefined && daysSinceSignal >= 90
+                            ? ""
+                            : daysSinceSignal !== undefined && daysSinceSignal > 7
+                              ? ` · Deal qui refroidit — aucune activité depuis ${daysSinceSignal}j`
+                              : daysSinceSignal !== undefined && daysSinceSignal > 0
+                                ? ` · aucune activité depuis ${daysSinceSignal}j`
+                                : ""}
                           {" · "}{stageLabel}
                         </p>
                       </div>
@@ -2003,9 +2007,9 @@ export default function CampaignDetail() {
               {/* Preview line */}
               <CardContent className="pt-0 px-4 pb-1">
                 <p className="text-xs text-muted-foreground">
-                  {daysSinceSignal !== undefined && daysSinceSignal > 5
+                  {daysSinceSignal !== undefined && daysSinceSignal > 5 && daysSinceSignal < 90
                     ? `Aucune activité depuis ${daysSinceSignal}j — que s'est-il passé ?`
-                    : "Aucun signal offline"}
+                    : "Aucun signal reçu pour le moment."}
                 </p>
               </CardContent>
               <div id="offline-signal-widget" data-offline-content className="hidden">

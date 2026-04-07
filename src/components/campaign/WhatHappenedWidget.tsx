@@ -95,11 +95,16 @@ ${text.trim()}`
             campaign_id: campaignId,
             event_type: "offline_signal",
             event_layer: "declared",
-            event_data: {
-              signal: "ae_input",
-              label: text.trim(),
-              ...enrichedData,
-            },
+          event_data: {
+            signal: "ae_input",
+            label: text.trim(),
+            raw_text: enrichedData.raw_text ?? text.trim(),
+            sentiment: enrichedData.sentiment ?? "neutral",
+            impact: enrichedData.impact ?? "low",
+            contacts_detected: enrichedData.contacts_detected ?? [],
+            summary_fr: enrichedData.summary_fr ?? text.trim().slice(0, 100),
+            signal_layer: "declared",
+          },
           },
         }
       );

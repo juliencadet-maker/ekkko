@@ -56,7 +56,7 @@ function getQualifiedActivity(eventType: string | undefined): string | null {
 
 // ─── Status label mapping ───────────────────────────────────────────
 const STATUS_LABELS: Record<string, string> = {
-  draft: "En préparation",
+  draft: "Vidéo en cours",
   active: "En cours",
   observing: "Actif",
   snoozed: "En veille",
