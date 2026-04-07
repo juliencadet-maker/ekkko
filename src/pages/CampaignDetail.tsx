@@ -773,7 +773,7 @@ export default function CampaignDetail() {
           )
         : [];
       setDetectedContacts(contacts);
-      setTimeout(() => setDetectedContacts([]), 8000);
+      setTimeout(() => setDetectedContacts([]), 20000);
     } catch (err) {
       console.error("[free_signal]", err);
       setFreeSignalStatus("error");
