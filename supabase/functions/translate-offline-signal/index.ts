@@ -17,7 +17,8 @@ Retourne UNIQUEMENT un objet JSON valide, sans markdown, sans backticks, sans te
     { "type": "string", "value": "string" }
   ],
   "stage_hint": "string ou null",
-  "sentiment": "positif | neutre | negatif | null"
+  "sentiment": "positif | neutre | negatif | null",
+  "contacts_detected": ["titre ou nom de contact mentionné"]
 }
 
 Règles strictes sur signals.type — utilise UNIQUEMENT ces valeurs si applicable :
