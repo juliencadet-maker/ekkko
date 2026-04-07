@@ -306,12 +306,13 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
     const seenDeclared = new Set<string>();
     return declaredContacts
       .filter((dc) => {
-        const key = normalize(dc.role || "");
+        const label = dc.insight_reasons?.label || dc.role || "";
+        const key = normalize(label);
         if (!key || seenDeclared.has(key)) return false;
         seenDeclared.add(key);
         return true;
       })
-      .filter((dc) => !observedLabels.has(normalize(dc.role || "")));
+      .filter((dc) => !observedLabels.has(normalize(dc.insight_reasons?.label || dc.role || "")));
   }, [declaredContacts, viewers]);
 
   // État vide si aucun viewer eligible
