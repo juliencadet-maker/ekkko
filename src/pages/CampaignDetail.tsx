@@ -222,7 +222,8 @@ export default function CampaignDetail() {
   const [offlineSignalSent, setOfflineSignalSent] = useState(false);
   const [freeSignalText, setFreeSignalText] = useState("");
   const [freeSignalLoading, setFreeSignalLoading] = useState(false);
-  const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
+   const [freeSignalStatus, setFreeSignalStatus] = useState<"idle" | "success" | "error">("idle");
+  const [detectedContacts, setDetectedContacts] = useState<string[]>([]);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   // E3 — Guardrails + execution token
   const [guardrailBlocked, setGuardrailBlocked] = useState<string | null>(null);
@@ -759,12 +760,20 @@ export default function CampaignDetail() {
     setFreeSignalLoading(true);
     setFreeSignalStatus("idle");
     try {
-      const { error } = await supabase.functions.invoke("translate-offline-signal", {
+      const { data, error } = await supabase.functions.invoke("translate-offline-signal", {
         body: { campaign_id: id, raw_input: freeSignalText.trim() },
       });
       if (error) throw error;
       setFreeSignalText("");
       setFreeSignalStatus("success");
+
+      const contacts: string[] = Array.isArray(data?.extracted?.contacts_detected)
+        ? (data.extracted.contacts_detected as string[]).filter(
+            (c: string) => typeof c === "string" && c.trim().length > 0
+          )
+        : [];
+      setDetectedContacts(contacts);
+      setTimeout(() => setDetectedContacts([]), 8000);
     } catch (err) {
       console.error("[free_signal]", err);
       setFreeSignalStatus("error");
@@ -1932,8 +1941,18 @@ export default function CampaignDetail() {
                     {freeSignalLoading ? "Traitement…" : "Enregistrer"}
                   </button>
                 </div>
-                {freeSignalStatus === "success" && (
+                {freeSignalStatus === "success" && detectedContacts.length === 0 && (
                   <p className="text-[10px] text-accent mt-1">Signal enregistré.</p>
+                )}
+                {freeSignalStatus === "success" && detectedContacts.length > 0 && (
+                  <div className="mt-2 p-2 rounded-lg border border-blue-200 bg-blue-50/40">
+                    <p className="text-[11px] font-medium" style={{ color: "#3B82F6" }}>
+                      Signal enregistré — Contact détecté : {detectedContacts.join(", ")}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Visible dans la PowerMap · Ajoutez le nom complet si disponible.
+                    </p>
+                  </div>
                 )}
                 {freeSignalStatus === "error" && (
                   <p className="text-[10px] text-destructive mt-1">Erreur d'enregistrement.</p>

@@ -219,6 +219,56 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Contacts déclarés → deal_contact_roles (fire-and-forget) ──────────
+    const rawContacts: unknown[] = Array.isArray(extracted?.contacts_detected)
+      ? extracted.contacts_detected
+      : [];
+
+    const KNOWN_TITLES = [
+      "dsi", "daf", "drh", "cfo", "ceo", "cto", "coo", "cmo", "vp",
+      "directeur", "directrice", "responsable", "manager",
+      "président", "présidente", "associé", "associée",
+      "partner", "head of", "chief",
+    ];
+
+    const qualityContacts = (rawContacts as string[]).filter((c) => {
+      if (typeof c !== "string") return false;
+      const trimmed = c.trim();
+      if (trimmed.length < 2 || trimmed.length > 80) return false;
+      const lower = trimmed.toLowerCase();
+      const hasKnownTitle = KNOWN_TITLES.some((t) => lower.includes(t));
+      const words = trimmed.split(/\s+/);
+      const hasTwoWordsWithMaj =
+        words.length >= 2 &&
+        words.some((w) => /^[A-ZÀÂÉÈÊËÎÏÔÙÛÜÇ]/.test(w));
+      return hasKnownTitle || hasTwoWordsWithMaj;
+    });
+
+    if (qualityContacts.length > 0) {
+      const contactRoleInserts = qualityContacts.map((contact: string) => ({
+        campaign_id,
+        source: "declared",
+        role: contact.trim(),
+        layer: null,
+        viewer_id: null,
+        confidence: 0.6,
+        insight_reasons: {
+          from: "offline_signal",
+          raw: raw_input.slice(0, 200),
+          event_id: inserted.id,
+          note: "role = libellé détecté, pas rôle moteur canonique",
+        },
+      }));
+
+      adminClient
+        .from("deal_contact_roles")
+        .insert(contactRoleInserts)
+        .catch((e: unknown) =>
+          console.error("[translate-offline-signal] deal_contact_roles insert failed:", e)
+        );
+    }
+    // ── fin contacts déclarés ────────────────────────────────────────────
+
     return new Response(
       JSON.stringify({ success: true, event_id: inserted.id, extracted }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
