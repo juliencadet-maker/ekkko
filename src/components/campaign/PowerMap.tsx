@@ -184,6 +184,21 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers }: PowerM
   const [filterSpecial, setFilterSpecial] = useState<string>("none");
   const [selectedEntry, setSelectedEntry] = useState<PowerMapEntry | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "committee">("grid");
+  const [declaredContacts, setDeclaredContacts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    supabase
+      .from("deal_contact_roles")
+      .select("id, role, confidence, created_at")
+      .eq("campaign_id", campaignId)
+      .eq("source", "declared")
+      .is("viewer_id", null)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setDeclaredContacts(data);
+      });
+  }, [campaignId]);
 
   const handleStatClick = (status: string, special: string = "none") => {
     if (special !== "none") {
