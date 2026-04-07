@@ -775,6 +775,7 @@ export default function CampaignDetail() {
         : [];
       setDetectedContacts(contacts);
       setTimeout(() => setDetectedContacts([]), 20000);
+      setPowerMapRefresh((n) => n + 1);
     } catch (err) {
       console.error("[free_signal]", err);
       setFreeSignalStatus("error");
@@ -2148,7 +2149,7 @@ export default function CampaignDetail() {
                     </div>
                   </div>
                 ) : (
-                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} viewers={viewers} committeeLayers={committeeLayers} />
+                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} viewers={viewers} committeeLayers={committeeLayers} refreshTrigger={powerMapRefresh} />
                 )}
               </CardContent>
             </Card>
