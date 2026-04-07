@@ -1213,7 +1213,7 @@ export default function CampaignDetail() {
   })();
 
   const DEAL_STATE_CONFIG: Record<string, { label: string; emoji: string; cls: string }> = {
-    draft: { label: "Brouillon", emoji: "⚪", cls: "bg-muted text-muted-foreground border-border" },
+    draft: { label: "Vidéo en cours", emoji: "⚪", cls: "bg-muted text-muted-foreground border-border" },
     preparing: { label: "En préparation", emoji: "🟡", cls: "bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30" },
     ready: { label: "Prêt à envoyer", emoji: "🟢", cls: "bg-accent/15 text-accent border-accent/30" },
     sent: { label: "Envoyé au prospect", emoji: "🔵", cls: "bg-[hsl(var(--info))]/15 text-[hsl(var(--info))] border-[hsl(var(--info))]/30" },
@@ -2265,13 +2265,13 @@ export default function CampaignDetail() {
                           {campaign.status !== 'generating' && campaign.status !== 'pending_approval' && (
                             <>
                               <div className="flex flex-wrap justify-center gap-2">
-                                <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
+                                <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => { if (!id) { console.error("campaignId manquant"); return; } navigate(`/app/share?campaignId=${id}`); }}>
                                   <Video className="mr-2 h-3.5 w-3.5" /> Envoyer une vidéo
                                 </Button>
-                                <Button size="sm" variant="outline" className="rounded-cta">
+                                <Button size="sm" variant="outline" className="rounded-cta" onClick={() => { if (!id) { console.error("campaignId manquant"); return; } navigate(`/app/share?campaignId=${id}`); }}>
                                   <FileText className="mr-2 h-3.5 w-3.5" /> Partager un document
                                 </Button>
-                                <Button size="sm" variant="outline" className="rounded-cta">
+                                <Button size="sm" variant="outline" className="rounded-cta" onClick={() => { if (!id) { console.error("campaignId manquant"); return; } navigate(`/app/share?campaignId=${id}`); }}>
                                   <Download className="mr-2 h-3.5 w-3.5" /> Importer un fichier
                                 </Button>
                               </div>

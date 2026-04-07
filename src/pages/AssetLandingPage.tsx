@@ -304,9 +304,14 @@ export default function AssetLandingPage() {
         if (videoData?.known_contacts?.length > 0) {
           setKnownContacts(videoData.known_contacts);
         }
+        // Topics : visible uniquement si deal_experience_mode = "deal_room"
+        // Masqués par défaut — reset explicite obligatoire
         const rawTopics = videoData?.topics_enabled;
-        if (rawTopics && rawTopics.length > 0) {
+        const dealMode = videoData?.experience_mode;
+        if (rawTopics && rawTopics.length > 0 && dealMode === "deal_room") {
           setTopicsEnabled(rawTopics);
+        } else {
+          setTopicsEnabled([]); // reset explicite — évite l'état résiduel React
         }
 
         // D1b: Resolve token (couche 1)
@@ -958,11 +963,17 @@ export default function AssetLandingPage() {
 
       {/* HEADER HUMAIN */}
       <header className="py-8 px-6 text-center">
-        <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3"
-          style={{ backgroundColor: config.brandColor }}>
-          {aeInitials || "?"}
-        </div>
-        <p className="text-sm font-semibold text-foreground">{aeName}</p>
+        {isPreviewMode ? (
+          <div className="w-12 h-12 rounded-full bg-muted mx-auto mb-3" />
+        ) : (
+          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3"
+            style={{ backgroundColor: config.brandColor }}>
+            {aeInitials || "?"}
+          </div>
+        )}
+        <p className="text-sm font-semibold text-foreground">
+          {isPreviewMode ? (campaignName || "Votre espace de collaboration") : aeName}
+        </p>
         {prospectMessage && (
           <p className="text-xs text-muted-foreground italic mt-1 max-w-xs mx-auto leading-relaxed">
             {prospectMessage}

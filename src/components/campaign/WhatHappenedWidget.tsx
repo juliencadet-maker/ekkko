@@ -88,14 +88,29 @@ ${text.trim()}`
         enrichedData.summary_fr = text.trim().slice(0, 80);
       }
 
-      await supabase.from("timeline_events").insert([{
-        campaign_id: campaignId,
-        event_type: "offline_signal",
-        event_layer: "declared",
-        event_data: enrichedData as any,
-      }]);
+      const { error: invokeError } = await supabase.functions.invoke(
+        "log-offline-signal",
+        {
+          body: {
+            campaign_id: campaignId,
+            event_type: "offline_signal",
+            event_layer: "declared",
+            event_data: {
+              signal: "ae_input",
+              label: text.trim(),
+              ...enrichedData,
+            },
+          },
+        }
+      );
 
-      toast.success("Signal enregistre");
+      if (invokeError) {
+        console.error("[WhatHappenedWidget] log-offline-signal failed:", invokeError);
+        toast.error("Erreur lors de l'enregistrement");
+        return;
+      }
+
+      toast.success("Signal enregistré");
       setText("");
     } catch {
       toast.error("Erreur lors de l'enregistrement");
