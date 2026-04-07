@@ -242,6 +242,28 @@ export default function AssetLandingPage() {
   }, []);
 
   // ─── Fetch campaign data ───
+  // ── Phase 0 : Event tracking landing_opened ────────────────────────────
+  // Règles : pas si preview, pas si AE authentifié, 1 seul par session
+  useEffect(() => {
+    if (campaignId && !isPreviewMode) {
+      const sessionKey = `landing_tracked_${campaignId}`;
+      const alreadyTracked = sessionStorage.getItem(sessionKey);
+      if (!alreadyTracked) {
+        sessionStorage.setItem(sessionKey, "1");
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/log-landing-event`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            campaign_id: campaignId,
+            ref: referredBy ?? null,
+            event_category: "activation",
+          }),
+        }).catch((e) => console.error("audit_log_failed:landing_opened", e));
+      }
+    }
+  }, [campaignId, isPreviewMode, referredBy]);
+  // ── fin Phase 0 ────────────────────────────────────────────────────────
+
   useEffect(() => {
     const fetchCampaign = async () => {
       if (!campaignId) {
