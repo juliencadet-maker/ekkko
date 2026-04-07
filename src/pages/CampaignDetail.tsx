@@ -2115,42 +2115,7 @@ export default function CampaignDetail() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {viewers.length === 0 ? (
-                  <div className="py-8">
-                    <div className="flex justify-center gap-8 mb-6">
-                      {["Direction", "Finance", "Metier"].map((role) => (
-                        <div key={role} className="flex flex-col items-center gap-2">
-                          <div className="w-14 h-14 rounded-full bg-[#D5D2CB]/40 border-2 border-[#D5D2CB] flex items-center justify-center">
-                            <Users className="h-5 w-5 text-[#D5D2CB]" />
-                          </div>
-                          <span className="text-xs text-[#D5D2CB] font-medium">{role}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-center gap-4 mb-6">
-                      <div className="w-px h-6 bg-[#D5D2CB]/30" />
-                      <div className="w-20 h-px bg-[#D5D2CB]/30 self-center" />
-                      <div className="w-px h-6 bg-[#D5D2CB]/30" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-foreground mb-1">Aucun écho identifié sur ce deal.</p>
-                      <p className="text-xs text-muted-foreground mb-4">Envoyez un contenu pour générer les premiers signaux.</p>
-                      <Button size="sm" className="rounded-cta bg-accent text-accent-foreground hover:bg-accent/90">
-                        <Plus className="mr-2 h-3.5 w-3.5" /> Ajouter un contact
-                      </Button>
-                      <div className="mt-6 text-left max-w-xs mx-auto">
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Contacts suggérés à identifier :</p>
-                        <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                          <li>Un décideur Finance (CFO, DAF)</li>
-                          <li>Un sponsor métier</li>
-                          <li>Un contact technique si le deal le nécessite</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} viewers={viewers} committeeLayers={committeeLayers} refreshTrigger={powerMapRefresh} />
-                )}
+                <PowerMap campaignId={campaign.id} orgId={membership?.org_id || ""} viewers={viewers} committeeLayers={committeeLayers} refreshTrigger={powerMapRefresh} />
               </CardContent>
             </Card>
           </SectionGuard>

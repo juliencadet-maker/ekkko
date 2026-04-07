@@ -197,8 +197,7 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
       .is("viewer_id", null)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        console.log("[PowerMap] declared contacts query:", { data, error, campaignId, refreshTrigger });
+      .then(({ data }) => {
         if (data) setDeclaredContacts(data);
       });
   }, [campaignId, refreshTrigger]);
