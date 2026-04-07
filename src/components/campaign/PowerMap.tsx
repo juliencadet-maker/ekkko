@@ -191,7 +191,7 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
     if (!campaignId) return;
     supabase
       .from("deal_contact_roles")
-      .select("id, role, confidence, created_at")
+      .select("id, role, confidence, created_at, insight_reasons")
       .eq("campaign_id", campaignId)
       .eq("source", "declared")
       .is("viewer_id", null)
@@ -306,12 +306,13 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
     const seenDeclared = new Set<string>();
     return declaredContacts
       .filter((dc) => {
-        const key = normalize(dc.role || "");
+        const label = dc.insight_reasons?.label || dc.role || "";
+        const key = normalize(label);
         if (!key || seenDeclared.has(key)) return false;
         seenDeclared.add(key);
         return true;
       })
-      .filter((dc) => !observedLabels.has(normalize(dc.role || "")));
+      .filter((dc) => !observedLabels.has(normalize(dc.insight_reasons?.label || dc.role || "")));
   }, [declaredContacts, viewers]);
 
   // État vide si aucun viewer eligible
@@ -658,7 +659,7 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-medium text-foreground">
-                        {contact.role || "Inconnu"}
+                        {contact.insight_reasons?.label || contact.role || "Inconnu"}
                       </span>
                       <span
                         className="text-[9px] font-semibold px-1 py-0.5 rounded"
