@@ -250,12 +250,13 @@ Deno.serve(async (req) => {
       const contactRoleInserts = qualityContacts.map((contact: string) => ({
         campaign_id,
         source: "declared",
-        role: contact.trim(),
+        role: "unknown",
         layer: null,
         viewer_id: null,
         confidence: 0.6,
         insight_reasons: {
           from: "offline_signal",
+          label: contact.trim(),
           raw: raw_input.slice(0, 200),
           event_id: inserted.id,
           note: "role = libellé détecté, pas rôle moteur canonique",
