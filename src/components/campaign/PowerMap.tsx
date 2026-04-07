@@ -292,6 +292,27 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers }: PowerM
     [filteredEntries]
   );
 
+  // ── Déduplication contacts déclarés ──────────────────────────────────
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\b(le|la|les|un|une|the|a)\b/g, "").trim();
+
+  const uniqueDeclaredContacts = useMemo(() => {
+    const observedLabels = new Set(
+      viewers
+        .map((v: any) => normalize(v.title || v.name || ""))
+        .filter(Boolean)
+    );
+    const seenDeclared = new Set<string>();
+    return declaredContacts
+      .filter((dc) => {
+        const key = normalize(dc.role || "");
+        if (!key || seenDeclared.has(key)) return false;
+        seenDeclared.add(key);
+        return true;
+      })
+      .filter((dc) => !observedLabels.has(normalize(dc.role || "")));
+  }, [declaredContacts, viewers]);
+
   // État vide si aucun viewer eligible
   if (entries.length === 0) {
     return (
@@ -608,6 +629,53 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers }: PowerM
               })}
             </div>
           </TooltipProvider>
+        )}
+
+        {/* Declared contacts section */}
+        {uniqueDeclaredContacts.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">
+              Contacts déclarés
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {uniqueDeclaredContacts.map((contact) => {
+                const daysAgo = contact.created_at
+                  ? Math.floor(
+                      (Date.now() - new Date(contact.created_at).getTime()) / 86400000
+                    )
+                  : null;
+                const dateLabel =
+                  daysAgo === 0 ? "Aujourd'hui"
+                  : daysAgo === 1 ? "Hier"
+                  : daysAgo !== null ? `Il y a ${daysAgo}j`
+                  : "";
+                return (
+                  <div
+                    key={contact.id}
+                    className="flex flex-col gap-0.5 px-2 py-1.5 rounded-lg border"
+                    style={{ borderColor: "#3B82F6", backgroundColor: "#EFF6FF" }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-medium text-foreground">
+                        {contact.role || "Inconnu"}
+                      </span>
+                      <span
+                        className="text-[9px] font-semibold px-1 py-0.5 rounded"
+                        style={{ color: "#3B82F6", backgroundColor: "#DBEAFE" }}
+                      >
+                        DÉCLARÉ
+                      </span>
+                    </div>
+                    {dateLabel && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {dateLabel}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 
