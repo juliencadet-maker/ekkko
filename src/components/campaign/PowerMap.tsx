@@ -315,8 +315,8 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
       .filter((dc) => !observedLabels.has(normalize(dc.insight_reasons?.label || dc.role || "")));
   }, [declaredContacts, viewers]);
 
-  // État vide si aucun viewer eligible
-  if (entries.length === 0) {
+  // État vide uniquement s'il n'y a ni viewers observés ni contacts déclarés
+  if (entries.length === 0 && uniqueDeclaredContacts.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
