@@ -191,7 +191,7 @@ export function PowerMap({ campaignId, orgId, viewers, committeeLayers, refreshT
     if (!campaignId) return;
     supabase
       .from("deal_contact_roles")
-      .select("id, role, confidence, created_at")
+      .select("id, role, confidence, created_at, insight_reasons")
       .eq("campaign_id", campaignId)
       .eq("source", "declared")
       .is("viewer_id", null)
