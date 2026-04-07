@@ -265,8 +265,11 @@ Deno.serve(async (req) => {
       adminClient
         .from("deal_contact_roles")
         .insert(contactRoleInserts)
+        .then(({ error: insertErr }) => {
+          if (insertErr) console.error("[translate-offline-signal] deal_contact_roles insert failed:", insertErr);
+        })
         .catch((e: unknown) =>
-          console.error("[translate-offline-signal] deal_contact_roles insert failed:", e)
+          console.error("[translate-offline-signal] deal_contact_roles insert exception:", e)
         );
     }
     // ── fin contacts déclarés ────────────────────────────────────────────
