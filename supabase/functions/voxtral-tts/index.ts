@@ -116,7 +116,7 @@ serve(async (req) => {
     const refVideoResponse = await fetch(signedUrlData.signedUrl);
     if (!refVideoResponse.ok) {
       return new Response(
-        JSON.stringify({ error: "Failed to download reference video" }),
+        JSON.stringify({ error: "Failed to download voice reference" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
