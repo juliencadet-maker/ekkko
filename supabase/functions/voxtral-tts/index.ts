@@ -105,7 +105,7 @@ serve(async (req) => {
     if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error("Signed URL error:", signedUrlError);
       return new Response(
-        JSON.stringify({ error: "Failed to generate reference video URL" }),
+        JSON.stringify({ error: "Failed to generate voice reference URL" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
