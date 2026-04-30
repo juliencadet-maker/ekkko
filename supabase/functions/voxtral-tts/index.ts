@@ -37,9 +37,8 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -69,9 +68,22 @@ serve(async (req) => {
       );
     }
 
-    // Prefer dedicated voice reference audio, fall back to reference video
+    // Voice reference fallback chain : audio_source_path → metadata.voice_reference_path → reference_video_path (legacy)
     const metadata = (identity.metadata as Record<string, unknown>) || {};
-    const voiceReferencePath = (metadata.voice_reference_path as string) || identity.reference_video_path;
+    const voiceReferencePath =
+      (identity.audio_source_path as string | null)
+      || (metadata.voice_reference_path as string | null)
+      || identity.reference_video_path;
+
+    const voiceSource = identity.audio_source_path
+      ? "audio_source_path"
+      : metadata.voice_reference_path
+        ? "metadata.voice_reference_path"
+        : identity.reference_video_path
+          ? "reference_video_path (legacy)"
+          : "none";
+
+    console.log("Voxtral voice source selected:", voiceSource);
 
     if (!voiceReferencePath) {
       return new Response(
@@ -80,7 +92,7 @@ serve(async (req) => {
       );
     }
 
-    // Get a signed URL for the reference video (used as voice prompt)
+    // Get a signed URL for the voice reference (audio or video file)
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -93,18 +105,18 @@ serve(async (req) => {
     if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error("Signed URL error:", signedUrlError);
       return new Response(
-        JSON.stringify({ error: "Failed to generate reference video URL" }),
+        JSON.stringify({ error: "Failed to generate voice reference URL" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Generating Voxtral TTS for identity ${identity_id}, voice ref: ${voiceReferencePath}, script length: ${script.length}`);
+    console.log(`Generating Voxtral TTS for identity ${identity_id}, source: ${voiceSource}, script length: ${script.length}`);
 
-    // Download the reference video to use as voice prompt
+    // Download the voice reference to use as voice prompt
     const refVideoResponse = await fetch(signedUrlData.signedUrl);
     if (!refVideoResponse.ok) {
       return new Response(
-        JSON.stringify({ error: "Failed to download reference video" }),
+        JSON.stringify({ error: "Failed to download voice reference" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

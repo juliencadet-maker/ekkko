@@ -404,6 +404,7 @@ export type Database = {
           approved_at: string | null
           approved_by_user_id: string | null
           committee_size_declared: number | null
+          company_display_name: string | null
           completed_at: string | null
           created_at: string
           created_by_user_id: string | null
@@ -441,6 +442,7 @@ export type Database = {
           approved_at?: string | null
           approved_by_user_id?: string | null
           committee_size_declared?: number | null
+          company_display_name?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -478,6 +480,7 @@ export type Database = {
           approved_at?: string | null
           approved_by_user_id?: string | null
           committee_size_declared?: number | null
+          company_display_name?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -858,25 +861,31 @@ export type Database = {
       }
       deal_rooms: {
         Row: {
+          audio_status: string
           campaign_id: string
           created_at: string
           id: string
           is_public: boolean | null
           slug: string | null
+          video_status: string
         }
         Insert: {
+          audio_status?: string
           campaign_id: string
           created_at?: string
           id?: string
           is_public?: boolean | null
           slug?: string | null
+          video_status?: string
         }
         Update: {
+          audio_status?: string
           campaign_id?: string
           created_at?: string
           id?: string
           is_public?: boolean | null
           slug?: string | null
+          video_status?: string
         }
         Relationships: [
           {
@@ -1170,6 +1179,7 @@ export type Database = {
       }
       identities: {
         Row: {
+          audio_source_path: string | null
           clone_status: string | null
           consent_given: boolean | null
           consent_given_at: string | null
@@ -1189,6 +1199,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audio_source_path?: string | null
           clone_status?: string | null
           consent_given?: boolean | null
           consent_given_at?: string | null
@@ -1208,6 +1219,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audio_source_path?: string | null
           clone_status?: string | null
           consent_given?: boolean | null
           consent_given_at?: string | null
