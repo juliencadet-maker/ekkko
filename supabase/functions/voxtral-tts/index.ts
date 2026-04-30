@@ -68,9 +68,22 @@ serve(async (req) => {
       );
     }
 
-    // Prefer dedicated voice reference audio, fall back to reference video
+    // Voice reference fallback chain : audio_source_path → metadata.voice_reference_path → reference_video_path (legacy)
     const metadata = (identity.metadata as Record<string, unknown>) || {};
-    const voiceReferencePath = (metadata.voice_reference_path as string) || identity.reference_video_path;
+    const voiceReferencePath =
+      (identity.audio_source_path as string | null)
+      || (metadata.voice_reference_path as string | null)
+      || identity.reference_video_path;
+
+    const voiceSource = identity.audio_source_path
+      ? "audio_source_path"
+      : metadata.voice_reference_path
+        ? "metadata.voice_reference_path"
+        : identity.reference_video_path
+          ? "reference_video_path (legacy)"
+          : "none";
+
+    console.log("Voxtral voice source selected:", voiceSource);
 
     if (!voiceReferencePath) {
       return new Response(
