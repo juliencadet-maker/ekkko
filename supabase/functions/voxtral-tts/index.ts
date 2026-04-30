@@ -92,7 +92,7 @@ serve(async (req) => {
       );
     }
 
-    // Get a signed URL for the reference video (used as voice prompt)
+    // Get a signed URL for the voice reference (audio or video file)
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
