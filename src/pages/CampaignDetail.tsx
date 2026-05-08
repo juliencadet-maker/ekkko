@@ -72,6 +72,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Campaign, Video as VideoType, Recipient } from "@/types/database";
+import { DealContentTab } from "@/components/campaign/deal-content/DealContentTab";
 
 // ─── Section Error Boundary ─────────────────────────────────────────
 interface SectionGuardProps { children: ReactNode; name?: string; }
