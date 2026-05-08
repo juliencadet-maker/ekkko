@@ -26,6 +26,7 @@ serve(async (req) => {
       asset_id, campaign_id, viewer_hash, event_type,
       time_spent_seconds, viewer_email, viewer_name,
       referred_by_hash, asset_purpose,
+      link_token, // Phase 1c-2 R3 — optional, only on link_click
     } = body;
 
     // Validation requise
