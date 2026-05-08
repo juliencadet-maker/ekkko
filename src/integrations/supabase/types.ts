@@ -932,6 +932,78 @@ export type Database = {
           },
         ]
       }
+      deal_room_version: {
+        Row: {
+          audio_duration_ms: number | null
+          audio_status: string
+          audio_storage_path: string | null
+          campaign_id: string
+          created_at: string
+          created_by_user_id: string | null
+          deal_room_id: string
+          id: string
+          is_active: boolean
+          metadata: Json
+          org_id: string
+          provider_audio: string | null
+          provider_job_id: string | null
+          provider_video: string | null
+          script_naturalized: string | null
+          script_raw_text: string | null
+          updated_at: string
+          version_number: number
+          video_duration_ms: number | null
+          video_status: string
+          video_storage_path: string | null
+        }
+        Insert: {
+          audio_duration_ms?: number | null
+          audio_status?: string
+          audio_storage_path?: string | null
+          campaign_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deal_room_id: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          org_id: string
+          provider_audio?: string | null
+          provider_job_id?: string | null
+          provider_video?: string | null
+          script_naturalized?: string | null
+          script_raw_text?: string | null
+          updated_at?: string
+          version_number?: number
+          video_duration_ms?: number | null
+          video_status?: string
+          video_storage_path?: string | null
+        }
+        Update: {
+          audio_duration_ms?: number | null
+          audio_status?: string
+          audio_storage_path?: string | null
+          campaign_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          deal_room_id?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          org_id?: string
+          provider_audio?: string | null
+          provider_job_id?: string | null
+          provider_video?: string | null
+          script_naturalized?: string | null
+          script_raw_text?: string | null
+          updated_at?: string
+          version_number?: number
+          video_duration_ms?: number | null
+          video_status?: string
+          video_storage_path?: string | null
+        }
+        Relationships: []
+      }
       deal_rooms: {
         Row: {
           audio_status: string
@@ -1250,10 +1322,44 @@ export type Database = {
           },
         ]
       }
+      idempotency_keys: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          expires_at: string
+          key: string
+          org_id: string | null
+          request_hash: string | null
+          response: Json | null
+          scope: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          expires_at?: string
+          key: string
+          org_id?: string | null
+          request_hash?: string | null
+          response?: Json | null
+          scope: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          expires_at?: string
+          key?: string
+          org_id?: string | null
+          request_hash?: string | null
+          response?: Json | null
+          scope?: string
+        }
+        Relationships: []
+      }
       identities: {
         Row: {
           audio_source_path: string | null
           clone_status: string | null
+          cloning_active: boolean
           consent_given: boolean | null
           consent_given_at: string | null
           created_at: string
@@ -1274,6 +1380,7 @@ export type Database = {
         Insert: {
           audio_source_path?: string | null
           clone_status?: string | null
+          cloning_active?: boolean
           consent_given?: boolean | null
           consent_given_at?: string | null
           created_at?: string
@@ -1294,6 +1401,7 @@ export type Database = {
         Update: {
           audio_source_path?: string | null
           clone_status?: string | null
+          cloning_active?: boolean
           consent_given?: boolean | null
           consent_given_at?: string | null
           created_at?: string
@@ -1504,6 +1612,7 @@ export type Database = {
           avatar_url: string | null
           company: string | null
           created_at: string
+          deactivated_at: string | null
           default_identity_id: string | null
           email: string
           first_name: string | null
@@ -1522,6 +1631,7 @@ export type Database = {
           avatar_url?: string | null
           company?: string | null
           created_at?: string
+          deactivated_at?: string | null
           default_identity_id?: string | null
           email: string
           first_name?: string | null
@@ -1540,6 +1650,7 @@ export type Database = {
           avatar_url?: string | null
           company?: string | null
           created_at?: string
+          deactivated_at?: string | null
           default_identity_id?: string | null
           email?: string
           first_name?: string | null
