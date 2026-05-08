@@ -320,15 +320,18 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    const { error: updateError } = await supabase
-      .from("campaigns")
-      .update({
-        script_oral: scriptOral,
-        script_oral_generated_at: new Date().toISOString(),
-      })
-      .eq("id", campaign_id);
+    // Phase 1c-2 — Guardrail V0 : write campaigns.script_oral via the
+    // single legitimate RPC (validates token + flags transaction + UPDATE atomically).
+    const v0Token = Deno.env.get("V0_WRITER_TOKEN");
+    if (!v0Token) throw new Error("V0_WRITER_TOKEN env var not set");
 
-    if (updateError) throw updateError;
+    const { error: rpcError } = await supabase.rpc("v0_update_script_oral", {
+      p_token: v0Token,
+      p_campaign_id: campaign_id,
+      p_script_oral: scriptOral,
+      p_generated_at: new Date().toISOString(),
+    });
+    if (rpcError) throw rpcError;
 
     return new Response(
       JSON.stringify({ ok: true, script_oral: scriptOral }),
