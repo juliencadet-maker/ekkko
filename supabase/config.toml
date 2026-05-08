@@ -78,6 +78,9 @@ verify_jwt = false
 [functions.deal-trigger-notify]
 verify_jwt = false
 
+[functions.prospect-room-ai]
+verify_jwt = false
+
 [functions.deal-assets-attach]
 verify_jwt = false
 
