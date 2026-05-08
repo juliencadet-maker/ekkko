@@ -9,6 +9,7 @@ const corsHeaders = {
 const VALID_EVENTS = [
   "doc_opened", "doc_time_on_page", "doc_downloaded",
   "doc_return_visit", "doc_closed_without_read",
+  "link_click",
 ];
 
 const THRESHOLDS: Record<string, number> = {
@@ -25,6 +26,7 @@ serve(async (req) => {
       asset_id, campaign_id, viewer_hash, event_type,
       time_spent_seconds, viewer_email, viewer_name,
       referred_by_hash, asset_purpose,
+      link_token, // Phase 1c-2 R3 — optional, only on link_click
     } = body;
 
     // Validation requise
@@ -144,7 +146,7 @@ serve(async (req) => {
       );
     }
 
-    // 4. INSERT asset_page_events
+    // 4. INSERT asset_page_events (intact, + link_token if link_click)
     const timeBucket = Math.floor(Date.now() / 30000);
     const event_hash = `${campaign_id}_${asset_id}_${viewer_hash}_${event_type}_${timeBucket}`;
     await supabase.from("asset_page_events").insert({
@@ -157,18 +159,59 @@ serve(async (req) => {
       page_number: null,       // non mesurable via iframe cross-origin en D2
       max_scroll_pct: null,    // non mesurable via iframe cross-origin en D2
       identity_cluster_id: null,
+      link_token: event_type === "link_click" && typeof link_token === "string" ? link_token : null,
     });
 
+    // 4b. Phase 1c-2 R3 — stats clicks sur asset_tracked_links
+    if (event_type === "link_click" && typeof link_token === "string" && link_token.length > 0) {
+      try {
+        // unique_viewer_count = COUNT DISTINCT viewer_id avec ce link_token
+        const { data: distinctRows } = await supabase
+          .from("asset_page_events")
+          .select("viewer_id")
+          .eq("link_token", link_token)
+          .not("viewer_id", "is", null);
+        const uniqueViewers = new Set(
+          (distinctRows ?? []).map((r: { viewer_id: string | null }) => r.viewer_id),
+        );
+        const unique_viewer_count = uniqueViewers.size;
+
+        const { data: linkRow } = await supabase
+          .from("asset_tracked_links")
+          .select("click_count, first_clicked_at")
+          .eq("link_token", link_token)
+          .maybeSingle();
+
+        if (linkRow) {
+          const nowIso = new Date().toISOString();
+          await supabase
+            .from("asset_tracked_links")
+            .update({
+              click_count: (linkRow.click_count ?? 0) + 1,
+              last_clicked_at: nowIso,
+              first_clicked_at: linkRow.first_clicked_at ?? nowIso,
+              unique_viewer_count,
+            })
+            .eq("link_token", link_token);
+        }
+      } catch (e) {
+        console.error("[track-document-events] link_click_stats_failed:", e);
+      }
+    }
+
     // 5. INSERT timeline_events
+    const timelineEventType =
+      event_type === "link_click" ? "asset_link_clicked" : event_type;
     await supabase.from("timeline_events").insert({
       campaign_id,
-      event_type,
+      event_type: timelineEventType,
       event_layer: "fact",
       event_data: {
         asset_id,
         asset_purpose: asset_purpose || null,
         time_spent_seconds: time_spent_seconds ?? null,
         viewer_id: viewerId,
+        ...(event_type === "link_click" && link_token ? { link_token } : {}),
       },
     });
 

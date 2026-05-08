@@ -347,6 +347,7 @@ export type Database = {
           event_type: string | null
           id: string
           identity_cluster_id: string | null
+          link_token: string | null
           max_scroll_pct: number | null
           page_number: number | null
           time_spent_seconds: number | null
@@ -360,6 +361,7 @@ export type Database = {
           event_type?: string | null
           id?: string
           identity_cluster_id?: string | null
+          link_token?: string | null
           max_scroll_pct?: number | null
           page_number?: number | null
           time_spent_seconds?: number | null
@@ -373,6 +375,7 @@ export type Database = {
           event_type?: string | null
           id?: string
           identity_cluster_id?: string | null
+          link_token?: string | null
           max_scroll_pct?: number | null
           page_number?: number | null
           time_spent_seconds?: number | null
@@ -410,6 +413,7 @@ export type Database = {
           created_at: string
           created_by_user_id: string | null
           deal_asset_id: string
+          first_clicked_at: string | null
           id: string
           last_clicked_at: string | null
           link_label: string | null
@@ -417,6 +421,7 @@ export type Database = {
           metadata: Json
           org_id: string
           target_url: string
+          unique_viewer_count: number
           updated_at: string
         }
         Insert: {
@@ -426,6 +431,7 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string | null
           deal_asset_id: string
+          first_clicked_at?: string | null
           id?: string
           last_clicked_at?: string | null
           link_label?: string | null
@@ -433,6 +439,7 @@ export type Database = {
           metadata?: Json
           org_id: string
           target_url: string
+          unique_viewer_count?: number
           updated_at?: string
         }
         Update: {
@@ -442,6 +449,7 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string | null
           deal_asset_id?: string
+          first_clicked_at?: string | null
           id?: string
           last_clicked_at?: string | null
           link_label?: string | null
@@ -449,6 +457,7 @@ export type Database = {
           metadata?: Json
           org_id?: string
           target_url?: string
+          unique_viewer_count?: number
           updated_at?: string
         }
         Relationships: []
