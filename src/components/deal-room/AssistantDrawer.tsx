@@ -45,6 +45,9 @@ export function AssistantDrawer({
   const [answer, setAnswer] = useState<string | null>(null);
   const [askLoading, setAskLoading] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
+  const [lastAskedQuestion, setLastAskedQuestion] = useState<string | null>(null);
+  const [asyncSent, setAsyncSent] = useState(false);
+  const [asyncLoading, setAsyncLoading] = useState(false);
 
   // Fetch summary on first open.
   useEffect(() => {
