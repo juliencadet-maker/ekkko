@@ -1,3 +1,7 @@
+// ⚠️ FICHIER PROTÉGÉ — pipeline voix INTOUCHABLE.
+// Modification autorisée UNIQUEMENT par décision Ju + Claude explicite.
+// Phase 1c-2 a ajouté le check `cloning_active = false → 423 Locked` (D60).
+// Toute autre modification sans GO décisionnel = REGRESSION GARANTIE pipeline V0.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -65,6 +69,14 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Identity not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Phase 1c-2 (D60) — cloning_active=false ⇒ 423 Locked. Pas de fallback silencieux.
+    if (identity.cloning_active === false) {
+      return new Response(
+        JSON.stringify({ error: "identity_locked", message: "Cette identité a été désactivée. Le clonage vocal n'est plus disponible." }),
+        { status: 423, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
