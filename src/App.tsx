@@ -28,6 +28,7 @@ import ProspectRoomRouter from "./pages/prospect/ProspectRoomRouter";
 import DealIntelligence from "./pages/DealIntelligence";
 import SharePage from "./pages/SharePage";
 import NotFound from "./pages/NotFound";
+import DealRoomMock from "./pages/design/DealRoomMock";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/auth/demo" element={<AuthDemo />} />
             <Route path="/lp/:campaignId" element={<ProspectRoomRouter />} />
             <Route path="/approve/:token" element={<ApprovalReview />} />
+            <Route path="/design/deal-room" element={<DealRoomMock />} />
             <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
             <Route path="/app" element={<Navigate to="/app/cockpit" replace />} />
             <Route path="/app/dashboard" element={<Navigate to="/app/cockpit" replace />} />
