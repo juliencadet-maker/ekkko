@@ -2194,7 +2194,6 @@ export default function CampaignDetail() {
 
         {/* ─── Tab 3: Assets ─── */}
         <TabsContent value="assets" className="space-y-6">
-        <TabsContent value="assets" className="space-y-6">
           <SectionGuard name="DealContentTab">
             <DealContentTab
               campaignId={id!}
