@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import ApprovalReview from "./pages/ApprovalReview";
@@ -45,7 +45,8 @@ const App = () => (
             <Route path="/lp/:campaignId" element={<ProspectRoomRouter />} />
             <Route path="/approve/:token" element={<ApprovalReview />} />
             <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
-            <Route path="/app/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+            <Route path="/app" element={<Navigate to="/app/cockpit" replace />} />
+            <Route path="/app/dashboard" element={<Navigate to="/app/cockpit" replace />} />
             <Route path="/app/cockpit" element={<AuthGuard><Cockpit /></AuthGuard>} />
             <Route path="/app/inbox" element={<AuthGuard><Inbox /></AuthGuard>} />
             <Route path="/app/agent" element={<AuthGuard><AgentPage /></AuthGuard>} />

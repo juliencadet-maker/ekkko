@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, service);
 
-    // Fetch membership for org scope + role
+    // Fetch membership for org scope + role + last_inbox_seen_at (Phase 1d.5e D78-C)
     const { data: membership } = await admin
       .from("org_memberships")
       .select("org_id, role")
@@ -48,6 +48,13 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("last_inbox_seen_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const lastInboxSeenAt: string | null = profile?.last_inbox_seen_at ?? null;
 
     const orgId = membership.org_id as string;
     const role = membership.role as string;
@@ -191,6 +198,10 @@ Deno.serve(async (req) => {
         pending_questions: pendingQuestions,
         active_triggers: activeTriggers,
         new_signals_count: inboxEvents.length,
+        last_seen_at: lastInboxSeenAt,
+        new_since_visit: lastInboxSeenAt
+          ? inboxEvents.filter((e: any) => e.created_at > lastInboxSeenAt).length
+          : inboxEvents.length,
       },
       momentum: {
         accelerating: enriched.filter((d) => d.trajectory === "accelerating").length,
@@ -199,9 +210,15 @@ Deno.serve(async (req) => {
       },
       badges: {
         new_signals: inboxEvents.length,
+        new_since_visit: lastInboxSeenAt
+          ? inboxEvents.filter((e: any) => e.created_at > lastInboxSeenAt).length
+          : inboxEvents.length,
         pending_questions: pendingQuestions,
         active_triggers: activeTriggers.length,
-        global_attention: inboxEvents.length + pendingQuestions + activeTriggers.length,
+        global_attention:
+          (lastInboxSeenAt
+            ? inboxEvents.filter((e: any) => e.created_at > lastInboxSeenAt).length
+            : inboxEvents.length) + pendingQuestions + activeTriggers.length,
       },
     };
 

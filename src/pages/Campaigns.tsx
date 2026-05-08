@@ -26,6 +26,7 @@ interface DealScoreRow {
   alerts: any;
   risk_level: string | null;
   priority_score: number | null;
+  days_since_last_signal: number | null;
 }
 
 interface ViewerSummary {
@@ -76,6 +77,7 @@ export default function Campaigns() {
   const [lastEvents, setLastEvents] = useState<Record<string, string>>({});
   const [pendingApprovals, setPendingApprovals] = useState<Set<string>>(new Set());
   const [showClosed, setShowClosed] = useState(false);
+  const [showDormantOnly, setShowDormantOnly] = useState(false);
 
   const navigate = useNavigate();
   const { user, membership } = useAuthContext();
@@ -108,7 +110,7 @@ export default function Campaigns() {
           // Fetch scores
           const { data: scores } = await supabase
             .from("deal_scores")
-            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count, alerts, risk_level, priority_score")
+            .select("campaign_id, des, momentum, viewer_count, sponsor_count, blocker_count, alerts, risk_level, priority_score, days_since_last_signal")
             .in("campaign_id", campaignIds)
             .order("scored_at", { ascending: false });
 
@@ -180,6 +182,11 @@ export default function Campaigns() {
       filtered = filtered.filter(c => (c as any).deal_status !== 'closed');
     }
 
+    // Phase 1d.5e GC-17 — Deals qui dorment 7j+
+    if (showDormantOnly) {
+      filtered = filtered.filter(c => (dealScores[c.id]?.days_since_last_signal ?? 0) >= 7);
+    }
+
     // Sort by priority_score descending
     filtered.sort((a, b) => {
       const prioA = dealScores[a.id]?.priority_score ?? 0;
@@ -188,7 +195,7 @@ export default function Campaigns() {
     });
 
     return filtered;
-  }, [campaigns, searchQuery, dealScores, showClosed]);
+  }, [campaigns, searchQuery, dealScores, showClosed, showDormantOnly]);
 
   const getDesClass = (des: number | null) => {
     if (des === null) return "des-pill bg-muted text-muted-foreground";
@@ -257,12 +264,25 @@ export default function Campaigns() {
             className="pl-10"
           />
         </div>
-        <button
-          onClick={() => setShowClosed(prev => !prev)}
-          className="text-xs text-muted-foreground underline hover:text-foreground transition-colors"
-        >
-          {showClosed ? "Masquer les deals clôturés" : "Voir les deals clôturés"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowDormantOnly(prev => !prev)}
+            className={cn(
+              "text-xs px-2.5 py-1 rounded-full border transition-colors",
+              showDormantOnly
+                ? "bg-amber-500/10 border-amber-500/40 text-amber-700"
+                : "border-border text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Deals qui dorment 7j+
+          </button>
+          <button
+            onClick={() => setShowClosed(prev => !prev)}
+            className="text-xs text-muted-foreground underline hover:text-foreground transition-colors"
+          >
+            {showClosed ? "Masquer les deals clôturés" : "Voir les deals clôturés"}
+          </button>
+        </div>
       </div>
 
       {isLoading ? (

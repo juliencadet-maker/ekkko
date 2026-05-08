@@ -31,10 +31,13 @@ export interface CockpitFeed {
     pending_questions: number;
     active_triggers: any[];
     new_signals_count: number;
+    last_seen_at: string | null;
+    new_since_visit: number;
   };
   momentum: { accelerating: number; stable: number; slipping: number };
   badges: {
     new_signals: number;
+    new_since_visit: number;
     pending_questions: number;
     active_triggers: number;
     global_attention: number;
