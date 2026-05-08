@@ -10,7 +10,17 @@ const VALID_EVENTS = [
   "doc_opened", "doc_time_on_page", "doc_downloaded",
   "doc_return_visit", "doc_closed_without_read",
   "link_click",
+  // Phase 1d.5g — Deal Room V1.5 client-side signals (best-effort).
+  "block_viewed", "scroll_velocity",
+  "dr_revisit", "dr_session_end", "dr_presence_join", "dr_presence_leave",
 ];
+
+// Lite events bypass viewer upsert / dedup / asset_id mandatory.
+// They write a minimal asset_page_events row + timeline_events (event_layer='fact').
+const LITE_EVENTS = new Set([
+  "block_viewed", "scroll_velocity",
+  "dr_revisit", "dr_session_end", "dr_presence_join", "dr_presence_leave",
+]);
 
 const THRESHOLDS: Record<string, number> = {
   doc_opened: 5,
