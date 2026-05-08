@@ -2311,7 +2311,7 @@ export default function CampaignDetail() {
                                       try {
                                         const { data: assets } = await supabase
                                           .from("deal_assets").select("id")
-                                          .eq("campaign_id", id).eq("asset_status", "valid")
+                                          .eq("campaign_id", id).eq("asset_status", "active")
                                           .order("created_at", { ascending: false }).limit(1);
                                         const primaryAsset = assets?.[0];
                                         if (!primaryAsset) {

@@ -141,7 +141,7 @@ export default function SharePage() {
           .from("deal_assets")
           .select("id, asset_type, asset_purpose, version_number")
           .eq("campaign_id", selectedDealId)
-          .eq("asset_status", "valid")
+          .eq("asset_status", "active")
           .order("created_at", { ascending: false }),
         supabase
           .from("asset_deliveries")
