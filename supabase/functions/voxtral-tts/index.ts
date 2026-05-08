@@ -1,3 +1,7 @@
+// ⚠️ FICHIER PROTÉGÉ — pipeline voix INTOUCHABLE.
+// Modification autorisée UNIQUEMENT par décision Ju + Claude explicite.
+// Phase 1c-2 a ajouté le check `cloning_active = false → 423 Locked` (D60).
+// Toute autre modification sans GO décisionnel = REGRESSION GARANTIE pipeline V0.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
