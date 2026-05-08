@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         }
       );
 
-    // ── Étape 5 : INSERT asset_deliveries ─────────────────────────────
+    // ── Étape 5 : INSERT asset_deliveries (legacy delivery tracking) ──
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const delivery_token = crypto.randomUUID();
 
@@ -183,6 +183,116 @@ Deno.serve(async (req) => {
     }
 
     const tracked_url = `${siteUrl}/lp/${campaign_id}?ref=${delivery_token}`;
+
+    // ── Phase 1c-2 R2 (D54+D57) : double-write canonique + JSONB legacy ──
+    // Idempotence via UNIQUE(deal_asset_id, target_url) WHERE archived_at IS NULL.
+    // Si conflit -> on récupère le link_token existant (idempotent).
+    const link_label =
+      typeof body.link_label === "string" && body.link_label.trim().length > 0
+        ? body.link_label.trim().slice(0, 200)
+        : null;
+
+    let canonical_link_token = delivery_token;
+    let canonical_inserted = false;
+
+    const { data: canonicalInsert, error: canonicalErr } = await adminClient
+      .from("asset_tracked_links")
+      .insert({
+        org_id: campaign.org_id,
+        campaign_id,
+        deal_asset_id: asset_id,
+        link_token: delivery_token,
+        target_url: tracked_url,
+        link_label,
+        created_by_user_id: user.id,
+      })
+      .select("link_token")
+      .maybeSingle();
+
+    if (canonicalErr) {
+      // 23505 = unique_violation -> idempotent : fetch existing
+      if ((canonicalErr as { code?: string }).code === "23505") {
+        const { data: existing } = await adminClient
+          .from("asset_tracked_links")
+          .select("link_token")
+          .eq("deal_asset_id", asset_id)
+          .eq("target_url", tracked_url)
+          .is("archived_at", null)
+          .maybeSingle();
+        if (existing?.link_token) {
+          canonical_link_token = existing.link_token;
+          console.log(
+            `[create-tracked-link] canonical_idempotent_hit asset=${asset_id} token=${canonical_link_token}`,
+          );
+        }
+      } else {
+        console.error("[create-tracked-link] canonical_insert_failed:", canonicalErr);
+        await adminClient
+          .from("system_failures")
+          .insert({
+            campaign_id,
+            failure_type: "execution",
+            severity: "low",
+            message: "create-tracked-link canonical insert failed",
+            reason: canonicalErr.message,
+          })
+          .catch(() => {});
+      }
+    } else if (canonicalInsert?.link_token) {
+      canonical_link_token = canonicalInsert.link_token;
+      canonical_inserted = true;
+      console.log(
+        `[create-tracked-link] canonical_insert asset=${asset_id} token=${canonical_link_token} target=${tracked_url}`,
+      );
+    }
+
+    // Legacy JSONB append on deal_assets.tracked_links (best-effort, non bloquant)
+    try {
+      const { data: assetRow } = await adminClient
+        .from("deal_assets")
+        .select("tracked_links")
+        .eq("id", asset_id)
+        .maybeSingle();
+
+      const current = (assetRow?.tracked_links ?? {}) as Record<string, unknown>;
+      const list = Array.isArray((current as { links?: unknown }).links)
+        ? ((current as { links: unknown[] }).links as Array<Record<string, unknown>>)
+        : [];
+
+      const alreadyPresent = list.some(
+        (entry) =>
+          entry &&
+          typeof entry === "object" &&
+          (entry as { token?: string }).token === canonical_link_token,
+      );
+
+      if (!alreadyPresent) {
+        list.push({
+          token: canonical_link_token,
+          target_url: tracked_url,
+          created_at: new Date().toISOString(),
+        });
+        const { error: legacyErr } = await adminClient
+          .from("deal_assets")
+          .update({ tracked_links: { ...current, links: list } })
+          .eq("id", asset_id);
+        if (legacyErr) {
+          console.error("[create-tracked-link] legacy_jsonb_failed:", legacyErr);
+        } else {
+          console.log(
+            `[create-tracked-link] legacy_jsonb_append asset=${asset_id} token=${canonical_link_token}`,
+          );
+        }
+      } else {
+        console.log(
+          `[create-tracked-link] legacy_jsonb_idempotent_skip asset=${asset_id} token=${canonical_link_token}`,
+        );
+      }
+    } catch (e) {
+      console.error("[create-tracked-link] legacy_jsonb_unexpected:", e);
+    }
+
+    void canonical_inserted;
 
     // ── Phase 0 : Event tracking link_generated (fire-and-forget) ─────────
     // Ne jamais await — ne jamais bloquer la réponse principale
