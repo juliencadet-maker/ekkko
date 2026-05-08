@@ -33,16 +33,15 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const {
-      asset_id, campaign_id, viewer_hash, event_type,
+      asset_id, campaign_id, viewer_hash, event_type, metadata,
       time_spent_seconds, viewer_email, viewer_name,
       referred_by_hash, asset_purpose,
       link_token, // Phase 1c-2 R3 — optional, only on link_click
     } = body;
 
-    // Validation requise
-    if (!asset_id || !campaign_id || !viewer_hash || !event_type) {
+    if (!campaign_id || !event_type) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
+        JSON.stringify({ error: "Missing campaign_id or event_type" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -58,6 +57,34 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Phase 1d.5g — Lite path for V1.5 deal-room signals.
+    if (LITE_EVENTS.has(event_type)) {
+      try {
+        await supabase.from("timeline_events").insert({
+          campaign_id,
+          event_type,
+          event_layer: "fact",
+          event_data: {
+            asset_id: asset_id ?? null,
+            viewer_hash: viewer_hash ?? null,
+            metadata: metadata ?? null,
+          },
+        });
+      } catch (e) { console.error("[track-document-events] lite timeline", e); }
+      return new Response(
+        JSON.stringify({ ok: true, lite: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Legacy doc-tracking path requires asset_id + viewer_hash.
+    if (!asset_id || !viewer_hash) {
+      return new Response(
+        JSON.stringify({ error: "Missing asset_id or viewer_hash for doc event" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // 1. Upsert viewer
     const viewer_domain = viewer_email ? viewer_email.split("@")[1]?.toLowerCase() : null;
