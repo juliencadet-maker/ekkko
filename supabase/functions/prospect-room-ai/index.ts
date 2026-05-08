@@ -96,7 +96,7 @@ serve(async (req) => {
     // Load isolated knowledge.
     const [campRes, assetsRes] = await Promise.all([
       admin.from("campaigns")
-        .select("id, company_display_name, metadata")
+        .select("id, org_id, company_display_name, metadata")
         .eq("id", campaign_id).maybeSingle(),
       admin.from("deal_assets")
         .select("id, asset_type, asset_purpose, block_group, block_title, block_description, display_order")
@@ -176,7 +176,7 @@ serve(async (req) => {
       // Persist as a soft trace (used for rate limiting + audit).
       await admin.from("prospect_room_questions").insert({
         campaign_id,
-        org_id: null, // unknown at prospect level — left null for summaries
+        org_id: campaign.org_id,
         question: "[résumé page]",
         generated_answer: cleaned,
         ae_status: "new",
@@ -226,9 +226,7 @@ serve(async (req) => {
       return json({ error: "RATE_LIMIT_QA_24H" }, 429);
     }
 
-    // Fetch org_id (needed by RLS-friendly capture; available via campaign).
-    const { data: campOrg } = await admin
-      .from("campaigns").select("org_id").eq("id", campaign_id).single();
+    // org_id already loaded from campaigns above.
 
     const sysPrompt = [
       "Tu es un assistant qui répond aux questions d'un prospect à partir UNIQUEMENT du contexte JSON fourni.",
@@ -273,7 +271,7 @@ serve(async (req) => {
       .from("prospect_room_questions")
       .insert({
         campaign_id,
-        org_id: campOrg?.org_id ?? null,
+        org_id: campaign.org_id,
         asset_in_focus_id,
         prospect_email,
         prospect_display_name,
