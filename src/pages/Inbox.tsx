@@ -1,9 +1,12 @@
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
 import { useAECockpitFeed } from "@/hooks/useAECockpitFeed";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Inbox as InboxIcon, Zap, MessageSquare, Activity, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -23,7 +26,22 @@ const EVENT_LABEL: Record<string, string> = {
 
 export default function Inbox() {
   const navigate = useNavigate();
-  const { data, loading, error } = useAECockpitFeed(45_000);
+  const { user } = useAuthContext();
+  const { data, loading, error, refetch } = useAECockpitFeed(45_000);
+  const markedRef = useRef(false);
+
+  // Mark inbox as seen on first mount (Phase 1d.5e D78-C)
+  useEffect(() => {
+    if (!user?.id || markedRef.current) return;
+    markedRef.current = true;
+    (async () => {
+      await supabase
+        .from("profiles")
+        .update({ last_inbox_seen_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+      setTimeout(() => refetch(), 500);
+    })();
+  }, [user?.id, refetch]);
 
   return (
     <AppLayout>
