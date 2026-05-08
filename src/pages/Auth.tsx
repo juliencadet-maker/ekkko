@@ -34,7 +34,7 @@ export default function Auth() {
       if (needsOnboarding) {
         navigate("/app/onboarding", { replace: true });
       } else {
-        navigate("/app/campaigns", { replace: true });
+        navigate("/app/cockpit", { replace: true });
       }
     }
   }, [isAuthenticated, needsOnboarding, navigate]);
