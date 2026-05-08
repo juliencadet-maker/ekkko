@@ -77,3 +77,12 @@ verify_jwt = false
 
 [functions.deal-trigger-notify]
 verify_jwt = false
+
+[functions.deal-assets-attach]
+verify_jwt = false
+
+[functions.deal-assets-reorder]
+verify_jwt = false
+
+[functions.deal-assets-detach]
+verify_jwt = false

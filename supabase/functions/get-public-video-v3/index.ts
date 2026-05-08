@@ -88,8 +88,10 @@ serve(async (req) => {
     const [allAssetsRes, campaignRes, agentCtxRes, knownViewersRes, contactRolesRes] =
       await Promise.all([
         supabase.from("deal_assets")
-          .select("id, asset_type, file_url, asset_purpose")
+          .select("id, asset_type, file_url, asset_purpose, display_order, block_group, block_title, block_description")
           .eq("campaign_id", campaign_id).eq("asset_status", "active")
+          .is("deleted_at", null)
+          .order("display_order", { ascending: true })
           .order("created_at", { ascending: true }),
         supabase.from("campaigns")
           .select("name, description, deal_owner_id, created_by_user_id, deal_experience_mode, metadata, company_display_name, org_id")
@@ -226,13 +228,17 @@ serve(async (req) => {
       context_bullets.push("Points de validation finale couverts");
 
     const secondary_assets = allAssets
-      .slice(0, 4)
-      .map((a: { id: string; asset_type: string; asset_purpose: string; file_url: string }) => ({
+      .slice(0, 12)
+      .map((a: any) => ({
         id: a.id,
         asset_type: a.asset_type,
         asset_purpose: a.asset_purpose,
         file_url: a.file_url,
         label_fr: LABEL_FR[a.asset_purpose] || LABEL_FR.other,
+        display_order: a.display_order ?? 0,
+        block_group: a.block_group ?? null,
+        block_title: a.block_title ?? null,
+        block_description: a.block_description ?? null,
       }));
 
     return new Response(JSON.stringify({
