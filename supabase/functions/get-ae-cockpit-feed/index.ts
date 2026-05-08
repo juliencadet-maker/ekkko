@@ -198,6 +198,10 @@ Deno.serve(async (req) => {
         pending_questions: pendingQuestions,
         active_triggers: activeTriggers,
         new_signals_count: inboxEvents.length,
+        last_seen_at: lastInboxSeenAt,
+        new_since_visit: lastInboxSeenAt
+          ? inboxEvents.filter((e: any) => e.created_at > lastInboxSeenAt).length
+          : inboxEvents.length,
       },
       momentum: {
         accelerating: enriched.filter((d) => d.trajectory === "accelerating").length,
@@ -206,9 +210,15 @@ Deno.serve(async (req) => {
       },
       badges: {
         new_signals: inboxEvents.length,
+        new_since_visit: lastInboxSeenAt
+          ? inboxEvents.filter((e: any) => e.created_at > lastInboxSeenAt).length
+          : inboxEvents.length,
         pending_questions: pendingQuestions,
         active_triggers: activeTriggers.length,
-        global_attention: inboxEvents.length + pendingQuestions + activeTriggers.length,
+        global_attention:
+          (lastInboxSeenAt
+            ? inboxEvents.filter((e: any) => e.created_at > lastInboxSeenAt).length
+            : inboxEvents.length) + pendingQuestions + activeTriggers.length,
       },
     };
 
