@@ -1,3 +1,6 @@
+// ⚠️ FICHIER V0 PROTÉGÉ — Pipeline V0 (campaigns.script_oral source-of-truth Tavus/HeyGen).
+// Le write campaigns.script_oral DOIT passer par RPC v0_update_script_oral (trigger DB le force).
+// Modification autorisée UNIQUEMENT par décision Ju + Claude. Phase 1c-2 (D63).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
