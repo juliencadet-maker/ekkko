@@ -176,7 +176,7 @@ serve(async (req) => {
       // Persist as a soft trace (used for rate limiting + audit).
       await admin.from("prospect_room_questions").insert({
         campaign_id,
-        org_id: null, // unknown at prospect level — left null for summaries
+        org_id: campaign.org_id,
         question: "[résumé page]",
         generated_answer: cleaned,
         ae_status: "new",
