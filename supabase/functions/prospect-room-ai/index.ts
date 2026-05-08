@@ -271,7 +271,7 @@ serve(async (req) => {
       .from("prospect_room_questions")
       .insert({
         campaign_id,
-        org_id: campOrg?.org_id ?? null,
+        org_id: campaign.org_id,
         asset_in_focus_id,
         prospect_email,
         prospect_display_name,
