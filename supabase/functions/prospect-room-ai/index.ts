@@ -96,7 +96,7 @@ serve(async (req) => {
     // Load isolated knowledge.
     const [campRes, assetsRes] = await Promise.all([
       admin.from("campaigns")
-        .select("id, company_display_name, metadata")
+        .select("id, org_id, company_display_name, metadata")
         .eq("id", campaign_id).maybeSingle(),
       admin.from("deal_assets")
         .select("id, asset_type, asset_purpose, block_group, block_title, block_description, display_order")
