@@ -55,6 +55,63 @@ export type Database = {
           },
         ]
       }
+      agent_compose_sessions: {
+        Row: {
+          campaign_id: string
+          context_snapshot: Json
+          created_at: string
+          id: string
+          llm_cost_cents: number | null
+          metadata: Json
+          model: string | null
+          org_id: string
+          prompt: string | null
+          response: string | null
+          session_type: string
+          status: string
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          context_snapshot?: Json
+          created_at?: string
+          id?: string
+          llm_cost_cents?: number | null
+          metadata?: Json
+          model?: string | null
+          org_id: string
+          prompt?: string | null
+          response?: string | null
+          session_type?: string
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          context_snapshot?: Json
+          created_at?: string
+          id?: string
+          llm_cost_cents?: number | null
+          metadata?: Json
+          model?: string | null
+          org_id?: string
+          prompt?: string | null
+          response?: string | null
+          session_type?: string
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_context: {
         Row: {
           campaign_id: string
@@ -344,6 +401,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      asset_tracked_links: {
+        Row: {
+          archived_at: string | null
+          campaign_id: string
+          click_count: number
+          created_at: string
+          created_by_user_id: string | null
+          deal_asset_id: string
+          id: string
+          last_clicked_at: string | null
+          link_label: string | null
+          link_token: string
+          metadata: Json
+          org_id: string
+          target_url: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          campaign_id: string
+          click_count?: number
+          created_at?: string
+          created_by_user_id?: string | null
+          deal_asset_id: string
+          id?: string
+          last_clicked_at?: string | null
+          link_label?: string | null
+          link_token: string
+          metadata?: Json
+          org_id: string
+          target_url: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          campaign_id?: string
+          click_count?: number
+          created_at?: string
+          created_by_user_id?: string | null
+          deal_asset_id?: string
+          id?: string
+          last_clicked_at?: string | null
+          link_label?: string | null
+          link_token?: string
+          metadata?: Json
+          org_id?: string
+          target_url?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       assets: {
         Row: {
@@ -741,6 +849,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deal_communication_log: {
+        Row: {
+          body_preview: string | null
+          campaign_id: string
+          channel: string
+          created_at: string
+          direction: string
+          error_message: string | null
+          external_ref: string | null
+          id: string
+          metadata: Json
+          org_id: string
+          recipient_email: string | null
+          recipient_handle: string | null
+          sent_at: string
+          sent_by_user_id: string | null
+          source: string
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_preview?: string | null
+          campaign_id: string
+          channel: string
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          external_ref?: string | null
+          id?: string
+          metadata?: Json
+          org_id: string
+          recipient_email?: string | null
+          recipient_handle?: string | null
+          sent_at?: string
+          sent_by_user_id?: string | null
+          source: string
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_preview?: string | null
+          campaign_id?: string
+          channel?: string
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          external_ref?: string | null
+          id?: string
+          metadata?: Json
+          org_id?: string
+          recipient_email?: string | null
+          recipient_handle?: string | null
+          sent_at?: string
+          sent_by_user_id?: string | null
+          source?: string
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       deal_contact_roles: {
         Row: {
@@ -2520,6 +2691,7 @@ export type Database = {
           cta_clicked: boolean | null
           domain: string | null
           email: string | null
+          email_hash_global: string | null
           fingerprint: string | null
           first_seen_at: string | null
           id: string
@@ -2555,6 +2727,7 @@ export type Database = {
           cta_clicked?: boolean | null
           domain?: string | null
           email?: string | null
+          email_hash_global?: string | null
           fingerprint?: string | null
           first_seen_at?: string | null
           id?: string
@@ -2590,6 +2763,7 @@ export type Database = {
           cta_clicked?: boolean | null
           domain?: string | null
           email?: string | null
+          email_hash_global?: string | null
           fingerprint?: string | null
           first_seen_at?: string | null
           id?: string
