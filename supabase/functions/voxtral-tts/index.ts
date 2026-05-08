@@ -72,6 +72,14 @@ serve(async (req) => {
       );
     }
 
+    // Phase 1c-2 (D60) — cloning_active=false ⇒ 423 Locked. Pas de fallback silencieux.
+    if (identity.cloning_active === false) {
+      return new Response(
+        JSON.stringify({ error: "identity_locked", message: "Cette identité a été désactivée. Le clonage vocal n'est plus disponible." }),
+        { status: 423, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Voice reference fallback chain : audio_source_path → metadata.voice_reference_path → reference_video_path (legacy)
     const metadata = (identity.metadata as Record<string, unknown>) || {};
     const voiceReferencePath =
