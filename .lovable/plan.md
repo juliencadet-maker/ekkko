@@ -1,129 +1,126 @@
-## Phase 1e — Sanity Check (avant exécution)
+## Phase 1d.5 — Refondation Deal Room multi-assets + Bibliothèque AE
 
-Phase la plus dense du roadmap. Avant tout code, je verrouille **3 zones de risque critiques** + **mémoire phase-1d validée**.
-
----
-
-### 0. Mémoire à graver d'abord
-
-- `mem://features/phase-1d-deal-room-v15-surface.md` → ajout note **"Validation visuelle JU 8 mai 2026 OK : routing v1/v3 confirmé, prospect view propre"**
-- `mem://constraints/no-asset-recreation.md` → upgrade : D67 #8 = scope 1e, pas dette permanente
-- Nouveau `mem://constraints/process-approval-decision-untouchable.md` → V0 figé, tout flow V1.5 passe par `submit-deal-room-approval` séparé
-- Nouveau `mem://features/phase-1e-deal-room-v15-creation.md` (créé en fin de phase)
+Sanity check avant code. Tranchage data model + cartographie conflits + découpage micro-sessions + 7 questions cadrage.
 
 ---
 
-### 1. Zones de risque (sanity check obligatoire AVANT code)
+### 0. Diagnostic flash bug R0 "Preview en cours de préparation"
 
-**R1 — process-approval-decision (V0 INTOUCHABLE)**
-- Lecture passive du fichier actuel pour cartographier signatures, side-effects (notifications, audit_logs, video pipeline trigger, slack)
-- Création `submit-deal-room-approval` **strictement parallèle** : nouveau handler, nouvelle table de tracking si nécessaire (`deal_room_approval_requests`?) ou réutilisation `approval_requests` avec `approval_type = 'deal_room_v15'`
-- **Règle absolue** : zéro `import` croisé, zéro modification de `process-approval-decision/index.ts`. Test grep CI à ajouter.
+R0 a backfillé `deal_assets` (10 rows) mais **PAS** `deal_room_version`. Or `get-public-video-v3` lit son media depuis `deal_room_version WHERE is_active = true` → renvoie **404 "No active Deal Room version"** sur tous les deals legacy.
 
-**R2 — D67 #9 preview vidéo cassée sur deals existants**
-- À investiguer **avant** code phase 1e : 
-  - vérifier que `AssetLandingPage` (v1) lit bien `campaigns.video_storage_path` ou passe par `deal_rooms`
-  - vérifier que `ProspectRoomRouter` ne masque pas un asset existant côté v1 quand flag OFF
-  - vérifier `get-public-video` (v1) vs `get-public-video-v3` : deals créés avant 1c-1b ont-ils `deal_room_version` row ?
-- Output attendu : 1 paragraphe diagnostic + fix scoped (probablement migration backfill `deal_room_version` depuis `deal_rooms` pour deals legacy, OU fallback v1 sur `deal_rooms` direct)
+Donc côté prospect v3, la vidéo n'apparaît jamais malgré `deal_assets.file_url` valide. C'est cohérent avec le retour Ju : "lien tracké généré OK + deal_assets visible côté AE" mais "preview = en cours de préparation" côté prospect.
 
-**R3 — D67 #8 ajout asset sur deal existant (boucle morte ShareDialog)**
-- Investiguer `ShareDialog.tsx` actuel : pourquoi "Aucun asset à partager" ?
-- Hypothèse : modal lit `deal_assets` filtré sur version active uniquement, sans CTA "créer nouveau"
-- Fix scope 1e : ajouter dans `ShareDialog` 2 actions secondaires :
-  - "Enregistrer une nouvelle vidéo" → push vers `FacecamRecorder` ou flow agent compositeur
-  - "Importer un fichier" → `VideoImportUpload` ou upload document direct vers bucket `deal-videos`
-- ⚠️ Doit respecter `mem://constraints/no-asset-recreation` ré-évalué : on lève la contrainte pour deals existants
+**Conséquence pour 1d.5** : la refondation déplace la source de vérité prospect de `deal_room_version` (1=1) vers **`deal_assets` ordonnés** (1=N). Le bug disparaît naturellement → pas de patch isolé à faire.
 
 ---
 
-### 2. Scope (11 points → 7 chantiers)
+### 1. Tranchage data model — recommandation ferme
 
-**C1 — NewCampaign refonte 4 étapes** (points 1, 2, 10)
-- `src/pages/NewCampaign.tsx` : 4 steps Contexte / Concurrence / Contacts / Asset
-- `<CompanyAutocomplete />` nouveau composant, debounce 150ms, query sur `accounts` table (org-scoped) + suggestions externes optionnelles plus tard
-- Suppression définitive UI topics calibration côté création
-- Vérification grep côté V15Room + AssetLandingPage que topics calibration ne fuite plus prospect-side
+**Option A (recommandée)** : enrichir `deal_assets` avec 2 colonnes :
+- `display_order INT NOT NULL DEFAULT 0` — index d'affichage prospect
+- `block_group TEXT` — slot sémantique (`hero_video` / `documents` / `social_proof` / `roi` / `pricing` / `other`) pour rendu groupé éventuel
 
-**C2 — company_display_name wiring** (point 3)
-- Lecture : déjà OK dans `DealRoomGreeting`
-- Écriture : NewCampaign step 1 → autocomplete remplit `company_display_name` distinct de `accounts.name`
-- Backfill historique : migration SQL `UPDATE campaigns SET company_display_name = COALESCE(company_display_name, (SELECT name FROM accounts WHERE id = account_id))` pour rows existantes
+**Option B (rejetée)** : nouvelle table `deal_room_blocks` pivot vers `deal_assets`. Surcouche inutile aujourd'hui. Bibliothèque AE pivot déjà en place (`asset_library_id`). Ajouter un 2e pivot = dette.
 
-**C3 — Boucle 48h récap** (point 4)
-- Migration : `ALTER TABLE campaigns ADD COLUMN draft_state JSONB DEFAULT '{}'::jsonb`
-- Edge `send-recap-email` (Resend, template DM Sans, marine, magic link signé 7j)
-- Edge `send-recap-cron` (pg_cron toutes les heures, sélectionne deals `status='draft' AND updated_at < now()-48h AND draft_state->>'recap_sent_at' IS NULL`)
-- Edge `magic-link-resume` (validate signed token → redirect `/campaigns/new?resume={id}`)
-- ⚠️ user-spec cron : utiliser `supabase--insert` (pas migration) car contient projet ref + anon key
+**Pourquoi A** :
+- `deal_assets` porte déjà `campaign_id`, `version_number`, `parent_asset_id`, `asset_library_id`, `asset_purpose`, `tracked_links`. Tout ce qu'il manque = ordre + slot.
+- 0 migration de données existantes (juste defaults).
+- v3 lit déjà `deal_assets` pour `secondary_assets` → un simple `ORDER BY display_order` suffit.
+- UX "réordonner" = `UPDATE display_order` sur 2 lignes. Pas besoin de table dédiée.
+- Si plus tard refonte UI Notion-like, on ajoute `deal_room_blocks` SANS casser 1d.5.
 
-**C4 — Agent compositeur autonome 7 étapes** (point 5)
-- Edge `agent-transcribe` : Whisper via Lovable AI Gateway (vérifier support, sinon fallback OpenAI direct)
-- Edge `agent-compose-deal` : pipeline 7 steps (transcript → extraction contexte → autocomplete account → suggest contacts → générer script → naturalize → save draft)
-- State machine `agent_compose_sessions.status` : `idle | transcribing | extracting | composing | naturalizing | ready | failed`
-- Cible coût : `google/gemini-3-flash-preview` partout sauf step naturalize (gemini-2.5-pro ponctuel) → estimé < 0.04€/session
-- Latence cible 30s : parallélisation steps 2-3-4 (extraction/account/contacts indépendants)
+**Décision V0 intouchable** : `deal_room_version` **conserve son rôle** pour la vidéo intro générée par pipeline V0/V1.5 (script_naturalized → audio → vidéo Tavus). On la **dénormalise** au moment du publish vers une row `deal_assets` (`asset_purpose='intro'`, `block_group='hero_video'`, `display_order=0`). Comme R0 vient de le faire pour le legacy.
 
-**C5 — wording-validator backend** (point 6)
-- `supabase/functions/_shared/wording-validator.ts` : regex strict sur "campagnes", "IA", "intelligence artificielle", "silencieux", "vidéo" (côté prospect output uniquement), labels anglais, emojis
-- Intégré dans `agent-compose-deal`, `generate-script`, `forward-magnet-submit` (côté validation prompt user aussi)
-- Return `{ ok: false, violations: [...] }` → 422 friendly
-
-**C6 — Flow approbation V1.5 dédié** (point 7) → cf R1
-- `submit-deal-room-approval/index.ts` (nouveau)
-- Réutilise table `approval_requests` avec discriminant `approval_type = 'deal_room_v15'`
-- Notifications via `notify-approval` existant (param-driven, pas de modif)
-- Décision UI : nouvelle page `/approvals/deal-room/:id` (pas toucher `/approval/:token` V0)
-
-**C7 — D67 #8 ShareDialog** (point 8) cf R3 ci-dessus
-
-**C8 — D67 #11 wording AE custom "pour avancer sur ce sujet"** (point 11)
-- Migration : `ALTER TABLE campaigns ADD COLUMN ae_custom_cta_label TEXT` (max 80 chars, validé par wording-validator)
-- UI : champ texte optionnel dans NewCampaign step 4 + édition possible depuis CampaignDetail
-- Fallback prospect side : si null → "pour avancer sur ce sujet" hardcoded (comportement actuel inchangé)
+→ Trigger Postgres `AFTER UPDATE ON deal_room_version WHEN NEW.is_active AND NEW.video_status='ready'` qui upsert dans `deal_assets`. Résout aussi le point "futures générations V0 ne peuplent pas deal_assets" (mentionné dans ta vigilance).
 
 ---
 
-### 3. Dépendances & ordre d'exécution suggéré
+### 2. Cartographie conflits
+
+**get-public-video-v3 (Phase 1c-3, 273 lignes)** :
+- Bloc "active version 404 si manquant" lignes 51-74 → à **alléger** : si pas de `deal_room_version`, on ne retourne plus 404, on continue avec `deal_assets` seulement.
+- `secondary_assets.slice(0, 4)` ligne 229 → supprimer le cap, retourner liste complète ordonnée par `display_order`.
+- Shape de retour : `secondary_assets` reste, mais devient la liste exhaustive. La vidéo "héro" reste exposée via `video_signed_url` (compat Phase 1d). Possible ajout d'un champ `assets_ordered[]` unifié pour V15Room (1d.5d).
+- 90j retention : lecture sur `deal_room_version.created_at`. Pour deals sans version (legacy), basculer sur `campaigns.created_at`.
+
+**Composants Phase 1d (V15Room, DealRoomGreeting, DealRoomIdentification, PdfReaderTracked, ForwardMagnetForm, SoftIdentifyTriggers)** :
+- V15Room = adaptation : itère sur `assets_ordered[]` au lieu d'une vidéo + `pdfAssets` filtrés. Chaque asset rendu via switch(asset_type).
+- Greeting/Identification/Forward/Soft = aucun changement (n'utilisent pas les assets).
+- PdfReaderTracked = aucun changement (déjà multi-instanciable, pris dans `.map`).
+
+**ShareDialog (`src/components/landing/ShareDialog.tsx`, 239 lignes)** :
+- Ce composant = "Partager à un collaborateur" (forward d'invitations email). **Ce n'est PAS le ShareDialog cassé** que Ju décrit ("envoyer fichier / importer fichier / refaire vidéo grisés"). Confusion à clarifier.
+- Le vrai blocage Ju = absence d'UI "ajouter un asset" sur deal existant dans `CampaignDetail.tsx` (2443 lignes). À investiguer en 1d.5c.
+
+**Pipeline V0 INTOUCHABLE** :
+- Aucun fichier V0 (transform-script-to-speech*, voxtral-tts, tavus-*, get-public-video v1, process-approval-decision) **n'est touché**. Le trigger `deal_room_version → deal_assets` est en lecture seule de V0, écriture sur `deal_assets`.
+- Si pendant 1d.5 j'identifie un cas où patcher V0 deviendrait nécessaire → STOP immédiat.
+
+**Phase 1c-1a `assets` table org-level** : déjà en place. Pivot `deal_assets.asset_library_id → assets.id` exploitable directement pour la bibliothèque AE (1d.5e). Aucune migration data.
+
+**Phase 1e (C1-C8)** :
+- C7 (D67 #1+#2 ShareDialog post-deal) → **supprimé**, absorbé par 1d.5c/1d.5d.
+- C4 agent compositeur 7 étapes → bénéficie : compose un Deal Room multi-assets dès la création.
+- C1, C2, C3, C5, C6, C8 → inchangés.
+
+---
+
+### 3. Découpage micro-sessions (7 sessions, ordre figé)
 
 ```
-R2 (diag preview vidéo) ─┐
-                         ├─→ Décision : fix legacy v1 OUI/NON avant tout le reste
-R3 (diag ShareDialog)  ─┘
-
-Puis en parallèle :
-  ├─ C5 wording-validator (utilitaire pur, 0 dépendance)
-  ├─ C2 backfill company_display_name (migration isolée)
-  └─ C8 ae_custom_cta_label (migration isolée)
-
-Puis séquentiel :
-  ├─ C1 NewCampaign refonte (utilise C2, C8, C5)
-  ├─ C7 ShareDialog (utilise composants C1)
-  ├─ C4 agent compositeur (utilise C5)
-  ├─ C3 boucle 48h récap (utilise C1 draft_state)
-  └─ C6 approbation V1.5 (dernier, isolé de V0)
+1d.5a  Data model        +display_order +block_group + index + RLS check
+                         + trigger deal_room_version→deal_assets (V0 cache fix)
+1d.5b  Backend           get-public-video-v3 multi-assets
+                         + edge fns AE: attach/reorder/detach/duplicate-from-library
+1d.5c  Frontend AE       CampaignDetail tab "Contenu du deal" → liste assets
+                         drag (boutons ↑↓), bouton "Ajouter" (4 sources :
+                         enregistrer vidéo / importer fichier / depuis biblio / lien)
+1d.5d  Frontend prospect V15Room rendu liste verticale ordonnée par display_order,
+                         avec rendu typé (video/pdf/image/link)
+1d.5e  Bibliothèque AE   Page /assets : liste org-scoped, recherche, "Réutiliser
+                         sur ce deal" (sélection deal cible → POST attach edge fn)
+1d.5f  2 surfaces share  Sépare "Deal Room collaborative" (lien long terme,
+                         multi-assets) vs "Quick share" (1 asset → lien tracké
+                         simple via asset_tracked_links existant)
+1d.5g  Best in class     Template Deal Room par défaut à la création
+                         (4 slots pré-suggérés : hero_video / documents /
+                         social_proof / roi). Tout supprimable/modifiable.
 ```
 
----
+Mutualisation possible : 1d.5a + trigger V0 = même migration (1 seule micro-session), évite ticket séparé.
 
-### 4. Hors scope (rappel)
+1d.5g peut être livré en même temps que 1d.5c (template = juste pré-création de 4 placeholders dans la liste assets, géré côté frontend AE).
 
-- Modif `process-approval-decision` V0
-- Modif `script_oral` / `script_versions` (V0 intouchable, cf D59/D61)
-- PDF tracking page_number/scroll_pct (debt Phase Mega)
-- Mirror Brief, mobile native, vidéo interactive
-- Génération forward emails LLM avancée
-- UI admin flags
+→ **Découpage final proposé : 6 micro-sessions** (a / b / c+g / d / e / f).
 
 ---
 
-### 5. Sanity check final attendu (avant GO code)
+### 4. Hors scope 1d.5 (renvoyé UX-UI Refonte)
 
-1. R1 OK : confirmation que `process-approval-decision/index.ts` reste en lecture seule pendant toute la phase
-2. R2 diagnostic : 1 paragraphe écrit + plan de fix scoped
-3. R3 diagnostic : 1 paragraphe écrit + plan de fix scoped
-4. Validation que `agent-transcribe` peut tourner via Lovable AI Gateway (sinon ajout secret Whisper)
-5. Validation cron pg_cron actif sur le projet (sinon migration enable extension)
-6. Confirmation user qu'on lève partiellement `no-asset-recreation` pour deals existants (D67 #8)
+- Drag-and-drop fluide (boutons ↑↓ suffisent pour 1d.5)
+- Blocs structurés Notion-like, typage visuel premium
+- Templates multiples par vertical
+- Bibliothèque avancée (tags / collections / partage entre AEs)
+- Page collaborative "vivante" avec commentaires prospect (forward magnet existe, suffit pour 1d.5)
+- PDF augmenté niveau 2/3 (debt Phase Mega)
 
-Une fois ces 6 points validés par toi/Claude/JU → GO code C1-C8 dans l'ordre.
+---
+
+### 5. Questions cadrage (7)
+
+1. **Cap nombre d'assets par Deal Room** : aucun, ou plafond souple (ex: 12) pour éviter Deal Rooms infinies côté prospect ?
+2. **Suppression asset** : soft delete (`deleted_at`, conserve l'historique tracking) ou hard delete (libère le slot) ?
+3. **Ordre par défaut à l'attach** : append en fin de liste, ou push en tête après le hero video ?
+4. **Réutilisation depuis bibliothèque** : copie le fichier dans `deal-videos` bucket (isolation deal) ou référence directe via `asset_library_id` (1 fichier source, économie storage) ?
+5. **Quick share = surface à part ou bouton dans Deal Room AE ?** (proposition : bouton "Partager rapidement ce contenu" sur chaque ligne asset, génère un `asset_tracked_links` 1-clic, indépendant de la Deal Room collaborative)
+6. **Best in class template** : 4 slots vides pré-créés à la création du deal (visibles AE, masqués prospect tant que vide), ou juste suggestions UI sans rows DB ?
+7. **Trigger V0 → deal_assets** : on l'inclut dans 1d.5a (corrige les futures générations V0) ou ticket séparé après pilote ?
+
+---
+
+### 6. Ce que je veux entendre avant GO code
+
+1. Validation Option A data model (display_order + block_group sur `deal_assets`)
+2. Réponses aux 7 questions cadrage (au moins Q1, Q2, Q4, Q5, Q7)
+3. Confirmation découpage 6 micro-sessions (a / b / c+g / d / e / f)
+4. Confirmation Phase 1e reprend post-1d.5 avec C7 supprimé, reste inchangé
