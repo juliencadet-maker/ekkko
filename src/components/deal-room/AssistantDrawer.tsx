@@ -13,7 +13,7 @@ interface Props {
 }
 
 interface AIResp {
-  mode: "summarize" | "qa";
+  mode: "summarize" | "qa" | "async";
   ui_label: string;
   disclosure: string;
   bullets?: string[];
@@ -45,6 +45,9 @@ export function AssistantDrawer({
   const [answer, setAnswer] = useState<string | null>(null);
   const [askLoading, setAskLoading] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
+  const [lastAskedQuestion, setLastAskedQuestion] = useState<string | null>(null);
+  const [asyncSent, setAsyncSent] = useState(false);
+  const [asyncLoading, setAsyncLoading] = useState(false);
 
   // Fetch summary on first open.
   useEffect(() => {
@@ -78,6 +81,8 @@ export function AssistantDrawer({
     setAskLoading(true);
     setAskError(null);
     setAnswer(null);
+    setAsyncSent(false);
+    setLastAskedQuestion(q);
     try {
       const { data, error } = await supabase.functions.invoke<AIResp>("prospect-room-ai", {
         body: {
@@ -101,6 +106,38 @@ export function AssistantDrawer({
       setAskError("Réponse indisponible.");
     } finally {
       setAskLoading(false);
+    }
+  };
+
+  // GC-46 — Async reply : transmettre la question à l'AE pour réponse manuelle.
+  const sendAsync = async () => {
+    const q = (lastAskedQuestion || question).trim();
+    if (!q) return;
+    setAsyncLoading(true);
+    setAskError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke<AIResp>("prospect-room-ai", {
+        body: {
+          mode: "async",
+          campaign_id: campaignId,
+          question: q,
+          viewer_hash: viewerHash,
+          prospect_email: prospectEmail,
+        },
+      });
+      if (error) throw error;
+      if (data?.error === "RATE_LIMIT_ASYNC_24H") {
+        setAskError("Limite atteinte (3 demandes / 24 h).");
+      } else if (data?.error) {
+        setAskError("Envoi impossible pour le moment.");
+      } else {
+        setAsyncSent(true);
+        setQuestion("");
+      }
+    } catch {
+      setAskError("Envoi impossible.");
+    } finally {
+      setAsyncLoading(false);
     }
   };
 
@@ -174,6 +211,24 @@ export function AssistantDrawer({
                   </p>
                   <p className="whitespace-pre-line text-[14px] leading-relaxed text-foreground/80">
                     {answer}
+                  </p>
+                  {!asyncSent && (
+                    <button
+                      onClick={sendAsync}
+                      disabled={asyncLoading}
+                      className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-foreground/65 underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+                    >
+                      {asyncLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                      Pas assez précis ? Demander à {aeFirstName || "votre interlocuteur"}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {asyncSent && (
+                <div className="rounded-xl border border-[hsl(var(--accent))]/30 bg-[hsl(var(--accent))]/8 p-4">
+                  <p className="text-[13px] leading-relaxed text-foreground/80">
+                    Votre question a été transmise à {aeFirstName || "votre interlocuteur"}. Vous recevrez une réponse par email.
                   </p>
                 </div>
               )}

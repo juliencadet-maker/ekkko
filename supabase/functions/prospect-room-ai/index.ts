@@ -84,14 +84,81 @@ serve(async (req) => {
     if (!campaign_id || typeof campaign_id !== "string" || !UUID.test(campaign_id)) {
       return json({ error: "Valid campaign_id required" }, 400);
     }
-    if (mode !== "summarize" && mode !== "qa") {
-      return json({ error: "mode must be 'summarize' or 'qa'" }, 400);
+    if (mode !== "summarize" && mode !== "qa" && mode !== "async") {
+      return json({ error: "mode must be 'summarize', 'qa' or 'async'" }, 400);
     }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    // ============ ASYNC reply mode (GC-46) ============
+    // Capture la question dans prospect_room_questions sans appel AI.
+    // Backlog visible côté AE (campaign-detail Q&A tab) — réponse manuelle.
+    if (mode === "async") {
+      const aq = typeof body.question === "string" ? body.question.trim() : "";
+      if (!aq) return json({ error: "question required" }, 400);
+      if (aq.length > 1000) return json({ error: "question too long" }, 400);
+
+      const a_viewer_hash = typeof body.viewer_hash === "string" ? body.viewer_hash.slice(0, 128) : null;
+      const a_email = typeof body.prospect_email === "string"
+        ? body.prospect_email.trim().toLowerCase().slice(0, 255) : null;
+      const a_name = typeof body.prospect_display_name === "string"
+        ? body.prospect_display_name.trim().slice(0, 200) : null;
+      const a_focus = typeof body.asset_in_focus_id === "string" && UUID.test(body.asset_in_focus_id)
+        ? body.asset_in_focus_id : null;
+
+      if (!a_viewer_hash && !a_email) {
+        return json({ error: "viewer_hash or prospect_email required" }, 400);
+      }
+
+      // Rate limit léger : 3 demandes async / viewer / 24h.
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      let aq_q = admin
+        .from("prospect_room_questions")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaign_id)
+        .gte("captured_at", dayAgo)
+        .contains("metadata", { kind: "async" });
+      if (a_viewer_hash) aq_q = aq_q.contains("metadata", { viewer_hash: a_viewer_hash });
+      else aq_q = aq_q.eq("prospect_email", a_email!);
+      const { count: asyncCount } = await aq_q;
+      if ((asyncCount ?? 0) >= 3) {
+        return json({ error: "RATE_LIMIT_ASYNC_24H" }, 429);
+      }
+
+      const { data: campRow } = await admin
+        .from("campaigns").select("org_id").eq("id", campaign_id).maybeSingle();
+      if (!campRow) return json({ error: "Campaign not found" }, 404);
+
+      const { error: insErr } = await admin.from("prospect_room_questions").insert({
+        campaign_id,
+        org_id: campRow.org_id,
+        asset_in_focus_id: a_focus,
+        prospect_email: a_email,
+        prospect_display_name: a_name,
+        question: aq,
+        generated_answer: null,
+        ae_status: "new",
+        metadata: {
+          kind: "async",
+          is_async_reply: true,
+          viewer_hash: a_viewer_hash,
+          source: "deal_room_v15",
+        },
+      });
+      if (insErr) {
+        console.error("[prospect-room-ai] async insert error", insErr);
+        return json({ error: "Persist failed" }, 500);
+      }
+      return json({
+        mode: "async",
+        ui_label: UI_LABEL_QA,
+        disclosure: "Votre question a bien été transmise. Vous recevrez une réponse par email.",
+      });
+    }
+
 
     // Load isolated knowledge.
     const [campRes, assetsRes] = await Promise.all([
