@@ -212,6 +212,24 @@ export function AssistantDrawer({
                   <p className="whitespace-pre-line text-[14px] leading-relaxed text-foreground/80">
                     {answer}
                   </p>
+                  {!asyncSent && (
+                    <button
+                      onClick={sendAsync}
+                      disabled={asyncLoading}
+                      className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-foreground/65 underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+                    >
+                      {asyncLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                      Pas assez précis ? Demander à {aeFirstName || "votre interlocuteur"}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {asyncSent && (
+                <div className="rounded-xl border border-[hsl(var(--accent))]/30 bg-[hsl(var(--accent))]/8 p-4">
+                  <p className="text-[13px] leading-relaxed text-foreground/80">
+                    Votre question a été transmise à {aeFirstName || "votre interlocuteur"}. Vous recevrez une réponse par email.
+                  </p>
                 </div>
               )}
 
