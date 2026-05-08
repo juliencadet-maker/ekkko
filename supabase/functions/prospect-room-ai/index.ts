@@ -84,8 +84,8 @@ serve(async (req) => {
     if (!campaign_id || typeof campaign_id !== "string" || !UUID.test(campaign_id)) {
       return json({ error: "Valid campaign_id required" }, 400);
     }
-    if (mode !== "summarize" && mode !== "qa") {
-      return json({ error: "mode must be 'summarize' or 'qa'" }, 400);
+    if (mode !== "summarize" && mode !== "qa" && mode !== "async") {
+      return json({ error: "mode must be 'summarize', 'qa' or 'async'" }, 400);
     }
 
     const admin = createClient(
