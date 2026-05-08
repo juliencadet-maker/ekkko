@@ -1604,7 +1604,11 @@ export default function CampaignDetail() {
           </div>
           <div className="flex gap-2">
             {/* BUG 5 — "Voir en tant que prospect" in header */}
-            <Button variant="outline" size="sm" onClick={() => window.open(`/lp/${id}?preview=true`, "_blank")}>
+            <Button variant="outline" size="sm" onClick={() => {
+              const mode = campaign?.deal_experience_mode;
+              const path = mode === "deal_room" ? `/dr/${id}?preview=true` : `/lp/${id}?preview=true`;
+              window.open(path, "_blank");
+            }}>
               <Eye className="mr-2 h-3.5 w-3.5" />
               Voir en tant que prospect
             </Button>

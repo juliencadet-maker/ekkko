@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AssetLandingPage from "@/pages/AssetLandingPage";
 import { useDealRoomVersion } from "@/hooks/useDealRoomVersion";
@@ -16,6 +16,8 @@ const V15Room = lazy(() =>
  */
 export default function ProspectRoomRouter() {
   const { campaignId } = useParams<{ campaignId: string }>();
+  const location = useLocation();
+  const forceV3 = location.pathname.startsWith("/dr/");
   const [orgId, setOrgId] = useState<string | null | undefined>(undefined);
   const version = useDealRoomVersion(orgId ?? null);
 
@@ -34,7 +36,7 @@ export default function ProspectRoomRouter() {
     })();
   }, [campaignId]);
 
-  if (orgId === undefined || version === "loading") {
+  if (orgId === undefined || (!forceV3 && version === "loading")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Chargement…</p>
@@ -42,7 +44,7 @@ export default function ProspectRoomRouter() {
     );
   }
 
-  if (version === "v3" && campaignId) {
+  if ((forceV3 || version === "v3") && campaignId) {
     return (
       <Suspense
         fallback={

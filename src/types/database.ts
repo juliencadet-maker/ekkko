@@ -140,6 +140,7 @@ export interface Campaign {
   scheduled_at: string | null;
   completed_at: string | null;
   metadata: Record<string, unknown>;
+  deal_experience_mode?: string | null;
   created_at: string;
   updated_at: string;
   identity?: Identity;
