@@ -12,6 +12,8 @@ import Auth from "./pages/Auth";
 import AuthDemo from "./pages/AuthDemo";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import Cockpit from "./pages/Cockpit";
+import Inbox from "./pages/Inbox";
 import AgentPage from "./pages/AgentPage";
 import Campaigns from "./pages/Campaigns";
 import CampaignDetail from "./pages/CampaignDetail";
@@ -44,6 +46,8 @@ const App = () => (
             <Route path="/approve/:token" element={<ApprovalReview />} />
             <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
             <Route path="/app/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+            <Route path="/app/cockpit" element={<AuthGuard><Cockpit /></AuthGuard>} />
+            <Route path="/app/inbox" element={<AuthGuard><Inbox /></AuthGuard>} />
             <Route path="/app/agent" element={<AuthGuard><AgentPage /></AuthGuard>} />
             <Route path="/app/campaigns" element={<AuthGuard><Campaigns /></AuthGuard>} />
             <Route path="/app/campaigns/new" element={<AuthGuard><NewCampaign /></AuthGuard>} />
