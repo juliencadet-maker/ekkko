@@ -22,7 +22,7 @@ import { FacecamRecorder } from "@/components/campaign/FacecamRecorder";
 import { VideoImportUpload } from "@/components/campaign/VideoImportUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { EkkoLoader } from "@/components/EkkoLoader";
+import { EkkoLoader } from "@/components/ui/EkkoLoader";
 
 interface Props {
   open: boolean;
