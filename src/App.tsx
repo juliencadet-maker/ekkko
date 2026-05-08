@@ -22,7 +22,6 @@ import Audit from "./pages/Audit";
 import Governance from "./pages/Governance";
 import Settings from "./pages/Settings";
 import UserApprovals from "./pages/UserApprovals";
-import AssetLandingPage from "./pages/AssetLandingPage";
 import ProspectRoomRouter from "./pages/prospect/ProspectRoomRouter";
 import DealIntelligence from "./pages/DealIntelligence";
 import SharePage from "./pages/SharePage";
