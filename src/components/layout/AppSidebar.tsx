@@ -19,14 +19,19 @@ import {
   ShieldCheck,
   User,
   UserCheck,
+  Compass,
+  Inbox as InboxIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ROLE_LABELS } from "@/lib/constants";
 import { NotificationBell } from "./NotificationBell";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
+import { useAECockpitFeed } from "@/hooks/useAECockpitFeed";
 
 const navigationItems = [
+  { label: "Cockpit", href: "/app/cockpit", icon: Compass },
+  { label: "Inbox", href: "/app/inbox", icon: InboxIcon, badgeKey: "inboxCount" as const },
   { label: "Deals", href: "/app/campaigns", icon: LayoutList },
   { label: "Agent Ekko", href: "/app/agent", icon: MessageSquare },
   { label: "Deal Intelligence", href: "/app/deal-intelligence", icon: Brain },
@@ -103,11 +108,19 @@ export function AppSidebar() {
       .then(({ count }) => setCampaignCount(count || 0));
   }, [membership?.org_id]);
 
+  // Global signal badge (cross-deals) — Phase 1d.5d-2 GC-35
+  const { data: feed } = useAECockpitFeed(60_000);
+  const inboxCount = feed?.badges.global_attention || 0;
+
   const renderNavItem = (item: typeof navigationItems[0]) => {
     const isActive = location.pathname === item.href ||
       (item.href === "/app/campaigns" && location.pathname.startsWith("/app/campaigns"));
     const Icon = item.icon;
-    const showBadge = (item as any).badgeKey === "pendingApprovals" && pendingCount > 0;
+    const badgeKey = (item as any).badgeKey;
+    const badgeValue =
+      badgeKey === "pendingApprovals" ? pendingCount :
+      badgeKey === "inboxCount" ? inboxCount : 0;
+    const showBadge = badgeKey && badgeValue > 0;
 
     return (
       <li key={item.href}>
@@ -124,7 +137,7 @@ export function AppSidebar() {
           <span className="flex-1">{item.label}</span>
           {showBadge && (
             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold px-1.5">
-              {pendingCount}
+              {badgeValue > 99 ? "99+" : badgeValue}
             </span>
           )}
         </Link>
