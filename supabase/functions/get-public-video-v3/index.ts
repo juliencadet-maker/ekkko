@@ -88,8 +88,10 @@ serve(async (req) => {
     const [allAssetsRes, campaignRes, agentCtxRes, knownViewersRes, contactRolesRes] =
       await Promise.all([
         supabase.from("deal_assets")
-          .select("id, asset_type, file_url, asset_purpose")
+          .select("id, asset_type, file_url, asset_purpose, display_order, block_group, block_title, block_description")
           .eq("campaign_id", campaign_id).eq("asset_status", "active")
+          .is("deleted_at", null)
+          .order("display_order", { ascending: true })
           .order("created_at", { ascending: true }),
         supabase.from("campaigns")
           .select("name, description, deal_owner_id, created_by_user_id, deal_experience_mode, metadata, company_display_name, org_id")
