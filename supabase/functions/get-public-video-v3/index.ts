@@ -266,6 +266,7 @@ serve(async (req) => {
       known_contacts,
       resolved_viewer,
       topics_enabled,
+      calendly_url: typeof meta.calendly_url === "string" && meta.calendly_url.startsWith("https://") ? meta.calendly_url : null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
