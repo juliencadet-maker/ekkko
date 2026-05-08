@@ -1873,6 +1873,45 @@ export type Database = {
           },
         ]
       }
+      prospect_reactions: {
+        Row: {
+          asset_id: string | null
+          block_group: string | null
+          campaign_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          org_id: string
+          prospect_email: string | null
+          reaction: string
+          viewer_hash: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          block_group?: string | null
+          campaign_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          org_id: string
+          prospect_email?: string | null
+          reaction: string
+          viewer_hash?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          block_group?: string | null
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          org_id?: string
+          prospect_email?: string | null
+          reaction?: string
+          viewer_hash?: string | null
+        }
+        Relationships: []
+      }
       prospect_room_questions: {
         Row: {
           ae_notes: string | null
