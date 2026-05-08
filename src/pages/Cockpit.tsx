@@ -139,9 +139,10 @@ export default function Cockpit() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4">
-                <div className="text-xs text-muted-foreground">Nouveaux signaux (7j)</div>
+                <div className="text-xs text-muted-foreground">Nouveaux depuis votre dernière visite</div>
                 <div className="text-2xl font-semibold text-foreground mt-1">
-                  {data.badges.new_signals}
+                  {data.badges.new_since_visit}
+                  <span className="text-xs text-muted-foreground font-normal ml-2">/ {data.badges.new_signals} sur 7j</span>
                 </div>
               </CardContent>
             </Card>
@@ -170,6 +171,30 @@ export default function Cockpit() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Pulse 7j (OOB-5) */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-signal" />
+                Pulse 7 jours
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-xs text-muted-foreground">Accélèrent</div>
+                <div className="text-xl font-semibold text-signal">{data.momentum.accelerating}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Stables</div>
+                <div className="text-xl font-semibold text-foreground">{data.momentum.stable}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Ralentissent</div>
+                <div className="text-xl font-semibold text-destructive">{data.momentum.slipping}</div>
+              </div>
+            </CardContent>
+          </Card>
 
           {data.meta.deal_count === 0 ? (
             <EmptyState
