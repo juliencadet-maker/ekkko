@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.deal-assets-detach]
 verify_jwt = false
+
+[functions.get-ae-cockpit-feed]
+verify_jwt = false
