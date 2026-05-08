@@ -50,10 +50,10 @@ export function ProspectQuestionsSection({ campaignId, onCountChange }: Props) {
   useEffect(() => { load(); }, [campaignId]);
 
   async function setStatus(id: string, status: "reviewed" | "actioned" | "dismissed") {
-    const update: any = { ae_status: status };
-    if (status !== "new") {
-      update.reviewed_at = new Date().toISOString();
-    }
+    const update: any = {
+      ae_status: status,
+      reviewed_at: new Date().toISOString(),
+    };
     const { error } = await supabase
       .from("prospect_room_questions").update(update).eq("id", id);
     if (error) {
