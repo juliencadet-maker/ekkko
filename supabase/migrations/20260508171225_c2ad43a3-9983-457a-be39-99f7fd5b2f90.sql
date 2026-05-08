@@ -1,25 +1,6 @@
-# Phase 1c-1b — Migration Surface Deal Room media (R1+R2 intégrés)
+-- Phase 1c-1b — Surface Deal Room media (idempotente, D59/D60/D61 + R1/R2/R4)
 
-> ⚠️ Je suis en **plan mode** : je ne peux pas exécuter `supabase--migration` ici. Approuve ce plan (bouton **Implement plan**) pour que je lance la migration + produise les 10 preuves dans la foulée. Aucune autre modif n'arrivera tant que tu n'approuves pas.
-
-## Décisions intégrées
-- **D59** — `campaigns.script_oral` legacy : `COMMENT` only, aucun touch.
-- **D60** — `idempotency_keys` backend-only : RLS ON, **0 policy** (service_role only).
-- **D61** — Coexistence définitive `script_versions` (V0) ↔ `deal_room_version` (V1.5) : `COMMENT` de scope sur les deux, aucune fusion.
-- **R1** — Checklist corrigée : **21 colonnes** sur `deal_room_version` (pas 18).
-- **R2** — `RAISE NOTICE` ajouté pour `profiles.deactivated_at IS NULL` (cible 2).
-- **R3** — Si linter remonte INFO/WARN `RLS Enabled No Policy` sur `idempotency_keys` : justifié par design (cf. COMMENT D60).
-- **R4** — Ordre triggers `BEFORE UPDATE` sur `deal_room_version` : `trg_drv_updated_at` puis `trg_invalidate_audio` (alphabétique, sans dépendance).
-
-## SQL final à exécuter
-
-```sql
--- =========================================================
--- Phase 1c-1b — Surface Deal Room media (idempotente)
--- Intègre D59/D60/D61 + R1/R2/R4
--- =========================================================
-
--- 1. Table deal_room_version (21 colonnes)
+-- 1. deal_room_version (21 colonnes)
 CREATE TABLE IF NOT EXISTS public.deal_room_version (
   id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   deal_room_id          uuid NOT NULL,
@@ -45,9 +26,9 @@ CREATE TABLE IF NOT EXISTS public.deal_room_version (
 );
 
 COMMENT ON TABLE public.deal_room_version IS
-  'V1.5 — Versioning du media du Deal Room (script + audio + video). Coexiste avec script_versions (V0, édition pré-rejet) — D61.';
+  'V1.5 — Versioning du media du Deal Room (script + audio + video). Coexiste avec script_versions (V0, edition pre-rejet) — D61.';
 
--- 2. CHECK constraints (whitelist statuts)
+-- 2. CHECK constraints
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'deal_room_version_audio_status_chk') THEN
     ALTER TABLE public.deal_room_version
@@ -68,9 +49,8 @@ CREATE INDEX IF NOT EXISTS idx_drv_org       ON public.deal_room_version(org_id)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_drv_active_per_room
   ON public.deal_room_version(deal_room_id) WHERE is_active = true;
 
--- 4. RLS deal_room_version (option D — org members via campaign)
+-- 4. RLS deal_room_version
 ALTER TABLE public.deal_room_version ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Org members can access deal_room_version" ON public.deal_room_version;
 CREATE POLICY "Org members can access deal_room_version"
   ON public.deal_room_version
@@ -81,7 +61,7 @@ CREATE POLICY "Org members can access deal_room_version"
       AND campaigns.org_id = get_user_org_id(auth.uid())
   ));
 
--- 5. Triggers BEFORE UPDATE (R4 — ordre alphabétique)
+-- 5. Triggers BEFORE UPDATE (R4 — ordre alphabetique)
 CREATE OR REPLACE FUNCTION public.invalidate_audio_on_script_change()
 RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
 BEGIN
@@ -106,7 +86,7 @@ CREATE TRIGGER trg_invalidate_audio
   BEFORE UPDATE ON public.deal_room_version
   FOR EACH ROW EXECUTE FUNCTION public.invalidate_audio_on_script_change();
 
--- 6. idempotency_keys (D60 — backend-only)
+-- 6. idempotency_keys (D60)
 CREATE TABLE IF NOT EXISTS public.idempotency_keys (
   key            text PRIMARY KEY,
   scope          text NOT NULL,
@@ -118,28 +98,26 @@ CREATE TABLE IF NOT EXISTS public.idempotency_keys (
   expires_at     timestamptz NOT NULL DEFAULT (now() + interval '24 hours')
 );
 COMMENT ON TABLE public.idempotency_keys IS
-  'Backend-only — accès service_role uniquement. RLS ON sans policy par design (D60). Ne pas exposer à role authenticated.';
+  'Backend-only — acces service_role uniquement. RLS ON sans policy par design (D60). Ne pas exposer a role authenticated.';
 CREATE INDEX IF NOT EXISTS idx_idem_expires ON public.idempotency_keys(expires_at);
 ALTER TABLE public.idempotency_keys ENABLE ROW LEVEL SECURITY;
 
--- 7. RGPD — identities.cloning_active + profiles.deactivated_at
-ALTER TABLE public.identities  ADD COLUMN IF NOT EXISTS cloning_active boolean NOT NULL DEFAULT true;
-ALTER TABLE public.profiles    ADD COLUMN IF NOT EXISTS deactivated_at timestamptz;
-
--- Backfill explicite (idempotent)
+-- 7. RGPD
+ALTER TABLE public.identities ADD COLUMN IF NOT EXISTS cloning_active boolean NOT NULL DEFAULT true;
+ALTER TABLE public.profiles   ADD COLUMN IF NOT EXISTS deactivated_at timestamptz;
 UPDATE public.identities SET cloning_active = true WHERE cloning_active IS NULL;
 
--- 8. Cohabitation D59/D61 — COMMENT only sur legacy
+-- 8. Cohabitation D59/D61 — COMMENT only
 COMMENT ON COLUMN public.campaigns.script_oral IS
-  'Legacy V0 (Self-Campaign) — non touché en V1.5. Pipeline existant conservé. D59.';
+  'Legacy V0 (Self-Campaign) — non touche en V1.5. Pipeline existant conserve. D59.';
 COMMENT ON TABLE public.script_versions IS
-  'V0 — historique d''itération de script pré-rejet (Self-Campaign). Coexiste avec deal_room_version (V1.5). D61.';
+  'V0 — historique iteration de script pre-rejet (Self-Campaign). Coexiste avec deal_room_version (V1.5). D61.';
 COMMENT ON COLUMN public.deal_rooms.audio_status IS
-  'Cache dénormalisé de la version active. Source de vérité = deal_room_version.audio_status WHERE is_active. D61.';
+  'Cache denormalise de la version active. Source de verite = deal_room_version.audio_status WHERE is_active. D61.';
 COMMENT ON COLUMN public.deal_rooms.video_status IS
-  'Cache dénormalisé de la version active. Source de vérité = deal_room_version.video_status WHERE is_active. D61.';
+  'Cache denormalise de la version active. Source de verite = deal_room_version.video_status WHERE is_active. D61.';
 
--- 9. Validation post-migration (R2 intégré)
+-- 9. Validation post-migration (R2)
 DO $$
 DECLARE
   v_identities_with_cloning_active INTEGER;
@@ -159,33 +137,14 @@ BEGIN
   RAISE NOTICE '  identities avec cloning_active set : % (cible: 11)', v_identities_with_cloning_active;
   RAISE NOTICE '  profiles total                     : % (cible: 2)', v_profiles_count;
   RAISE NOTICE '  profiles avec deactivated_at NULL  : % (cible: 2)', v_profiles_deactivated_null;
-  RAISE NOTICE '  deal_room_version count            : % (cible: 0 — table neuve)', v_deal_room_version_count;
-  RAISE NOTICE '  idempotency_keys count             : % (cible: 0 — table neuve)', v_idempotency_count;
+  RAISE NOTICE '  deal_room_version count            : % (cible: 0)', v_deal_room_version_count;
+  RAISE NOTICE '  idempotency_keys count             : % (cible: 0)', v_idempotency_count;
   RAISE NOTICE '======================================';
 
   IF v_identities_with_cloning_active < 11 THEN
-    RAISE WARNING 'Phase 1c-1b : cloning_active non populé pour 100%% des identities. Investiguer.';
+    RAISE WARNING 'Phase 1c-1b : cloning_active non popule pour 100%% des identities.';
   END IF;
   IF v_profiles_deactivated_null < v_profiles_count THEN
     RAISE WARNING 'Phase 1c-1b : profile(s) avec deactivated_at NOT NULL post-migration. Anormal.';
   END IF;
 END $$;
-```
-
-## Preuves à produire post-exécution (un seul message)
-1. Migration appliquée (output supabase--migration).
-2. Rejeu idempotent 2× (mêmes counts, 0 erreur).
-3. `\d+ public.deal_room_version` → 21 colonnes confirmées.
-4. Liste triggers `deal_room_version` → ordre alphabétique trg_drv_updated_at, trg_invalidate_audio (R4).
-5. Sortie `RAISE NOTICE` validation (R2 inclus).
-6. Diff structurel policies RLS (avant/après — option D).
-7. Linter post-migration : cible 18 warnings inchangée + note R3 si INFO/WARN sur `idempotency_keys`.
-8. Counts : identities cloning_active=11, profiles deactivated_at NULL=2.
-9. Diff `src/integrations/supabase/types.ts`.
-10. Checklist § 3.2 corrigée (21 colonnes — R1).
-
-## Hors-scope (rappels)
-- Pas de code applicatif, pas de seed, pas d'edge function.
-- Pas de touch sur `campaigns.script_oral` / `script_versions` (COMMENT only).
-- Pas de Notion update tant que Ju n'a pas validé les preuves.
-- Doc stratégique "Ekko — Vision unifiée et horizon de convergence" : noté, je le lirai en entrée de Phase 1c-1c comme filtre décisionnel.
