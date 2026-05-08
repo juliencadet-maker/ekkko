@@ -81,6 +81,8 @@ export function AssistantDrawer({
     setAskLoading(true);
     setAskError(null);
     setAnswer(null);
+    setAsyncSent(false);
+    setLastAskedQuestion(q);
     try {
       const { data, error } = await supabase.functions.invoke<AIResp>("prospect-room-ai", {
         body: {
@@ -104,6 +106,38 @@ export function AssistantDrawer({
       setAskError("Réponse indisponible.");
     } finally {
       setAskLoading(false);
+    }
+  };
+
+  // GC-46 — Async reply : transmettre la question à l'AE pour réponse manuelle.
+  const sendAsync = async () => {
+    const q = (lastAskedQuestion || question).trim();
+    if (!q) return;
+    setAsyncLoading(true);
+    setAskError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke<AIResp>("prospect-room-ai", {
+        body: {
+          mode: "async",
+          campaign_id: campaignId,
+          question: q,
+          viewer_hash: viewerHash,
+          prospect_email: prospectEmail,
+        },
+      });
+      if (error) throw error;
+      if (data?.error === "RATE_LIMIT_ASYNC_24H") {
+        setAskError("Limite atteinte (3 demandes / 24 h).");
+      } else if (data?.error) {
+        setAskError("Envoi impossible pour le moment.");
+      } else {
+        setAsyncSent(true);
+        setQuestion("");
+      }
+    } catch {
+      setAskError("Envoi impossible.");
+    } finally {
+      setAsyncLoading(false);
     }
   };
 
