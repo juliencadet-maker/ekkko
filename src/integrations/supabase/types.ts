@@ -796,9 +796,13 @@ export type Database = {
           asset_purpose: string
           asset_status: string | null
           asset_type: string
+          block_description: string | null
+          block_group: string | null
+          block_title: string | null
           campaign_id: string
           created_at: string
           deleted_at: string | null
+          display_order: number
           file_url: string | null
           id: string
           parent_asset_id: string | null
@@ -811,9 +815,13 @@ export type Database = {
           asset_purpose: string
           asset_status?: string | null
           asset_type: string
+          block_description?: string | null
+          block_group?: string | null
+          block_title?: string | null
           campaign_id: string
           created_at?: string
           deleted_at?: string | null
+          display_order?: number
           file_url?: string | null
           id?: string
           parent_asset_id?: string | null
@@ -826,9 +834,13 @@ export type Database = {
           asset_purpose?: string
           asset_status?: string | null
           asset_type?: string
+          block_description?: string | null
+          block_group?: string | null
+          block_title?: string | null
           campaign_id?: string
           created_at?: string
           deleted_at?: string | null
+          display_order?: number
           file_url?: string | null
           id?: string
           parent_asset_id?: string | null
@@ -1706,6 +1718,7 @@ export type Database = {
       }
       orgs: {
         Row: {
+          brand_settings: Json
           created_at: string
           feature_flags: Json | null
           id: string
@@ -1717,6 +1730,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand_settings?: Json
           created_at?: string
           feature_flags?: Json | null
           id?: string
@@ -1728,6 +1742,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand_settings?: Json
           created_at?: string
           feature_flags?: Json | null
           id?: string
@@ -1854,6 +1869,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prospect_room_questions: {
+        Row: {
+          ae_notes: string | null
+          ae_status: string
+          ae_video_response_asset_id: string | null
+          asset_in_focus_id: string | null
+          campaign_id: string
+          captured_at: string
+          created_at: string
+          generated_answer: string | null
+          id: string
+          metadata: Json
+          org_id: string
+          prospect_display_name: string | null
+          prospect_email: string | null
+          question: string
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          viewer_id: string | null
+        }
+        Insert: {
+          ae_notes?: string | null
+          ae_status?: string
+          ae_video_response_asset_id?: string | null
+          asset_in_focus_id?: string | null
+          campaign_id: string
+          captured_at?: string
+          created_at?: string
+          generated_answer?: string | null
+          id?: string
+          metadata?: Json
+          org_id: string
+          prospect_display_name?: string | null
+          prospect_email?: string | null
+          question: string
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          viewer_id?: string | null
+        }
+        Update: {
+          ae_notes?: string | null
+          ae_status?: string
+          ae_video_response_asset_id?: string | null
+          asset_in_focus_id?: string | null
+          campaign_id?: string
+          captured_at?: string
+          created_at?: string
+          generated_answer?: string | null
+          id?: string
+          metadata?: Json
+          org_id?: string
+          prospect_display_name?: string | null
+          prospect_email?: string | null
+          question?: string
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          viewer_id?: string | null
+        }
+        Relationships: []
       }
       providers: {
         Row: {
