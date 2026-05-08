@@ -44,6 +44,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/demo" element={<AuthDemo />} />
             <Route path="/lp/:campaignId" element={<ProspectRoomRouter />} />
+            <Route path="/dr/:campaignId" element={<ProspectRoomRouter />} />
             <Route path="/approve/:token" element={<ApprovalReview />} />
             <Route path="/design/deal-room" element={<DealRoomMock />} />
             <Route path="/app/onboarding" element={<AuthGuard requireOnboarding={false}><Onboarding /></AuthGuard>} />
