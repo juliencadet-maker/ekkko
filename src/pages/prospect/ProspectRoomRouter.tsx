@@ -36,7 +36,7 @@ export default function ProspectRoomRouter() {
     })();
   }, [campaignId]);
 
-  if (orgId === undefined || version === "loading") {
+  if (orgId === undefined || (!forceV3 && version === "loading")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Chargement…</p>
@@ -44,7 +44,7 @@ export default function ProspectRoomRouter() {
     );
   }
 
-  if (version === "v3" && campaignId) {
+  if ((forceV3 || version === "v3") && campaignId) {
     return (
       <Suspense
         fallback={
