@@ -1,92 +1,182 @@
 
-## 1. Confirmation MAJ CODE À JOUR § 4
+# Phase 1c-1a — Bibliothèque assets org-level
 
-Restructuration validée et exécutée comme proposée :
+Migration finale validée (P2 amendé post-A1/A3/A4). Aucune ligne de code écrite tant que ce plan n'est pas approuvé.
 
-- **§ 4.A — État prod actuel (8 colonnes)** : legacy PRÉ-1a + Phase 1a (`clone_status`, `script_oral`, `script_oral_generated_at`, `committee_size_declared`, `deal_value`, etc.)
-- **§ 4.B — Ajouts Phase 1b (4 colonnes)** : `identities.audio_source_path`, `campaigns.company_display_name`, `deal_rooms.audio_status`, `deal_rooms.video_status`
-- **§ 4.C — Manquants RGPD pour 1c-1b** : `identities.cloning_active`, `profiles.deactivated_at` (à créer)
+## Décisions actées
 
-Page Notion sera mise à jour dès sortie de plan-mode. SAV-006 reste source de vérité projet, intouché.
+| # | Sujet | Tranche |
+|---|---|---|
+| 1 | RLS pattern | `get_user_org_id(auth.uid())` |
+| 2 | `owner_id` | FK `auth.users(id) ON DELETE SET NULL` |
+| 3 | `mime_type` | NULLABLE (legacy = NULL, requis applicativement pour nouveaux uploads) |
+| 4 | `asset_type` legacy | CHECK strict conservé, mapping fallback `'other'` |
+| 5 | `storage_path` | Path Supabase Storage (extraction regex depuis `file_url` legacy) |
+| 6 | `archived_at` | Conservé, distinct de `deal_assets.deleted_at` |
+| A1 | Compteurs storage | 4 catégories : `public_url`, `signed_url`, `already_relative_path`, `unknown_pattern` |
+| A3 | Test RLS cross-org | `BEGIN; ... ROLLBACK;` avec 2 users + 2 orgs, 8 assertions avec preuves SQL |
+| A4 | Test regex enrichi | `BEGIN; ... ROLLBACK;` avec 4 fixtures couvrant les 4 patterns |
 
----
+## Ordre d'exécution
 
-## 2. Arbitrage `campaigns.script_oral` — recherche code
+```text
+1. Pré-flight (read-only)
+   - SELECT file_url FROM deal_assets WHERE deleted_at IS NULL  (calibrer regex)
+   - SELECT count(*) FROM orgs WHERE is_demo_org = false        (orgs réelles)
+   - SELECT count(*) FROM auth.users                            (users dispo)
+   - supabase--linter (baseline warnings)
 
-### Audit complet (résultats `rg`)
+2. Test enrichi regex storage_path (BEGIN; ... ROLLBACK;)
+   - 4 fixtures deal_assets : public URL, signed URL, path relatif, URL externe
+   - Exécution backfill DO $$
+   - Vérification table : storage_path attendu pour chaque cas
+   - Vérification RAISE NOTICE : 4 compteurs cohérents
+   - Si un cas KO → STOP, diagnostic avant prod
 
-**Écritures dans la colonne `campaigns.script_oral` :**
-- `supabase/functions/transform-script-to-speech/index.ts:326` — UPDATE direct sur `campaigns` après transformation Gemini.
-  C'est l'unique writer.
+3. Test RLS cross-org (BEGIN; ... ROLLBACK;)
+   - 2 orgs + 2 users + 2 memberships créés en transaction
+   - 8 assertions :
+     a. user_A SELECT → 1 ligne (son asset)
+     b. user_B SELECT → 0 ligne (cross-org isolation)
+     c. user_B INSERT dans org_A → ERREUR RLS WITH CHECK
+     d. user_B UPDATE asset user_A → 0 ligne affectée
+     e. user_A UPDATE son asset → 1 ligne affectée
+     f. user_A INSERT dans org_B → ERREUR RLS WITH CHECK
+     g. user_A DELETE → ERREUR (pas de policy DELETE)
+     h. anonymous SELECT → 0 ligne
+   - Preuves SQL brutes (counts, error messages, lignes affectées)
 
-**Lectures de la colonne `campaigns.script_oral` :**
-- `supabase/functions/tavus-generate-video/index.ts:235` — `const baseScript = (campaign as any).script_oral || campaign.script;`
-  → **Pipeline Tavus actif** consomme cette colonne pour générer la vidéo exec.
+4. Migration réelle (si étapes 2 & 3 passent)
+   - Préambule défensif (deal_assets, campaigns, get_user_org_id présents)
+   - CREATE TABLE assets (17 colonnes + 5 index)
+   - 3 RLS policies (SELECT/INSERT/UPDATE) — pas de DELETE policy
+   - ALTER deal_assets ADD COLUMN asset_library_id + index partiel
+   - Backfill DO $$ idempotent (WHERE asset_library_id IS NULL)
+   - Validation post-migration : 0 orphan attendu
 
-**Consommateurs indirects (via réponse HTTP, pas la colonne) :**
-- `src/pages/NewCampaign.tsx:280-285` — lit `res.data.script_oral` retourné par la fonction (pas la DB).
-- `supabase/functions/process-approval-decision/index.ts:108-124` — appelle `transform-script-to-speech` dans le pipeline d'approbation, consomme la réponse.
+5. Idempotence : 2e exécution → 0 changement (RAISE NOTICE compteurs à 0 sauf déjà migré)
 
-**Conclusion factuelle :**
-- TTS V0 mentionnée dans la migration du 2 avril **est encore active**.
-- `voxtral-tts` ne lit/écrit PAS `script_oral` (commentaire ligne 141 confirme : closing phrase TTS-only, non persistée).
-- 1 writer (`transform-script-to-speech`), 1 reader DB (`tavus-generate-video`), branchés ensemble via `process-approval-decision`.
+6. Linter Supabase post-migration (diff vs baseline)
 
-### Verdict : **Scénario A nuancé** (avec frontière claire)
+7. Tests régression manuels
+   - Tracking vidéo, document events, landing Deal Room, voxtral-tts
 
-`campaigns.script_oral` n'est **pas** mort (scénario C éliminé). Mais c'est un **pipeline legacy mono-deal** (1 campaign = 1 script exec → 1 vidéo Tavus), qui ne sait pas gérer la logique multi-version Deal Room (versioning, raw vs spoken, prospect-level personalisation).
+8. MAJ Notion CODE À JOUR § Phase 1c-1a (diff exact : 1 table, 5 index, 3 policies, 1 colonne pivot, 4 COMMENT)
 
-Ajouter un trigger d'agrégation (scénario B) introduirait un couplage SQL fragile entre deux modèles aux sémantiques différentes (`campaigns.script_oral` = script exec global ; `deal_room_version.script_raw_text` = script versionné par Deal Room). Anti-pattern.
+9. Retour final 4 partenaires avec toutes les preuves
+```
 
-**Recommandation : Scénario A avec frontière sémantique explicite.**
+## Détails techniques
 
-#### Règles à graver en Phase 1c-1b
+### Migration SQL principale
 
-1. **`campaigns.script_oral`** reste actif **uniquement** pour le pipeline exec/Tavus legacy (genèse mono-script, pas de versioning, pas de Deal Room).
-   - Aucun nouveau code ne doit lire/écrire cette colonne.
-   - `COMMENT ON COLUMN campaigns.script_oral IS 'LEGACY — Tavus exec pipeline only. New code MUST use deal_room_version.script_raw_text.'`
+Fichier généré par `supabase--migration` :
 
-2. **`deal_room_version.script_raw_text` + `script_spoken_text`** = source canonique pour **tout** flow Deal Room (Phase 1c-2 et au-delà).
+```sql
+-- 0. Préambule défensif (RAISE EXCEPTION si pré-requis manquants)
 
-3. **Pipeline Tavus** (`tavus-generate-video`) :
-   - **Phase 1c** : on ne touche pas, il continue de lire `campaigns.script_oral`.
-   - **Phase 1d ou Mega-features** : ticket dédié pour migrer Tavus vers `deal_room_version.script_spoken_text` (la version canonique du script, post-Voxtral). Une fois migré, `campaigns.script_oral` devient supprimable.
+-- 1. CREATE TABLE public.assets
+--    Colonnes : id, org_id, owner_id (FK auth.users ON DELETE SET NULL),
+--    name (NOT NULL), asset_type (CHECK whitelist 6 valeurs), purpose,
+--    storage_path (NOT NULL), mime_type (NULL), file_size_bytes,
+--    tags (TEXT[]), description,
+--    last_used_at, last_used_for_company, usage_count (DEFAULT 0),
+--    created_via (CHECK whitelist 4 valeurs : web/extension/agent_compositeur/legacy_migration),
+--    created_at, updated_at, archived_at
 
-4. **`transform-script-to-speech`** : reste tel quel en Phase 1c (il sert encore le pipeline exec). Phase 1e introduira la nouvelle voie via l'agent compositeur écrivant directement dans `deal_room_version.script_raw_text`.
+-- 2. Index : org_id, owner_id, (owner_id, last_used_at DESC NULLS LAST),
+--    GIN tags, GIN tsvector('french', name+description+purpose)
 
-5. **Pas de trigger d'agrégation, pas de mirror.** Les deux colonnes représentent deux concepts différents :
-   - `script_oral` = sortie Gemini "transformation orale" stockée au niveau campaign (one-shot).
-   - `script_raw_text` = input AE/agent versionné au niveau deal_room.
-   - `script_spoken_text` = sortie Voxtral persistée par version.
+-- 3. RLS ENABLE + 3 policies via get_user_org_id(auth.uid())
+--    SELECT : org_id matche
+--    INSERT : org_id matche (WITH CHECK)
+--    UPDATE : owner_id = auth.uid() AND org_id matche
+--    Pas de policy DELETE (soft-archive via UPDATE archived_at)
 
-#### Justification synthétique
+-- 4. ALTER deal_assets ADD COLUMN asset_library_id UUID REFERENCES assets(id) ON DELETE SET NULL
+--    Index partiel WHERE asset_library_id IS NOT NULL
 
-| Critère | A (nuancé) | B (mirror) | C (mort) |
-|---|---|---|---|
-| Aligné code actuel | ✅ Tavus continue | ⚠️ Trigger fragile | ❌ Faux : Tavus lit |
-| Risque régression | Nul | Élevé (trigger SQL) | Casse Tavus |
-| Anti-pattern double truth | Évité (frontières sémantiques) | Présent (agrégation) | N/A |
-| Effort 1c | 1 COMMENT SQL | Trigger + tests | Refacto Tavus immédiate |
-| Dette pour Mega-features | Suppression colonne propre | Suppression trigger + colonne | Aucune |
+-- 5. Backfill DO $$
+--    Variables compteurs : v_migrated, v_skipped (no org),
+--      v_storage_public, v_storage_signed, v_storage_relative, v_unclear_storage,
+--      v_other_type
+--    Loop : SELECT da.*, c.org_id, c.created_by_user_id WHERE asset_library_id IS NULL AND deleted_at IS NULL
+--    Mapping asset_type avec fallback 'other' (ILIKE patterns)
+--    Extraction storage_path : 4 cas (public_url, signed_url, already_relative, unknown)
+--    Insert assets + UPDATE deal_assets.asset_library_id
+--    RAISE NOTICE final avec les 7 compteurs
 
-Scénario A nuancé = effort minimal en 1c, dette claire et bornée pour Mega-features.
+-- 6. Validation post-migration
+--    SELECT count(*) deal_assets actifs avec org_id mais asset_library_id IS NULL
+--    RAISE NOTICE OK ou WARNING avec orphan_count
+```
 
----
+### Bloc extraction storage_path (4 cas)
 
-## 3. Actions restantes côté Lovable
+```sql
+IF file_url LIKE '%/storage/v1/object/public/%' THEN
+  → regex extraction, v_storage_public_count++
+ELSIF file_url LIKE '%/storage/v1/object/sign/%' THEN
+  → regex extraction, v_storage_signed_count++
+ELSIF file_url NOT LIKE 'http%' AND file_url NOT LIKE '//%' THEN
+  → garder tel quel, v_storage_relative_count++
+ELSE
+  → garder tel quel, v_unclear_storage_count++ + RAISE NOTICE
+END IF
+```
 
-- **Action 2** (Voxtral `response_format: "mp3"` direct) : test API réel sur compte Mistral Ekko **avant P1 Phase 1c-2**.
-- **Action 3** (modèle STT exact agent compositeur) : test API réel **avant P1 Phase 1e**.
+### Mapping asset_type legacy
 
-Pas bloquants pour 1c-1a ni 1c-1b.
+```sql
+CASE
+  WHEN da.asset_type IN ('presentation','demo','case_study','whitepaper','video','other') THEN da.asset_type
+  WHEN lower LIKE '%present%' THEN 'presentation'
+  WHEN lower LIKE '%demo%' THEN 'demo'
+  WHEN lower LIKE '%case%' OR LIKE '%client%' THEN 'case_study'
+  WHEN lower LIKE '%whitepaper%' OR LIKE '%paper%' THEN 'whitepaper'
+  WHEN lower LIKE '%video%' THEN 'video'
+  ELSE 'other'  -- + v_other_type_count++ + RAISE NOTICE
+END
+```
 
----
+### Test RLS — pattern simulation user
 
-## 4. Prêt pour P1 Phase 1c-1a
+Tentative `SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub TO '<uuid>';`. Si Supabase Cloud Lovable n'autorise pas ce pattern hors edge function (PostgREST exécute via JWT, mais en `psql` direct on est superuser), fallback : invocation des fonctions `get_user_org_id(<uuid>)` directement avec UUID hardcodés pour vérifier la logique de filtre, et test d'INSERT/UPDATE en désactivant temporairement le superuser via `SET LOCAL ROLE authenticated`. Si blocage total → arrêt et remontée à toi pour alternative (créer users via signup edge puis tester via edge function dédiée).
 
-Une fois ce plan validé :
-- Notion CODE À JOUR § 4 mis à jour (§ 4.A / 4.B / 4.C).
-- Décision script_oral = Scénario A nuancé gravée dans la doc Phase 1c-1b.
-- Claude peut générer P1 Phase 1c-1a (Bibliothèque assets) — scope confirmé inchangé.
+### Rollback
 
-On t'attend sur le go pour exécuter la MAJ Notion + ouvrir P1 Phase 1c-1a.
+```sql
+ALTER TABLE deal_assets DROP COLUMN IF EXISTS asset_library_id;
+DROP INDEX IF EXISTS idx_deal_assets_library_id;
+DROP TABLE IF EXISTS public.assets CASCADE;
+```
+
+## Checklist 100% (gate avant retour final)
+
+- [ ] Pré-flight : 4 sanity checks fournis avec sorties brutes
+- [ ] Test enrichi regex : 4 patterns validés en BEGIN/ROLLBACK avec table de vérif + RAISE NOTICE
+- [ ] Test RLS cross-org : 8 assertions avec preuves SQL (counts, errors, lignes affectées)
+- [ ] Migration : table + 5 index + 3 policies + colonne pivot + index partiel + 4 COMMENT
+- [ ] CHECK asset_type et created_via testés (INSERT hors whitelist → 23514)
+- [ ] FK `ON DELETE SET NULL` testée (DELETE asset → asset_library_id NULL)
+- [ ] Idempotence : 2e run = 0 changement
+- [ ] Backfill : RAISE NOTICE avec 7 compteurs cohérents
+- [ ] Validation post-migration : 0 orphan ou WARNING explicite
+- [ ] `src/integrations/supabase/types.ts` régénéré (commit séparé)
+- [ ] Aucun fichier intouchable modifié
+- [ ] Aucune écriture frontend sur `timeline_events`
+- [ ] Régression manuelle : tracking vidéo, doc events, Deal Room, voxtral-tts
+- [ ] Linter Supabase : diff baseline vs post (0 nouveau warning, ou justifié)
+- [ ] Notion CODE À JOUR § Phase 1c-1a mis à jour avec diff exact
+
+## Périmètre intouchable (rappel)
+
+Aucune modification de : `voxtral-tts`, `transform-script-to-speech`, `tavus-*`, `get-public-video`, `heygen-*`, frontend assets/Deal Room, `timeline_events` (lecture only), edge functions media. Hors scope strict 1c-1b/1c/2/3 (deal_room_version, idempotency_keys, RGPD, asset_tracked_links, agent_compose_sessions, fork v3, feature flags).
+
+## Workflow
+
+1. Tu approuves ce plan (clic "Implement plan").
+2. J'exécute dans l'ordre 1→9 avec arrêt immédiat à toute assertion KO.
+3. Je reviens avec retour complet : sorties SQL brutes des 3 sandboxes, RAISE NOTICE backfill, diff linter, captures régression, lien Notion mis à jour.
+4. ChatGPT audite les preuves, Ju valide, on enchaîne sur P1 Phase 1c-1b.
+
