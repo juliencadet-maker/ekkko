@@ -345,6 +345,69 @@ export type Database = {
           },
         ]
       }
+      assets: {
+        Row: {
+          archived_at: string | null
+          asset_type: string
+          created_at: string
+          created_via: string
+          description: string | null
+          file_size_bytes: number | null
+          id: string
+          last_used_at: string | null
+          last_used_for_company: string | null
+          mime_type: string | null
+          name: string
+          org_id: string
+          owner_id: string | null
+          purpose: string | null
+          storage_path: string
+          tags: string[] | null
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          archived_at?: string | null
+          asset_type: string
+          created_at?: string
+          created_via?: string
+          description?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          last_used_at?: string | null
+          last_used_for_company?: string | null
+          mime_type?: string | null
+          name: string
+          org_id: string
+          owner_id?: string | null
+          purpose?: string | null
+          storage_path: string
+          tags?: string[] | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          archived_at?: string | null
+          asset_type?: string
+          created_at?: string
+          created_via?: string
+          description?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          last_used_at?: string | null
+          last_used_for_company?: string | null
+          mime_type?: string | null
+          name?: string
+          org_id?: string
+          owner_id?: string | null
+          purpose?: string | null
+          storage_path?: string
+          tags?: string[] | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           created_at: string
@@ -612,6 +675,7 @@ export type Database = {
       deal_assets: {
         Row: {
           asset_hash: string | null
+          asset_library_id: string | null
           asset_purpose: string
           asset_status: string | null
           asset_type: string
@@ -626,6 +690,7 @@ export type Database = {
         }
         Insert: {
           asset_hash?: string | null
+          asset_library_id?: string | null
           asset_purpose: string
           asset_status?: string | null
           asset_type: string
@@ -640,6 +705,7 @@ export type Database = {
         }
         Update: {
           asset_hash?: string | null
+          asset_library_id?: string | null
           asset_purpose?: string
           asset_status?: string | null
           asset_type?: string
@@ -653,6 +719,13 @@ export type Database = {
           version_number?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "deal_assets_asset_library_id_fkey"
+            columns: ["asset_library_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "deal_assets_campaign_id_fkey"
             columns: ["campaign_id"]
