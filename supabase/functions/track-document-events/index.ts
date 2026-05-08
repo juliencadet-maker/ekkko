@@ -9,6 +9,7 @@ const corsHeaders = {
 const VALID_EVENTS = [
   "doc_opened", "doc_time_on_page", "doc_downloaded",
   "doc_return_visit", "doc_closed_without_read",
+  "link_click",
 ];
 
 const THRESHOLDS: Record<string, number> = {
