@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       .select("id, asset_status, asset_purpose, asset_type")
       .eq("id", asset_id)
       .eq("campaign_id", campaign_id)
-      .eq("asset_status", "valid")
+      .eq("asset_status", "active")
       .maybeSingle();
 
     if (assetError || !asset)
