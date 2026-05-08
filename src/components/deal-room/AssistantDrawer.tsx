@@ -13,7 +13,7 @@ interface Props {
 }
 
 interface AIResp {
-  mode: "summarize" | "qa";
+  mode: "summarize" | "qa" | "async";
   ui_label: string;
   disclosure: string;
   bullets?: string[];
