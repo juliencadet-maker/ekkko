@@ -2972,6 +2972,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_feature_enabled: {
+        Args: { p_flag_name: string; p_org_id: string }
+        Returns: boolean
+      }
       v0_update_script_oral: {
         Args: {
           p_campaign_id: string
