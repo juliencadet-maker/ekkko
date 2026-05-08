@@ -226,9 +226,7 @@ serve(async (req) => {
       return json({ error: "RATE_LIMIT_QA_24H" }, 429);
     }
 
-    // Fetch org_id (needed by RLS-friendly capture; available via campaign).
-    const { data: campOrg } = await admin
-      .from("campaigns").select("org_id").eq("id", campaign_id).single();
+    // org_id already loaded from campaigns above.
 
     const sysPrompt = [
       "Tu es un assistant qui répond aux questions d'un prospect à partir UNIQUEMENT du contexte JSON fourni.",
