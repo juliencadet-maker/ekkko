@@ -228,13 +228,17 @@ serve(async (req) => {
       context_bullets.push("Points de validation finale couverts");
 
     const secondary_assets = allAssets
-      .slice(0, 4)
-      .map((a: { id: string; asset_type: string; asset_purpose: string; file_url: string }) => ({
+      .slice(0, 12)
+      .map((a: any) => ({
         id: a.id,
         asset_type: a.asset_type,
         asset_purpose: a.asset_purpose,
         file_url: a.file_url,
         label_fr: LABEL_FR[a.asset_purpose] || LABEL_FR.other,
+        display_order: a.display_order ?? 0,
+        block_group: a.block_group ?? null,
+        block_title: a.block_title ?? null,
+        block_description: a.block_description ?? null,
       }));
 
     return new Response(JSON.stringify({
