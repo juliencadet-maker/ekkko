@@ -1,191 +1,103 @@
-# Phase 1c-1b — Migration Surface Deal Room media (R1+R2 intégrés)
+## Phase 1d — Deal Room V1.5 Surface Prospect
 
-> ⚠️ Je suis en **plan mode** : je ne peux pas exécuter `supabase--migration` ici. Approuve ce plan (bouton **Implement plan**) pour que je lance la migration + produise les 10 preuves dans la foulée. Aucune autre modif n'arrivera tant que tu n'approuves pas.
+Objectif : livrer la surface prospect V1.5 (8 zones) derrière le feature flag `deal_room_v15`, avec routing v1/v3, soft identify, PDF tracké, Forward Magnet, et durcir les tests E2E Playwright RLS (rattrapage dette 1c).
 
-## Décisions intégrées
-- **D59** — `campaigns.script_oral` legacy : `COMMENT` only, aucun touch.
-- **D60** — `idempotency_keys` backend-only : RLS ON, **0 policy** (service_role only).
-- **D61** — Coexistence définitive `script_versions` (V0) ↔ `deal_room_version` (V1.5) : `COMMENT` de scope sur les deux, aucune fusion.
-- **R1** — Checklist corrigée : **21 colonnes** sur `deal_room_version` (pas 18).
-- **R2** — `RAISE NOTICE` ajouté pour `profiles.deactivated_at IS NULL` (cible 2).
-- **R3** — Si linter remonte INFO/WARN `RLS Enabled No Policy` sur `idempotency_keys` : justifié par design (cf. COMMENT D60).
-- **R4** — Ordre triggers `BEFORE UPDATE` sur `deal_room_version` : `trg_drv_updated_at` puis `trg_invalidate_audio` (alphabétique, sans dépendance).
+### Scope (8 zones)
 
-## SQL final à exécuter
+**1. Routing v1/v3 (zone 6)**
+- Hook `useDealRoomVersion(orgId)` qui appelle l'edge `is_feature_enabled` (RPC) → résout en `'v1' | 'v3'`
+- `prospect/[token]` route : si flag ON → fetch `get-public-video-v3`, sinon `get-public-video` (v1)
+- Aucune migration : flag déjà en place (Phase 1c-3)
 
-```sql
--- =========================================================
--- Phase 1c-1b — Surface Deal Room media (idempotente)
--- Intègre D59/D60/D61 + R1/R2/R4
--- =========================================================
+**2. `<DealRoomIdentification />` (zone 1) — 3 couches D1/D2/D3**
+- D1 : token URL → identification implicite (pré-rempli, jamais de prompt)
+- D2 : social select (LinkedIn/Email manuel) — pas d'auto-sélection
+- D3 : topics neutres affichés en chips, prospect coche 0..n (jamais pré-coché)
+- Persistance via `prospect_feedback` (event `identification_layer_completed`)
 
--- 1. Table deal_room_version (21 colonnes)
-CREATE TABLE IF NOT EXISTS public.deal_room_version (
-  id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  deal_room_id          uuid NOT NULL,
-  campaign_id           uuid NOT NULL,
-  org_id                uuid NOT NULL,
-  version_number        integer NOT NULL DEFAULT 1,
-  is_active             boolean NOT NULL DEFAULT false,
-  script_raw_text       text,
-  script_naturalized    text,
-  audio_status          text NOT NULL DEFAULT 'none',
-  audio_storage_path    text,
-  audio_duration_ms     integer,
-  video_status          text NOT NULL DEFAULT 'none',
-  video_storage_path    text,
-  video_duration_ms     integer,
-  provider_audio        text,
-  provider_video        text,
-  provider_job_id       text,
-  created_by_user_id    uuid,
-  created_at            timestamptz NOT NULL DEFAULT now(),
-  updated_at            timestamptz NOT NULL DEFAULT now(),
-  metadata              jsonb NOT NULL DEFAULT '{}'::jsonb
-);
+**3. Soft identify — 5 triggers (zone 2)**
+- T1 : 60s de lecture vidéo cumulés
+- T2 : click "Télécharger PDF"
+- T3 : réaction emoji
+- T4 : 2e visite détectée (localStorage `ekko_visit_count_{token}`)
+- T5 : `beforeunload` après 30s+ sur la page
+- Chaque trigger appelle `prospect-feedback` avec `event_type='soft_identify_trigger'` + cooldown 10s (déjà existant)
 
-COMMENT ON TABLE public.deal_room_version IS
-  'V1.5 — Versioning du media du Deal Room (script + audio + video). Coexiste avec script_versions (V0, édition pré-rejet) — D61.';
+**4. `<PdfReaderTracked />` (zone 3)**
+- Wrapper PDF.js inline (lib `react-pdf` déjà dispo ou ajout)
+- Émet `page_number` + `scroll_pct` à chaque changement (debounce 2s) vers `track-document-events`
+- Map sur les 5 doc signals (déjà spécifiés dans `mem://tech/document-tracking-v2`)
 
--- 2. CHECK constraints (whitelist statuts)
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'deal_room_version_audio_status_chk') THEN
-    ALTER TABLE public.deal_room_version
-      ADD CONSTRAINT deal_room_version_audio_status_chk
-      CHECK (audio_status IN ('none','pending','processing','ready','error'));
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'deal_room_version_video_status_chk') THEN
-    ALTER TABLE public.deal_room_version
-      ADD CONSTRAINT deal_room_version_video_status_chk
-      CHECK (video_status IN ('none','pending','processing','ready','error'));
-  END IF;
-END $$;
+**5. Forward Magnet (zone 4)**
+- Mini-form `<ForwardMagnetForm />` : prénom + email + rôle (énum D38 : Champion / Décideur / Influenceur / Utilisateur / Autre)
+- Anti-spam D56 : avant insert, check `deal_communication_log` pour `recipient_email` identique sur les 24h → si trouvé, retourne 429 friendly
+- Edge function `forward-magnet-submit` : insert `recipients` + `deal_communication_log` (channel=`forward`, source=`prospect_room`)
 
--- 3. Index
-CREATE INDEX IF NOT EXISTS idx_drv_deal_room ON public.deal_room_version(deal_room_id);
-CREATE INDEX IF NOT EXISTS idx_drv_campaign  ON public.deal_room_version(campaign_id);
-CREATE INDEX IF NOT EXISTS idx_drv_org       ON public.deal_room_version(org_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_drv_active_per_room
-  ON public.deal_room_version(deal_room_id) WHERE is_active = true;
+**6. `<DealRoomGreeting />` (zone 5)**
+- "Bonjour l'équipe {company_display_name}" si `company_display_name` non null
+- Fallback : "Bonjour"
+- Tokenize : DM Sans, marine sur ivoire
 
--- 4. RLS deal_room_version (option D — org members via campaign)
-ALTER TABLE public.deal_room_version ENABLE ROW LEVEL SECURITY;
+**7. Perf budget (zone 7)**
+- Lazy-load PDF.js + react-pdf via `React.lazy` + `Suspense`
+- Code-split routes prospect (`/p/[token]`)
+- Vérif post-build : `bun run build` → check `dist/assets/*.js` < 200kb gzip total pour la route prospect
+- Pas de polices custom non-utilisées
 
-DROP POLICY IF EXISTS "Org members can access deal_room_version" ON public.deal_room_version;
-CREATE POLICY "Org members can access deal_room_version"
-  ON public.deal_room_version
-  FOR ALL TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM public.campaigns
-    WHERE campaigns.id = deal_room_version.campaign_id
-      AND campaigns.org_id = get_user_org_id(auth.uid())
-  ));
+**8. Tests E2E Playwright RLS (zone 8)**
+- Setup minimal Playwright (config + 2 users tenant A/B + service-role helper)
+- Rattrapage dette 1c-1a : 3/8 assertions manquantes sur `script_versions`, `script_tokens`, `deal_signals`
+- Étend aux 5 tables 1c : `assets`, `deal_room_version`, `asset_tracked_links`, `agent_compose_sessions`, `deal_communication_log`
+- Test isolation V1.5 : grep `script_versions` doit rester absent du code rendu pour orgs avec `deal_room_v15=true` (assertion statique sur build output)
 
--- 5. Triggers BEFORE UPDATE (R4 — ordre alphabétique)
-CREATE OR REPLACE FUNCTION public.invalidate_audio_on_script_change()
-RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
-BEGIN
-  IF NEW.script_raw_text IS DISTINCT FROM OLD.script_raw_text THEN
-    NEW.audio_status := 'none';
-    NEW.audio_storage_path := NULL;
-    NEW.audio_duration_ms := NULL;
-    NEW.video_status := 'none';
-    NEW.video_storage_path := NULL;
-    NEW.video_duration_ms := NULL;
-  END IF;
-  RETURN NEW;
-END $$;
+### Détails techniques
 
-DROP TRIGGER IF EXISTS trg_drv_updated_at ON public.deal_room_version;
-CREATE TRIGGER trg_drv_updated_at
-  BEFORE UPDATE ON public.deal_room_version
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS trg_invalidate_audio ON public.deal_room_version;
-CREATE TRIGGER trg_invalidate_audio
-  BEFORE UPDATE ON public.deal_room_version
-  FOR EACH ROW EXECUTE FUNCTION public.invalidate_audio_on_script_change();
-
--- 6. idempotency_keys (D60 — backend-only)
-CREATE TABLE IF NOT EXISTS public.idempotency_keys (
-  key            text PRIMARY KEY,
-  scope          text NOT NULL,
-  org_id         uuid,
-  campaign_id    uuid,
-  request_hash   text,
-  response       jsonb,
-  created_at     timestamptz NOT NULL DEFAULT now(),
-  expires_at     timestamptz NOT NULL DEFAULT (now() + interval '24 hours')
-);
-COMMENT ON TABLE public.idempotency_keys IS
-  'Backend-only — accès service_role uniquement. RLS ON sans policy par design (D60). Ne pas exposer à role authenticated.';
-CREATE INDEX IF NOT EXISTS idx_idem_expires ON public.idempotency_keys(expires_at);
-ALTER TABLE public.idempotency_keys ENABLE ROW LEVEL SECURITY;
-
--- 7. RGPD — identities.cloning_active + profiles.deactivated_at
-ALTER TABLE public.identities  ADD COLUMN IF NOT EXISTS cloning_active boolean NOT NULL DEFAULT true;
-ALTER TABLE public.profiles    ADD COLUMN IF NOT EXISTS deactivated_at timestamptz;
-
--- Backfill explicite (idempotent)
-UPDATE public.identities SET cloning_active = true WHERE cloning_active IS NULL;
-
--- 8. Cohabitation D59/D61 — COMMENT only sur legacy
-COMMENT ON COLUMN public.campaigns.script_oral IS
-  'Legacy V0 (Self-Campaign) — non touché en V1.5. Pipeline existant conservé. D59.';
-COMMENT ON TABLE public.script_versions IS
-  'V0 — historique d''itération de script pré-rejet (Self-Campaign). Coexiste avec deal_room_version (V1.5). D61.';
-COMMENT ON COLUMN public.deal_rooms.audio_status IS
-  'Cache dénormalisé de la version active. Source de vérité = deal_room_version.audio_status WHERE is_active. D61.';
-COMMENT ON COLUMN public.deal_rooms.video_status IS
-  'Cache dénormalisé de la version active. Source de vérité = deal_room_version.video_status WHERE is_active. D61.';
-
--- 9. Validation post-migration (R2 intégré)
-DO $$
-DECLARE
-  v_identities_with_cloning_active INTEGER;
-  v_profiles_count INTEGER;
-  v_profiles_deactivated_null INTEGER;
-  v_deal_room_version_count INTEGER;
-  v_idempotency_count INTEGER;
-BEGIN
-  SELECT count(*) INTO v_identities_with_cloning_active FROM public.identities WHERE cloning_active IS NOT NULL;
-  SELECT count(*) INTO v_profiles_count FROM public.profiles;
-  SELECT count(*) INTO v_profiles_deactivated_null FROM public.profiles WHERE deactivated_at IS NULL;
-  SELECT count(*) INTO v_deal_room_version_count FROM public.deal_room_version;
-  SELECT count(*) INTO v_idempotency_count FROM public.idempotency_keys;
-
-  RAISE NOTICE '======================================';
-  RAISE NOTICE 'Phase 1c-1b validation';
-  RAISE NOTICE '  identities avec cloning_active set : % (cible: 11)', v_identities_with_cloning_active;
-  RAISE NOTICE '  profiles total                     : % (cible: 2)', v_profiles_count;
-  RAISE NOTICE '  profiles avec deactivated_at NULL  : % (cible: 2)', v_profiles_deactivated_null;
-  RAISE NOTICE '  deal_room_version count            : % (cible: 0 — table neuve)', v_deal_room_version_count;
-  RAISE NOTICE '  idempotency_keys count             : % (cible: 0 — table neuve)', v_idempotency_count;
-  RAISE NOTICE '======================================';
-
-  IF v_identities_with_cloning_active < 11 THEN
-    RAISE WARNING 'Phase 1c-1b : cloning_active non populé pour 100%% des identities. Investiguer.';
-  END IF;
-  IF v_profiles_deactivated_null < v_profiles_count THEN
-    RAISE WARNING 'Phase 1c-1b : profile(s) avec deactivated_at NOT NULL post-migration. Anormal.';
-  END IF;
-END $$;
+**Edge function `forward-magnet-submit`**
+```ts
+// Validation Zod (firstName, email, role enum)
+// Anti-spam : SELECT count(*) FROM deal_communication_log WHERE recipient_email=? AND campaign_id=? AND sent_at > now()-interval '24h'
+// Si > 0 → 429 + message FR
+// Sinon : INSERT recipients + INSERT deal_communication_log
+// Return { ok: true }
 ```
 
-## Preuves à produire post-exécution (un seul message)
-1. Migration appliquée (output supabase--migration).
-2. Rejeu idempotent 2× (mêmes counts, 0 erreur).
-3. `\d+ public.deal_room_version` → 21 colonnes confirmées.
-4. Liste triggers `deal_room_version` → ordre alphabétique trg_drv_updated_at, trg_invalidate_audio (R4).
-5. Sortie `RAISE NOTICE` validation (R2 inclus).
-6. Diff structurel policies RLS (avant/après — option D).
-7. Linter post-migration : cible 18 warnings inchangée + note R3 si INFO/WARN sur `idempotency_keys`.
-8. Counts : identities cloning_active=11, profiles deactivated_at NULL=2.
-9. Diff `src/integrations/supabase/types.ts`.
-10. Checklist § 3.2 corrigée (21 colonnes — R1).
+**Hook routing**
+```ts
+// src/hooks/useDealRoomVersion.ts
+const { data } = useQuery(['drv-flag', orgId], async () => {
+  const { data } = await supabase.rpc('is_feature_enabled', { p_org_id: orgId, p_flag_name: 'deal_room_v15' });
+  return data ? 'v3' : 'v1';
+});
+```
 
-## Hors-scope (rappels)
-- Pas de code applicatif, pas de seed, pas d'edge function.
-- Pas de touch sur `campaigns.script_oral` / `script_versions` (COMMENT only).
-- Pas de Notion update tant que Ju n'a pas validé les preuves.
-- Doc stratégique "Ekko — Vision unifiée et horizon de convergence" : noté, je le lirai en entrée de Phase 1c-1c comme filtre décisionnel.
+**Composants nouveaux**
+- `src/components/prospect/v15/DealRoomIdentification.tsx`
+- `src/components/prospect/v15/DealRoomGreeting.tsx`
+- `src/components/prospect/v15/PdfReaderTracked.tsx`
+- `src/components/prospect/v15/ForwardMagnetForm.tsx`
+- `src/components/prospect/v15/SoftIdentifyTriggers.tsx` (hooks-only, pas de UI)
+- `src/pages/prospect/[token]/V15Room.tsx` (orchestrateur)
+- `src/hooks/useDealRoomVersion.ts`
+
+**Tests**
+- `tests/e2e/rls/` : un fichier par table (8 fichiers)
+- `tests/e2e/v15-isolation.spec.ts` : assertion grep
+- `playwright.config.ts` racine
+
+### Wording & design tokens
+- Strict : aucun "campagnes", "IA", "silencieux", labels anglais, emojis labels, psychologie prospect
+- Couleurs : Marine (#0D1B2A), Ivoire (#F7F6F3), Vert Signal (#1AE08A) CTA unique, Amber/Rouge/Bleu badges
+- Typo : DM Sans body, Instrument Serif logo only
+
+### Hors scope (rappel)
+Mirror Brief, PDF niveau 2/3, vidéo interactive, LLM forward emails, UI admin flags, mobile native, fichiers intouchables (`client.ts`, `types.ts`, `.env`).
+
+### Activation
+Tous les orgs restent en `deal_room_v15=false`. Activation manuelle via SQL au cas par cas après recette.
+
+### Sanity check final
+1. `bun run build` OK
+2. Route `/p/{token}` charge < 200kb gzip pour la portion lazy-loaded prospect
+3. Avec flag OFF : v1 inchangé (régression visuelle nulle)
+4. Avec flag ON : v3 affiche greeting + identification + PDF tracké + forward
+5. Tests Playwright RLS : 8/8 verts
