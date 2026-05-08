@@ -2077,6 +2077,30 @@ export type Database = {
           },
         ]
       }
+      system_config: {
+        Row: {
+          created_at: string
+          description: string | null
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       system_failures: {
         Row: {
           campaign_id: string | null
@@ -2938,6 +2962,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      v0_update_script_oral: {
+        Args: {
+          p_campaign_id: string
+          p_generated_at: string
+          p_script_oral: string
+          p_token: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
