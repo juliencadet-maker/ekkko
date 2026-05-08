@@ -16,15 +16,13 @@ interface V15RoomProps {
 interface V3Payload {
   video_signed_url?: string | null;
   audio_signed_url?: string | null;
-  campaign?: {
-    name?: string;
-    description?: string;
-    company_display_name?: string | null;
-    deal_experience_mode?: string;
-  };
+  campaign_name?: string | null;
+  company_display_name?: string | null;
+  prospect_message?: string | null;
+  experience_mode?: string;
   topics_enabled?: string[];
-  assets?: Array<{ id: string; asset_type: string; file_url: string; asset_purpose?: string }>;
-  known_viewer?: { name?: string } | null;
+  secondary_assets?: Array<{ id: string; asset_type: string; file_url: string; asset_purpose?: string }>;
+  resolved_viewer?: { name?: string } | null;
 }
 
 /**
@@ -76,7 +74,7 @@ export function V15Room({ campaignId }: V15RoomProps) {
     );
   }
 
-  const pdfAssets = (data.assets || []).filter(
+  const pdfAssets = (data.secondary_assets || []).filter(
     (a) => a.asset_type === "pdf" || a.file_url?.toLowerCase().endsWith(".pdf")
   );
 
@@ -89,16 +87,16 @@ export function V15Room({ campaignId }: V15RoomProps) {
 
       <div className="max-w-3xl mx-auto px-6 py-12 space-y-10">
         {/* Greeting */}
-        <DealRoomGreeting companyDisplayName={data.campaign?.company_display_name} />
+        <DealRoomGreeting companyDisplayName={data.company_display_name} />
 
-        {data.campaign?.description && (
-          <p className="text-foreground/80 leading-relaxed">{data.campaign.description}</p>
+        {data.prospect_message && (
+          <p className="text-foreground/80 leading-relaxed">{data.prospect_message}</p>
         )}
 
         {/* Identification 3 couches */}
         {!identification && (
           <DealRoomIdentification
-            knownViewerName={data.known_viewer?.name || null}
+            knownViewerName={data.resolved_viewer?.name || null}
             topicsAvailable={data.topics_enabled || []}
             onIdentify={setIdentification}
           />
