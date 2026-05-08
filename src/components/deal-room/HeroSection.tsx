@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Lock, Clock, Eye, ArrowDown, Play } from "lucide-react";
+import { Lock, Clock, Eye, ArrowDown } from "lucide-react";
 import { V15Payload } from "./types";
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
   greetingFirstName: string | null;
   videoSeconds: number;
   onPlaybackSeconds: (sec: number) => void;
+  onVideoStateChange?: (playing: boolean) => void;
   totalBlocks: number;
   viewedCount: number;
 }
@@ -17,8 +18,9 @@ interface Props {
 export function HeroSection({
   payload,
   greetingFirstName,
-  videoSeconds,
+  videoSeconds: _videoSeconds,
   onPlaybackSeconds,
+  onVideoStateChange,
   totalBlocks,
   viewedCount,
 }: Props) {
@@ -28,9 +30,7 @@ export function HeroSection({
     const t2 = setTimeout(() => setPhase(2), 700);
     const t3 = setTimeout(() => setPhase(3), 1200);
     const t4 = setTimeout(() => setPhase(4), 1800);
-    return () => {
-      [t1, t2, t3, t4].forEach(clearTimeout);
-    };
+    return () => { [t1, t2, t3, t4].forEach(clearTimeout); };
   }, []);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -40,17 +40,20 @@ export function HeroSection({
     const v = videoRef.current;
     if (!v) return;
     const onTime = () => onPlaybackSeconds(Math.floor(v.currentTime));
-    const onPlay = () => setPlaying(true);
-    const onPause = () => setPlaying(false);
+    const onPlay = () => { setPlaying(true); onVideoStateChange?.(true); };
+    const onPause = () => { setPlaying(false); onVideoStateChange?.(false); };
+    const onEnded = () => { setPlaying(false); onVideoStateChange?.(false); };
     v.addEventListener("timeupdate", onTime);
     v.addEventListener("play", onPlay);
     v.addEventListener("pause", onPause);
+    v.addEventListener("ended", onEnded);
     return () => {
       v.removeEventListener("timeupdate", onTime);
       v.removeEventListener("play", onPlay);
       v.removeEventListener("pause", onPause);
+      v.removeEventListener("ended", onEnded);
     };
-  }, [onPlaybackSeconds]);
+  }, [onPlaybackSeconds, onVideoStateChange]);
 
   const company = payload.company_display_name;
   const fade = (n: number) =>
@@ -141,12 +144,8 @@ export function HeroSection({
         ) : null}
 
         <div className={`flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] text-foreground/55 ${fade(4)}`}>
-          <span className="inline-flex items-center gap-1.5">
-            <Lock className="h-3.5 w-3.5" /> Espace privé
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" /> lien expirable
-          </span>
+          <span className="inline-flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Espace privé</span>
+          <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> lien expirable</span>
           {totalBlocks > 0 && (
             <span className="inline-flex items-center gap-1.5">
               <Eye className="h-3.5 w-3.5" /> {viewedCount} / {totalBlocks} sections vues

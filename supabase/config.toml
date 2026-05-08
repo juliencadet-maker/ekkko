@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.get-ae-cockpit-feed]
 verify_jwt = false
+
+[functions.submit-prospect-reaction]
+verify_jwt = false

@@ -8,6 +8,7 @@ export type BlockGroup =
   | "roi"
   | "pricing"
   | "references"
+  | "calendly"
   | "other";
 
 export const BLOCK_ORDER: BlockGroup[] = [
@@ -17,6 +18,7 @@ export const BLOCK_ORDER: BlockGroup[] = [
   "roi",
   "pricing",
   "references",
+  "calendly",
   "other",
 ];
 
@@ -27,6 +29,7 @@ export const BLOCK_LABELS: Record<BlockGroup, string> = {
   roi: "Retour sur investissement",
   pricing: "Tarification",
   references: "Références",
+  calendly: "Réserver un échange",
   other: "Compléments",
 };
 
@@ -57,6 +60,7 @@ export interface V15Payload {
   topics_enabled: string[];
   resolved_viewer: { id?: string; name?: string; email?: string | null; title?: string | null } | null;
   experience_mode: string;
+  calendly_url?: string | null;
 }
 
 export interface BlockProps {

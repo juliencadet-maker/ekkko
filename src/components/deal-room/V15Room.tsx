@@ -10,6 +10,8 @@ import { AssistantDrawer } from "./AssistantDrawer";
 import { TrustBanner } from "./TrustBanner";
 import { SmartQuestionPopup } from "./SmartQuestionPopup";
 import { BlockShell } from "./BlockShell";
+import { PresenceIndicator } from "./PresenceIndicator";
+import { SharedCursors } from "./SharedCursors";
 
 import { DocumentsBlock } from "./blocks/DocumentsBlock";
 import { SocialProofBlock } from "./blocks/SocialProofBlock";
@@ -17,6 +19,7 @@ import { RoiBlock } from "./blocks/RoiBlock";
 import { PricingBlock } from "./blocks/PricingBlock";
 import { ReferencesBlock } from "./blocks/ReferencesBlock";
 import { OtherBlock } from "./blocks/OtherBlock";
+import { CalendlyBlock } from "./blocks/CalendlyBlock";
 
 import { BLOCK_LABELS, BLOCK_ORDER, BlockGroup, V15Asset, V15Payload } from "./types";
 import { persistViewer, readViewer } from "./lib/viewerHash";
@@ -26,12 +29,13 @@ interface Props {
 }
 
 const BLOCK_COMPONENTS: Record<BlockGroup, React.ComponentType<any>> = {
-  hero_video: () => null, // hero rendered separately
+  hero_video: () => null,
   documents: DocumentsBlock,
   social_proof: SocialProofBlock,
   roi: RoiBlock,
   pricing: PricingBlock,
   references: ReferencesBlock,
+  calendly: () => null, // rendered separately because it needs payload.calendly_url
   other: OtherBlock,
 };
 
@@ -51,6 +55,7 @@ export function V15Room({ campaignId }: Props) {
 
   const [viewedIds, setViewedIds] = useState<Set<string>>(new Set());
   const scrollVelocityRef = useRef<{ last: number; ts: number }>({ last: 0, ts: Date.now() });
+  const sessionStart = useRef<number>(Date.now());
 
   // Init viewer from localStorage
   useEffect(() => {
@@ -64,6 +69,49 @@ export function V15Room({ campaignId }: Props) {
     const t = setTimeout(() => setAssistantPulse(false), 6000);
     return () => clearTimeout(t);
   }, []);
+
+  // Phase 1d.5g — GC-12 revisit detection (cooldown 1h).
+  useEffect(() => {
+    if (!campaignId) return;
+    try {
+      const k = `ekko_dr_last_visit_${campaignId}`;
+      const prev = parseInt(localStorage.getItem(k) || "0", 10);
+      const now = Date.now();
+      if (prev && now - prev > 60 * 60 * 1000) {
+        void supabase.functions.invoke("track-document-events", {
+          body: {
+            campaign_id: campaignId,
+            event_type: "dr_revisit",
+            viewer_hash: viewerHash,
+            metadata: { hours_since_last_visit: Math.round((now - prev) / 3600000) },
+          },
+        }).catch(() => {});
+      }
+      localStorage.setItem(k, String(now));
+    } catch { /* ignore */ }
+  }, [campaignId, viewerHash]);
+
+  // Phase 1d.5g — beforeunload session_end via sendBeacon.
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const url = `https://kqpbsznldzrklnnbqtwq.supabase.co/functions/v1/track-document-events`;
+        const body = JSON.stringify({
+          campaign_id: campaignId,
+          event_type: "dr_session_end",
+          viewer_hash: viewerHash,
+          metadata: {
+            duration_seconds: Math.floor((Date.now() - sessionStart.current) / 1000),
+            blocks_viewed: viewedIds.size,
+          },
+        });
+        const blob = new Blob([body], { type: "application/json" });
+        navigator.sendBeacon?.(url, blob);
+      } catch { /* ignore */ }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [campaignId, viewerHash, viewedIds]);
 
   // Fetch payload
   useEffect(() => {
@@ -80,7 +128,6 @@ export function V15Room({ campaignId }: Props) {
           return;
         }
         setData(payload);
-        // Resolve org_id (best-effort, public select on campaigns is org-scoped — may return null for anon)
         const { data: c } = await supabase
           .from("campaigns")
           .select("org_id")
@@ -91,9 +138,7 @@ export function V15Room({ campaignId }: Props) {
         if (!cancelled) setError("Erreur de chargement.");
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [campaignId, viewerHash]);
 
   // Identification → derive viewer_hash deterministically
@@ -106,7 +151,7 @@ export function V15Room({ campaignId }: Props) {
     })();
   }, [identification, campaignId]);
 
-  // Track block visibility for read receipts (GC-9 + scroll velocity GC-13)
+  // Track block visibility (GC-11) — calls now succeed thanks to lite-events whitelist.
   useEffect(() => {
     if (!data) return;
     const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-block-group]"));
@@ -124,15 +169,13 @@ export function V15Room({ campaignId }: Props) {
                   `ekko_dr_viewed_${campaignId}`,
                   JSON.stringify(Array.from(next))
                 );
-              } catch {
-                /* ignore */
-              }
-              // Best-effort backend log
+              } catch { /* ignore */ }
               void supabase.functions.invoke("track-document-events", {
                 body: {
                   campaign_id: campaignId,
                   asset_id: e.target.getAttribute("data-asset-id"),
                   event_type: "block_viewed",
+                  viewer_hash: viewerHash,
                   metadata: { block_id: id, block_group: e.target.getAttribute("data-block-group") },
                 },
               }).catch(() => {});
@@ -145,19 +188,17 @@ export function V15Room({ campaignId }: Props) {
     );
     sections.forEach((s) => obs.observe(s));
     return () => obs.disconnect();
-  }, [data, campaignId]);
+  }, [data, campaignId, viewerHash]);
 
   // Restore viewedIds
   useEffect(() => {
     try {
       const raw = localStorage.getItem(`ekko_dr_viewed_${campaignId}`);
       if (raw) setViewedIds(new Set(JSON.parse(raw)));
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }, [campaignId]);
 
-  // Scroll velocity tracking (GC-13 — best-effort, throttled 2s)
+  // Scroll velocity (GC-13) — throttled 2s.
   useEffect(() => {
     let ticking = false;
     let lastSent = 0;
@@ -167,7 +208,7 @@ export function V15Room({ campaignId }: Props) {
       const dt = now - scrollVelocityRef.current.ts;
       scrollVelocityRef.current = { last: window.scrollY, ts: now };
       if (dt <= 0) return;
-      const v = Math.abs(dy) / dt; // px/ms
+      const v = Math.abs(dy) / dt;
       if (now - lastSent < 2000 || v < 0.5) return;
       lastSent = now;
       if (!ticking) {
@@ -178,6 +219,7 @@ export function V15Room({ campaignId }: Props) {
             body: {
               campaign_id: campaignId,
               event_type: "scroll_velocity",
+              viewer_hash: viewerHash,
               metadata: { velocity_px_per_ms: Number(v.toFixed(3)) },
             },
           }).catch(() => {});
@@ -186,7 +228,7 @@ export function V15Room({ campaignId }: Props) {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [campaignId]);
+  }, [campaignId, viewerHash]);
 
   if (error) {
     return (
@@ -206,36 +248,38 @@ export function V15Room({ campaignId }: Props) {
 
   const greetingFirstName = data.resolved_viewer?.name?.split(" ")[0] || null;
 
-  // Group secondary_assets by block_group, preserving display_order.
   const grouped: Partial<Record<BlockGroup, V15Asset[]>> = {};
   for (const a of data.secondary_assets || []) {
     const g = (a.block_group as BlockGroup | null) || "other";
     if (!BLOCK_ORDER.includes(g)) continue;
-    if (g === "hero_video") continue; // hero handled by HeroSection
+    if (g === "hero_video") continue;
     if (!grouped[g]) grouped[g] = [];
     grouped[g]!.push(a);
   }
 
-  const orderedBlocks: { id: string; group: BlockGroup; assets: V15Asset[]; title: string; subtitle: string | null }[] =
-    BLOCK_ORDER
-      .filter((g) => g !== "hero_video" && grouped[g] && grouped[g]!.length > 0)
-      .map((g) => {
-        const assets = grouped[g]!.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
-        const customTitle = assets.find((a) => a.block_title)?.block_title;
-        const customSubtitle = assets.find((a) => a.block_description)?.block_description ?? null;
-        return {
-          id: `block-${g}`,
-          group: g,
-          assets,
-          title: customTitle || BLOCK_LABELS[g],
-          subtitle: customSubtitle,
-        };
-      });
+  // Synthetic Calendly block when AE configured a calendly_url.
+  if (data.calendly_url) {
+    grouped.calendly = grouped.calendly || [];
+  }
+
+  const orderedBlocks = BLOCK_ORDER
+    .filter((g) => g !== "hero_video" && (grouped[g] || g === "calendly" && data.calendly_url))
+    .filter((g) => g === "calendly" ? !!data.calendly_url : (grouped[g] && grouped[g]!.length > 0))
+    .map((g) => {
+      const assets = (grouped[g] || []).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+      const customTitle = assets.find((a) => a.block_title)?.block_title;
+      const customSubtitle = assets.find((a) => a.block_description)?.block_description ?? null;
+      return {
+        id: `block-${g}`,
+        group: g,
+        assets,
+        title: customTitle || BLOCK_LABELS[g],
+        subtitle: customSubtitle,
+      };
+    });
 
   const tocSections = orderedBlocks.map((b) => ({
-    id: b.id,
-    blockGroup: b.group,
-    title: b.title,
+    id: b.id, blockGroup: b.group, title: b.title,
   }));
 
   return (
@@ -254,6 +298,14 @@ export function V15Room({ campaignId }: Props) {
         }}
       />
 
+      <PresenceIndicator
+        campaignId={campaignId}
+        viewerHash={viewerHash}
+        prospectEmail={prospectEmail}
+        selfLabel={data.resolved_viewer?.name || null}
+      />
+      <SharedCursors campaignId={campaignId} viewerHash={viewerHash} />
+
       <div className="sticky top-0 z-20 border-b border-foreground/5 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-12 max-w-[1100px] items-center justify-between px-6">
           <div className="flex items-center gap-2">
@@ -271,15 +323,12 @@ export function V15Room({ campaignId }: Props) {
         payload={data}
         greetingFirstName={greetingFirstName}
         videoSeconds={videoSeconds}
-        onPlaybackSeconds={(s) => {
-          setVideoSeconds(s);
-          // Heuristic: if last update was a while ago, mark as paused (handled by HeroSection events ideally)
-        }}
+        onPlaybackSeconds={setVideoSeconds}
+        onVideoStateChange={(playing) => setVideoPaused(!playing)}
         totalBlocks={orderedBlocks.length}
         viewedCount={orderedBlocks.filter((b) => viewedIds.has(b.id)).length}
       />
 
-      {/* Identification (D2/D3) — only shown if no resolved viewer */}
       {!data.resolved_viewer && !identification && (
         <section className="mx-auto max-w-[1100px] px-6 py-8">
           <DealRoomIdentification
@@ -311,20 +360,26 @@ export function V15Room({ campaignId }: Props) {
                 viewerHash={viewerHash}
                 prospectEmail={prospectEmail}
               >
-                <Comp
-                  campaignId={campaignId}
-                  assets={b.assets}
-                  viewerHash={viewerHash}
-                  prospectEmail={prospectEmail}
-                  blockGroup={b.group}
-                  blockIndex={i}
-                  totalBlocks={orderedBlocks.length}
-                />
+                {b.group === "calendly" ? (
+                  <CalendlyBlock
+                    url={data.calendly_url || null}
+                    aeFirstName={data.ae_name?.split(" ")[0] || null}
+                  />
+                ) : (
+                  <Comp
+                    campaignId={campaignId}
+                    assets={b.assets}
+                    viewerHash={viewerHash}
+                    prospectEmail={prospectEmail}
+                    blockGroup={b.group}
+                    blockIndex={i}
+                    totalBlocks={orderedBlocks.length}
+                  />
+                )}
               </BlockShell>
             );
           })}
 
-          {/* Forward magnet — encourage sharing with the committee */}
           <section className="border-b border-foreground/5 py-12">
             <ForwardMagnetForm campaignId={campaignId} />
           </section>
