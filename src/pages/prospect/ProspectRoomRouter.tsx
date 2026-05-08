@@ -16,6 +16,8 @@ const V15Room = lazy(() =>
  */
 export default function ProspectRoomRouter() {
   const { campaignId } = useParams<{ campaignId: string }>();
+  const location = useLocation();
+  const forceV3 = location.pathname.startsWith("/dr/");
   const [orgId, setOrgId] = useState<string | null | undefined>(undefined);
   const version = useDealRoomVersion(orgId ?? null);
 
