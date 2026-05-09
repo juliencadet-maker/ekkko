@@ -1,6 +1,6 @@
-// Phase 1d.5h — Timeline events writer
-// Forces `logged_via` and validates event_type against a strict whitelist.
-// Server-side only: NEVER let clients write timeline_events directly.
+// Phase 1d.5h-fix — Timeline events writer (native audit columns).
+// Inserts directly on the post-migration native columns:
+//   actor_user_id, logged_via, org_id (no more event_data._audit fold).
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export const TIMELINE_EVENT_TYPES = [
@@ -90,27 +90,29 @@ export async function writeTimelineEvent(
   if (!TIMELINE_EVENT_TYPES.includes(evt.event_type)) {
     return { ok: false, error: `unknown event_type: ${evt.event_type}` };
   }
-  // Real timeline_events schema: only campaign_id, event_layer, event_type,
-  // event_data, viewer_id, asset_id, identity_cluster_id, deal_room_id.
-  // Audit metadata (logged_via, actor_user_id, org_id, payload) is folded
-  // into event_data to preserve traceability without altering the schema.
-  const baseData = (evt.event_data ?? {}) as Record<string, unknown>;
-  const audit = {
-    logged_via: via,
-    actor_user_id: evt.actor_user_id ?? evt.created_by_user_id ?? null,
-    org_id: evt.org_id ?? null,
+
+  const eventData = {
+    ...(evt.event_data ?? {}),
     ...(evt.payload ? { payload: evt.payload } : {}),
-  };
+  } as Record<string, unknown>;
+
   const row: Record<string, unknown> = {
     campaign_id: evt.campaign_id,
     event_type: evt.event_type,
     event_layer: evt.event_layer,
-    event_data: { ...baseData, _audit: audit },
+    event_data: eventData,
+    actor_user_id: evt.actor_user_id ?? evt.created_by_user_id ?? null,
+    logged_via: via,
+    org_id: evt.org_id ?? null,
   };
   if (evt.viewer_id) row.viewer_id = evt.viewer_id;
   if (evt.deal_room_id) row.deal_room_id = evt.deal_room_id;
 
-  const { data, error } = await supabase.from("timeline_events").insert(row).select("id").maybeSingle();
+  const { data, error } = await supabase
+    .from("timeline_events")
+    .insert(row)
+    .select("id")
+    .maybeSingle();
   if (error) {
     console.warn(`[timeline:${via}] insert failed:`, error.message);
     return { ok: false, error: error.message };

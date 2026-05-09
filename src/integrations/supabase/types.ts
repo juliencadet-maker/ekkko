@@ -2677,6 +2677,7 @@ export type Database = {
       }
       timeline_events: {
         Row: {
+          actor_user_id: string | null
           asset_id: string | null
           campaign_id: string
           created_at: string
@@ -2686,9 +2687,12 @@ export type Database = {
           event_type: string
           id: string
           identity_cluster_id: string | null
+          logged_via: string | null
+          org_id: string | null
           viewer_id: string | null
         }
         Insert: {
+          actor_user_id?: string | null
           asset_id?: string | null
           campaign_id: string
           created_at?: string
@@ -2698,9 +2702,12 @@ export type Database = {
           event_type: string
           id?: string
           identity_cluster_id?: string | null
+          logged_via?: string | null
+          org_id?: string | null
           viewer_id?: string | null
         }
         Update: {
+          actor_user_id?: string | null
           asset_id?: string | null
           campaign_id?: string
           created_at?: string
@@ -2710,6 +2717,8 @@ export type Database = {
           event_type?: string
           id?: string
           identity_cluster_id?: string | null
+          logged_via?: string | null
+          org_id?: string | null
           viewer_id?: string | null
         }
         Relationships: [

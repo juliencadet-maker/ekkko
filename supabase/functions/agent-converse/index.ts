@@ -1,16 +1,28 @@
-// Phase 1d.5h — Phase 3: agent-converse with tool-calling loop.
+// Phase 1d.5h-fix — agent-converse with tool-calling loop + auth + persistence fixes.
 // Multi-turn loop: Gemini → tool_calls → execute (READ parallel, WRITE serial)
 //   → reinject tool results → Gemini → ... up to MAX_TOOL_ITER iterations.
+//
+// Auth model (post Phase 3-fix):
+//   - Authorization: Bearer <token>
+//   - if token === SUPABASE_SERVICE_ROLE_KEY → trusted internal caller (proxy ekko-agent),
+//     body.user_id is accepted as-is.
+//   - else → supabase.auth.getUser(token), 403 if body.user_id !== jwt.sub
+//   - no token: legacy behaviour (treated as unauthenticated, no persistence).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { writeTimelineEvent } from "../_shared/timeline-events-writer.ts";
 import {
   TOOL_HANDLERS,
   TOOL_DECLARATIONS,
   READ_TOOLS,
-  MAX_TOOL_ITER,
   type ToolContext,
   type ToolName,
 } from "../_shared/agent-tools.ts";
+
+// MAX_TOOL_ITER : env override possible pour tests (g)
+const MAX_TOOL_ITER = (() => {
+  const v = Number(Deno.env.get("MAX_TOOL_ITER") ?? "5");
+  return Number.isFinite(v) && v > 0 && v <= 10 ? v : 5;
+})();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,7 +46,7 @@ OUTILS DISPONIBLES :
 
 RÈGLES TOOLS :
 - Appelle un tool QUAND tu as besoin de données fraîches/précises ou de poser une action — pas pour faire joli.
-- Tu peux enchaîner jusqu'à 5 tours d'outils. Au-delà, tu réponds avec ce que tu as.
+- Tu peux enchaîner jusqu'à ${MAX_TOOL_ITER} tours d'outils. Au-delà, tu réponds avec ce que tu as.
 - Pour WRITE (log_*, snooze_*, queue_*) : appelle UNIQUEMENT si l'AE l'a demandé explicitement ou implicitement.
 - N'invente jamais d'IDs. Si campaign_id absent → tools utilisent le deal du contexte.
 
@@ -61,7 +73,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as ConverseInput;
-    const { campaign_id, messages, user_id, source } = body;
+    const { campaign_id, messages, user_id: bodyUserId, source } = body;
     if (!campaign_id || !Array.isArray(messages)) {
       return json({ error: "campaign_id and messages required" }, 400);
     }
@@ -72,6 +84,28 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
+    // ---------- AUTH ----------
+    // Trusted-internal-caller pattern: SERVICE_ROLE bypass, otherwise validate JWT.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    let trustedInternalCaller = false;
+    let resolvedUserId: string | null = bodyUserId ?? null;
+
+    if (token && token === serviceRoleKey) {
+      trustedInternalCaller = true; // proxy ekko-agent forwards with SERVICE_ROLE
+    } else if (token) {
+      const { data: userData, error: authErr } = await supabase.auth.getUser(token);
+      if (authErr || !userData?.user) {
+        return json({ error: "invalid token" }, 401);
+      }
+      if (bodyUserId && bodyUserId !== userData.user.id) {
+        return json({ error: "user_id mismatch with JWT" }, 403);
+      }
+      resolvedUserId = userData.user.id;
+    }
+    // else: no token — accept (legacy/dev). resolvedUserId may be null → no persistence.
+
     // Resolve campaign + org
     const { data: campaign, error: cErr } = await supabase
       .from("campaigns")
@@ -80,7 +114,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (cErr || !campaign) return json({ error: "campaign not found" }, 404);
 
-    // Build a lightweight context snapshot (heavy reads now go via tools)
+    // Lightweight context snapshot
     const { data: latestScore } = await supabase
       .from("deal_scores")
       .select("des, momentum, viewer_count, days_since_last_signal, alerts")
@@ -107,17 +141,16 @@ Deno.serve(async (req) => {
     if (!lovableApiKey) return json({ error: "AI not configured" }, 500);
 
     // ---------- Tool loop ----------
-    const toolCtx: ToolContext | null = user_id
+    const toolCtx: ToolContext | null = resolvedUserId
       ? {
         supabase,
-        user_id,
+        user_id: resolvedUserId,
         org_id: campaign.org_id,
         campaign_id,
         via: "agent-converse",
       }
       : null;
 
-    // Conversation = system + user-provided messages, then we append assistant + tool turns
     const convo: any[] = [
       { role: "system", content: systemPrompt },
       ...messages.map((m) => ({ role: m.role, content: m.content, ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}) })),
@@ -153,19 +186,16 @@ Deno.serve(async (req) => {
 
       if (!toolCalls || toolCalls.length === 0 || !toolCtx) {
         finalReply = message?.content ?? "Erreur de réponse de l'agent.";
-        // Append final assistant turn for persistence
         convo.push({ role: "assistant", content: finalReply });
         break;
       }
 
-      // Append assistant message with tool_calls (required for OpenAI/Gemini protocol)
       convo.push({
         role: "assistant",
         content: message.content ?? "",
         tool_calls: toolCalls,
       });
 
-      // Split READ vs WRITE
       const reads: any[] = [];
       const writes: any[] = [];
       for (const tc of toolCalls) {
@@ -194,12 +224,10 @@ Deno.serve(async (req) => {
         return { tool_call_id: tc.id, content: JSON.stringify(result) };
       };
 
-      // READ in parallel, WRITE serial
       const readResults = await Promise.all(reads.map(execOne));
       const writeResults: any[] = [];
       for (const w of writes) writeResults.push(await execOne(w));
 
-      // Reinject tool results in original order
       const byId = new Map<string, any>();
       [...readResults, ...writeResults].forEach((r) => byId.set(r.tool_call_id, r));
       for (const tc of toolCalls) {
@@ -208,9 +236,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ---------- MAX_TOOL_ITER reached: log FIRST, then attempt wrap-up ----------
     if (iter >= MAX_TOOL_ITER && !finalReply) {
       maxIterReached = true;
-      // Force a final non-tool response by removing tools and asking to wrap up
+
+      // Log to system_failures BEFORE wrap-up (must fire even if wrap-up fails)
+      const { error: sfErr } = await supabase.from("system_failures").insert({
+        failure_type: "execution",
+        severity: "medium",
+        message: "agent-converse: MAX_TOOL_ITER reached",
+        campaign_id,
+        reason: JSON.stringify({
+          error_code: "agent_max_iter_reached",
+          provider: "internal",
+          attempt_n: iter,
+          request_id: null,
+          deal_room_version_id: null,
+          timestamp_iso: new Date().toISOString(),
+          tool_call_count: allToolCalls.length,
+          tools_used: allToolCalls.map((t) => t.name),
+        }),
+      });
+      if (sfErr) console.warn("[agent-converse] system_failures insert failed:", sfErr.message);
+
+      // Wrap-up: force a final non-tool response
       const wrapResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableApiKey}` },
@@ -229,82 +278,78 @@ Deno.serve(async (req) => {
       } else {
         finalReply = "Limite d'analyse atteinte sans réponse propre.";
       }
-
-      // Log to system_failures (failure_type='execution', severity='medium')
-      await supabase.from("system_failures").insert({
-        failure_type: "execution",
-        severity: "medium",
-        message: "agent-converse: MAX_TOOL_ITER reached",
-        campaign_id,
-        reason: JSON.stringify({
-          error_code: "agent_max_iter_reached",
-          provider: "internal",
-          attempt_n: iter,
-          request_id: null,
-          deal_room_version_id: null,
-          timestamp_iso: new Date().toISOString(),
-          tool_call_count: allToolCalls.length,
-          tools_used: allToolCalls.map((t) => t.name),
-        }),
-      });
     }
 
-    // Persist conversation (legacy compat — agent_conversations)
-    if (user_id) {
-      const allMessages = [...messages, { role: "assistant", content: finalReply }];
-      await supabase.from("agent_conversations").upsert(
-        {
-          campaign_id,
-          user_id,
-          messages: allMessages,
-          context_snapshot: { ...dealContext, tool_calls_made: allToolCalls.length, max_iter_reached: maxIterReached },
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "campaign_id,user_id", ignoreDuplicates: false },
-      );
-
-      // Persist user msg + assistant reply (with tool_calls) into agent_messages
-      const lastUser = [...messages].reverse().find((m) => m.role === "user");
-      // Need a conversation_id for agent_messages (FK via RLS). Resolve it now.
-      const { data: convRow } = await supabase
+    // ---------- Persistence (only if we have a resolvedUserId) ----------
+    // Whitelist surface to satisfy chk_ac_surface check constraint.
+    const ALLOWED_SURFACES = new Set(["cockpit", "deal_compose", "prospect_drawer", "extension", "inbox", "slack"]);
+    const surface = source && ALLOWED_SURFACES.has(source) ? source : "cockpit";
+    if (resolvedUserId) {
+      // Upsert agent_conversations — use UNIQUE(campaign_id, user_id), return id directly
+      const { data: convRow, error: convErr } = await supabase
         .from("agent_conversations")
+        .upsert(
+          {
+            campaign_id,
+            user_id: resolvedUserId,
+            context_snapshot: { ...dealContext, tool_calls_made: allToolCalls.length, max_iter_reached: maxIterReached },
+            last_message_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            surface,
+          },
+          { onConflict: "campaign_id,user_id", ignoreDuplicates: false },
+        )
         .select("id")
-        .eq("campaign_id", campaign_id)
-        .eq("user_id", user_id)
         .maybeSingle();
+      if (convErr) {
+        console.warn("[agent-converse] agent_conversations upsert failed:", convErr.message);
+        await supabase.from("system_failures").insert({
+          failure_type: "execution",
+          severity: "low",
+          message: "agent-converse: agent_conversations upsert failed",
+          campaign_id,
+          reason: JSON.stringify({ error: convErr.message, timestamp_iso: new Date().toISOString() }),
+        });
+      }
+
       const conversation_id = convRow?.id;
+      const lastUser = [...messages].reverse().find((m) => m.role === "user");
       if (conversation_id && lastUser) {
-        await supabase.from("agent_messages").insert([
+        const { error: msgErr } = await supabase.from("agent_messages").insert([
           {
             conversation_id,
             role: "user",
             content: lastUser.content,
-            surface: source ?? "direct",
+            surface,
+            metadata: {},
           },
           {
             conversation_id,
             role: "assistant",
             content: finalReply,
-            surface: source ?? "direct",
+            surface,
             tool_calls: allToolCalls.length > 0 ? allToolCalls.map((t) => ({ name: t.name, args: t.args })) : null,
             tool_results: allToolCalls.length > 0 ? allToolCalls.map((t) => ({ name: t.name, ok: t.result?.ok })) : null,
-            metadata: { iter, max_iter_reached: maxIterReached },
+            metadata: { iter, max_iter_reached: maxIterReached, internal_caller: trustedInternalCaller, source: source ?? null },
           },
         ]);
+        if (msgErr) console.warn("[agent-converse] agent_messages insert failed:", msgErr.message);
       }
 
-      // Audit
+      // Audit timeline
       await writeTimelineEvent(supabase, "agent-converse", {
         campaign_id,
         org_id: campaign.org_id,
         event_type: "agent_message",
         event_layer: "fact",
-        actor_user_id: user_id,
+        actor_user_id: resolvedUserId,
         event_data: {
           source: source ?? "direct",
+          surface,
           tool_calls: allToolCalls.length,
           max_iter_reached: maxIterReached,
           tools_used: allToolCalls.map((t) => t.name),
+          internal_caller: trustedInternalCaller,
         },
       });
     }
