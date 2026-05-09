@@ -61,6 +61,7 @@ export interface V15Payload {
   resolved_viewer: { id?: string; name?: string; email?: string | null; title?: string | null } | null;
   experience_mode: string;
   calendly_url?: string | null;
+  summary_bullets?: string[] | null;
 }
 
 export interface BlockProps {

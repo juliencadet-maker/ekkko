@@ -112,6 +112,18 @@ export function V15RoomPreview({ campaignId, className }: Props) {
         )}
       </div>
 
+      {/* Summary bullets (if present in payload at runtime) */}
+      {data.summary_bullets && data.summary_bullets.length > 0 && (
+        <div className="px-4 py-3 border-b">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Points clés</p>
+          <ul className="list-disc pl-5 space-y-1 text-sm">
+            {data.summary_bullets.map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Blocks */}
       <div className="px-4 py-3 space-y-4">
         {orderedBlocks.length === 0 ? (
