@@ -44,9 +44,16 @@ interface EkkoAgentProps {
   onClose?: () => void;
 }
 
+interface ToolEvent {
+  tool: string;
+  status: "start" | "ok" | "err";
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
+  toolEvents?: ToolEvent[];
+  streaming?: boolean;
 }
 
 const QUICK_PROMPTS = [
@@ -129,20 +136,99 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
     setMessages(newMessages);
     setLoading(true);
 
+    // Append a streaming assistant placeholder we'll mutate as deltas come in.
+    setMessages((prev) => [...prev, { role: "assistant", content: "", toolEvents: [], streaming: true }]);
+
     try {
-      const { data, error } = await supabase.functions.invoke("ekko-agent", {
-        body: {
+      const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token
+        ?? ((import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY as string);
+      const apikey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/ekko-agent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+          apikey,
+        },
+        body: JSON.stringify({
           campaign_id: campaignId,
           messages: newMessages,
           user_id: membership?.user_id || null,
-        },
+        }),
       });
 
-      if (error) throw error;
-      const reply = data.reply as string;
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      if (!response.ok || !response.body) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
-      // E2 — Extract suggestion from agent response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let acc = "";
+
+      const updateLast = (mut: (m: Message) => Message) => {
+        setMessages((prev) => {
+          const next = [...prev];
+          for (let i = next.length - 1; i >= 0; i--) {
+            if (next[i].role === "assistant" && next[i].streaming) {
+              next[i] = mut({ ...next[i] });
+              break;
+            }
+          }
+          return next;
+        });
+      };
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf("\n")) !== -1) {
+          let line = buf.slice(0, nl);
+          buf = buf.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const j = line.slice(6).trim();
+          if (!j || j === "[DONE]") continue;
+          try {
+            const evt = JSON.parse(j);
+            if (evt.type === "delta" && typeof evt.content === "string") {
+              acc += evt.content;
+              updateLast((m) => ({ ...m, content: acc }));
+            } else if (evt.type === "tool_call_start") {
+              updateLast((m) => ({
+                ...m,
+                toolEvents: [...(m.toolEvents ?? []), { tool: evt.tool, status: "start" }],
+              }));
+            } else if (evt.type === "tool_call_end") {
+              updateLast((m) => {
+                const evts = [...(m.toolEvents ?? [])];
+                for (let i = evts.length - 1; i >= 0; i--) {
+                  if (evts[i].tool === evt.tool && evts[i].status === "start") {
+                    evts[i] = { tool: evt.tool, status: evt.ok ? "ok" : "err" };
+                    break;
+                  }
+                }
+                return { ...m, toolEvents: evts };
+              });
+            } else if (evt.type === "error") {
+              acc = acc || `Erreur agent: ${evt.message ?? "inconnue"}`;
+              updateLast((m) => ({ ...m, content: acc }));
+            }
+          } catch {
+            // ignore malformed line
+          }
+        }
+      }
+
+      // Stream over → finalize streaming flag and run E2 suggestion extract.
+      updateLast((m) => ({ ...m, streaming: false }));
+      const reply = acc;
       const match = reply?.match(
         /si vous devez faire une seule chose[^,]*,\s*c'est\s+(.+?)[\.\n]/i
       );
@@ -154,7 +240,16 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
       }
     } catch (e) {
       console.error("Agent error:", e);
-      setMessages((prev) => [...prev, { role: "assistant", content: "Erreur de connexion à l'agent. Réessayez." }]);
+      setMessages((prev) => {
+        const next = [...prev];
+        for (let i = next.length - 1; i >= 0; i--) {
+          if (next[i].role === "assistant" && next[i].streaming) {
+            next[i] = { role: "assistant", content: "Erreur de connexion à l'agent. Réessayez.", streaming: false };
+            return next;
+          }
+        }
+        return [...next, { role: "assistant", content: "Erreur de connexion à l'agent. Réessayez." }];
+      });
     }
     setLoading(false);
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -319,6 +414,23 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                     }`}>
                       {m.role === "assistant"
                         ? <div className="space-y-1">
+                            {m.toolEvents && m.toolEvents.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mb-1.5">
+                                {m.toolEvents.map((te, k) => (
+                                  <span
+                                    key={k}
+                                    className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[10px] bg-background/60"
+                                    title={te.tool}
+                                  >
+                                    <span aria-hidden>🔧</span>
+                                    <span className="font-mono">{te.tool}</span>
+                                    <span aria-hidden>
+                                      {te.status === "start" ? "…" : te.status === "ok" ? "✓" : "✗"}
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             {parseAgentMessage(m.content).map((part, j) =>
                               part.text.trim() === "" ? null : (
                                 <div key={j} className="flex items-start gap-1.5">
@@ -333,6 +445,11 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                                   <span className="whitespace-pre-wrap">{part.text}</span>
                                 </div>
                               )
+                            )}
+                            {m.streaming && m.content === "" && (m.toolEvents?.length ?? 0) === 0 && (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <EkkoLoader mode="loop" size={12} /> Analyse…
+                              </span>
                             )}
                           </div>
                         : m.content
