@@ -41,6 +41,13 @@ export const TIMELINE_EVENT_TYPES = [
   "scoring_recomputed",
   "trigger_fired",
   "voxtral_retry",
+  // Phase 4-fix — pending action side-effects (real handlers)
+  "external_message_sent",
+  "exec_email_sent",
+  "voice_source_changed",
+  "gate_mode_changed",
+  "deal_room_cloned",
+  "deal_room_archived",
 ] as const;
 
 export type TimelineEventType = typeof TIMELINE_EVENT_TYPES[number];
