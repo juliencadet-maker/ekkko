@@ -1,7 +1,5 @@
-// Phase 1d.5h — ekko-agent: PROXY ALIAS to agent-converse.
-// Preserves legacy contract (campaign_id, messages, user_id → reply, context)
-// to keep WhatHappenedWidget.tsx and EkkoAgent.tsx untouched.
-// All real logic lives in agent-converse.
+// Phase 4-fix — ekko-agent: SSE pass-through proxy to agent-converse.
+// Forwards body verbatim with SERVICE_ROLE bearer + streams response back.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -26,6 +24,18 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ ...body, source: "ekko-agent-proxy" }),
     });
 
+    const isSse = upstream.headers.get("Content-Type")?.includes("text/event-stream");
+    if (isSse && upstream.body) {
+      return new Response(upstream.body, {
+        status: upstream.status,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
+    }
     const text = await upstream.text();
     return new Response(text, {
       status: upstream.status,
