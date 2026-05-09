@@ -95,3 +95,15 @@ verify_jwt = false
 
 [functions.submit-prospect-reaction]
 verify_jwt = false
+
+[functions.pending-action-create]
+verify_jwt = false
+
+[functions.pending-action-decide]
+verify_jwt = false
+
+[functions.pending-action-execute]
+verify_jwt = false
+
+[functions.pending-action-expire-cron]
+verify_jwt = false
