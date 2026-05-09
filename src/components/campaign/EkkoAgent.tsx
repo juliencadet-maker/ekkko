@@ -44,9 +44,16 @@ interface EkkoAgentProps {
   onClose?: () => void;
 }
 
+interface ToolEvent {
+  tool: string;
+  status: "start" | "ok" | "err";
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
+  toolEvents?: ToolEvent[];
+  streaming?: boolean;
 }
 
 const QUICK_PROMPTS = [
