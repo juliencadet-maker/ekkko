@@ -1458,7 +1458,7 @@ export default function CampaignDetail() {
       if ((count ?? 0) >= 2) {
         await supabase
           .from("deal_contact_roles")
-          .update({ confidence: 0.3 })
+          .update({ source_confidence: 0.3 })
           .eq("campaign_id", campaign.id)
           .neq("source", "declared");
       }
@@ -1492,7 +1492,7 @@ export default function CampaignDetail() {
           campaign_id: campaign.id,
           viewer_id: topViewer.id,
           source: "declared",
-          confidence: 0.95,
+          source_confidence: 0.95,
           insight_reasons: JSON.stringify([`AE a confirmé l'insight ${contradictionId}`]),
         }, { onConflict: "campaign_id,viewer_id" });
       }

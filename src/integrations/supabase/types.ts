@@ -55,63 +55,6 @@ export type Database = {
           },
         ]
       }
-      agent_compose_sessions: {
-        Row: {
-          campaign_id: string
-          context_snapshot: Json
-          created_at: string
-          id: string
-          llm_cost_cents: number | null
-          metadata: Json
-          model: string | null
-          org_id: string
-          prompt: string | null
-          response: string | null
-          session_type: string
-          status: string
-          tokens_in: number | null
-          tokens_out: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          campaign_id: string
-          context_snapshot?: Json
-          created_at?: string
-          id?: string
-          llm_cost_cents?: number | null
-          metadata?: Json
-          model?: string | null
-          org_id: string
-          prompt?: string | null
-          response?: string | null
-          session_type?: string
-          status?: string
-          tokens_in?: number | null
-          tokens_out?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          campaign_id?: string
-          context_snapshot?: Json
-          created_at?: string
-          id?: string
-          llm_cost_cents?: number | null
-          metadata?: Json
-          model?: string | null
-          org_id?: string
-          prompt?: string | null
-          response?: string | null
-          session_type?: string
-          status?: string
-          tokens_in?: number | null
-          tokens_out?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       agent_context: {
         Row: {
           campaign_id: string
@@ -178,7 +121,10 @@ export type Database = {
           created_at: string
           feedback: string | null
           id: string
-          messages: Json
+          last_message_at: string
+          metadata: Json
+          status: string
+          surface: string
           updated_at: string
           user_id: string
         }
@@ -188,7 +134,10 @@ export type Database = {
           created_at?: string
           feedback?: string | null
           id?: string
-          messages?: Json
+          last_message_at?: string
+          metadata?: Json
+          status?: string
+          surface?: string
           updated_at?: string
           user_id: string
         }
@@ -198,7 +147,10 @@ export type Database = {
           created_at?: string
           feedback?: string | null
           id?: string
-          messages?: Json
+          last_message_at?: string
+          metadata?: Json
+          status?: string
+          surface?: string
           updated_at?: string
           user_id?: string
         }
@@ -211,6 +163,248 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agent_memory_l1: {
+        Row: {
+          campaign_id: string | null
+          confidence: number
+          content: Json
+          created_at: string
+          deal_room_id: string | null
+          expires_at: string | null
+          id: string
+          importance: number
+          kind: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          confidence?: number
+          content: Json
+          created_at?: string
+          deal_room_id?: string | null
+          expires_at?: string | null
+          id?: string
+          importance?: number
+          kind: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          confidence?: number
+          content?: Json
+          created_at?: string
+          deal_room_id?: string | null
+          expires_at?: string | null
+          id?: string
+          importance?: number
+          kind?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          role: string
+          surface: string
+          tool_calls: Json | null
+          tool_results: Json | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role: string
+          surface: string
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role?: string
+          surface?: string
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "agent_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_notification_preferences: {
+        Row: {
+          channels: Json
+          daily_digest: boolean | null
+          daily_digest_time: string | null
+          graceful_silence_until: string | null
+          ignored_streak: number | null
+          max_per_day: number | null
+          per_kind: Json
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channels?: Json
+          daily_digest?: boolean | null
+          daily_digest_time?: string | null
+          graceful_silence_until?: string | null
+          ignored_streak?: number | null
+          max_per_day?: number | null
+          per_kind?: Json
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channels?: Json
+          daily_digest?: boolean | null
+          daily_digest_time?: string | null
+          graceful_silence_until?: string | null
+          ignored_streak?: number | null
+          max_per_day?: number | null
+          per_kind?: Json
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_notification_queue: {
+        Row: {
+          body: string | null
+          campaign_id: string | null
+          created_at: string
+          deal_room_id: string | null
+          delivered_at: string | null
+          delivered_channels: Json
+          dismissed_at: string | null
+          expires_at: string
+          id: string
+          kind: string
+          org_id: string
+          payload: Json
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          deal_room_id?: string | null
+          delivered_at?: string | null
+          delivered_channels?: Json
+          dismissed_at?: string | null
+          expires_at?: string
+          id?: string
+          kind: string
+          org_id: string
+          payload?: Json
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          deal_room_id?: string | null
+          delivered_at?: string | null
+          delivered_channels?: Json
+          dismissed_at?: string | null
+          expires_at?: string
+          id?: string
+          kind?: string
+          org_id?: string
+          payload?: Json
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_voice_compose_sessions: {
+        Row: {
+          campaign_id: string
+          context_snapshot: Json
+          created_at: string
+          id: string
+          llm_cost_cents: number | null
+          metadata: Json
+          model: string | null
+          org_id: string
+          prompt: string | null
+          response: string | null
+          session_type: string
+          status: string
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          context_snapshot?: Json
+          created_at?: string
+          id?: string
+          llm_cost_cents?: number | null
+          metadata?: Json
+          model?: string | null
+          org_id: string
+          prompt?: string | null
+          response?: string | null
+          session_type?: string
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          context_snapshot?: Json
+          created_at?: string
+          id?: string
+          llm_cost_cents?: number | null
+          metadata?: Json
+          model?: string | null
+          org_id?: string
+          prompt?: string | null
+          response?: string | null
+          session_type?: string
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       approval_requests: {
         Row: {
@@ -578,6 +772,42 @@ export type Database = {
           },
         ]
       }
+      best_practices_library: {
+        Row: {
+          body: string
+          category: string
+          contextual_block_type: string | null
+          contextual_deal_stage: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          seed_priority: number
+          title: string
+        }
+        Insert: {
+          body: string
+          category: string
+          contextual_block_type?: string | null
+          contextual_deal_stage?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          seed_priority?: number
+          title: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          contextual_block_type?: string | null
+          contextual_deal_stage?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          seed_priority?: number
+          title?: string
+        }
+        Relationships: []
+      }
       campaigns: {
         Row: {
           account_id: string | null
@@ -586,6 +816,7 @@ export type Database = {
           committee_size_declared: number | null
           company_display_name: string | null
           completed_at: string | null
+          complexity_level: number
           created_at: string
           created_by_user_id: string | null
           crm_stage: string | null
@@ -594,10 +825,12 @@ export type Database = {
           deal_owner_id: string | null
           deal_risk_level: string | null
           deal_risk_override: boolean | null
+          deal_stage: string
           deal_status: string | null
           deal_value: number | null
           deleted_at: string | null
           description: string | null
+          dimensions: Json
           first_action_completed_at: string | null
           first_outcome_detected_at: string | null
           first_signal_at: string | null
@@ -624,6 +857,7 @@ export type Database = {
           committee_size_declared?: number | null
           company_display_name?: string | null
           completed_at?: string | null
+          complexity_level?: number
           created_at?: string
           created_by_user_id?: string | null
           crm_stage?: string | null
@@ -632,10 +866,12 @@ export type Database = {
           deal_owner_id?: string | null
           deal_risk_level?: string | null
           deal_risk_override?: boolean | null
+          deal_stage?: string
           deal_status?: string | null
           deal_value?: number | null
           deleted_at?: string | null
           description?: string | null
+          dimensions?: Json
           first_action_completed_at?: string | null
           first_outcome_detected_at?: string | null
           first_signal_at?: string | null
@@ -662,6 +898,7 @@ export type Database = {
           committee_size_declared?: number | null
           company_display_name?: string | null
           completed_at?: string | null
+          complexity_level?: number
           created_at?: string
           created_by_user_id?: string | null
           crm_stage?: string | null
@@ -670,10 +907,12 @@ export type Database = {
           deal_owner_id?: string | null
           deal_risk_level?: string | null
           deal_risk_override?: boolean | null
+          deal_stage?: string
           deal_status?: string | null
           deal_value?: number | null
           deleted_at?: string | null
           description?: string | null
+          dimensions?: Json
           first_action_completed_at?: string | null
           first_outcome_detected_at?: string | null
           first_signal_at?: string | null
@@ -937,7 +1176,6 @@ export type Database = {
       deal_contact_roles: {
         Row: {
           campaign_id: string
-          confidence: number | null
           created_at: string
           deleted_at: string | null
           id: string
@@ -946,11 +1184,11 @@ export type Database = {
           layer: string | null
           role: string | null
           source: string | null
+          source_confidence: number | null
           viewer_id: string | null
         }
         Insert: {
           campaign_id: string
-          confidence?: number | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -959,11 +1197,11 @@ export type Database = {
           layer?: string | null
           role?: string | null
           source?: string | null
+          source_confidence?: number | null
           viewer_id?: string | null
         }
         Update: {
           campaign_id?: string
-          confidence?: number | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -972,6 +1210,7 @@ export type Database = {
           layer?: string | null
           role?: string | null
           source?: string | null
+          source_confidence?: number | null
           viewer_id?: string | null
         }
         Relationships: [
@@ -1133,8 +1372,10 @@ export type Database = {
           created_at: string
           created_by_user_id: string | null
           deal_room_id: string
+          hero_audio_voice_source: string
           id: string
           is_active: boolean
+          layout_mode: string
           metadata: Json
           org_id: string
           provider_audio: string | null
@@ -1156,8 +1397,10 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string | null
           deal_room_id: string
+          hero_audio_voice_source?: string
           id?: string
           is_active?: boolean
+          layout_mode?: string
           metadata?: Json
           org_id: string
           provider_audio?: string | null
@@ -1179,8 +1422,10 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string | null
           deal_room_id?: string
+          hero_audio_voice_source?: string
           id?: string
           is_active?: boolean
+          layout_mode?: string
           metadata?: Json
           org_id?: string
           provider_audio?: string | null
@@ -1198,38 +1443,60 @@ export type Database = {
       }
       deal_rooms: {
         Row: {
-          audio_status: string
+          archived_at: string | null
+          archived_reason: string | null
           campaign_id: string
+          cloned_from_deal_room_id: string | null
           created_at: string
+          gate_mode: string
           id: string
+          is_primary: boolean
           is_public: boolean | null
+          scope: string
           slug: string | null
-          video_status: string
+          title: string | null
         }
         Insert: {
-          audio_status?: string
+          archived_at?: string | null
+          archived_reason?: string | null
           campaign_id: string
+          cloned_from_deal_room_id?: string | null
           created_at?: string
+          gate_mode?: string
           id?: string
+          is_primary?: boolean
           is_public?: boolean | null
+          scope?: string
           slug?: string | null
-          video_status?: string
+          title?: string | null
         }
         Update: {
-          audio_status?: string
+          archived_at?: string | null
+          archived_reason?: string | null
           campaign_id?: string
+          cloned_from_deal_room_id?: string | null
           created_at?: string
+          gate_mode?: string
           id?: string
+          is_primary?: boolean
           is_public?: boolean | null
+          scope?: string
           slug?: string | null
-          video_status?: string
+          title?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "deal_rooms_campaign_id_fkey"
             columns: ["campaign_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_rooms_cloned_from_deal_room_id_fkey"
+            columns: ["cloned_from_deal_room_id"]
+            isOneToOne: false
+            referencedRelation: "deal_rooms"
             referencedColumns: ["id"]
           },
         ]
@@ -1755,6 +2022,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_external_actions: {
+        Row: {
+          action_type: string
+          campaign_id: string
+          created_at: string
+          deal_room_id: string | null
+          decided_at: string | null
+          decided_by_user_id: string | null
+          expires_at: string
+          id: string
+          payload: Json
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          campaign_id: string
+          created_at?: string
+          deal_room_id?: string | null
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          expires_at?: string
+          id?: string
+          payload: Json
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          campaign_id?: string
+          created_at?: string
+          deal_room_id?: string | null
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          expires_at?: string
+          id?: string
+          payload?: Json
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       policies: {
         Row: {
           allow_self_approval_for_owners: boolean | null
@@ -1802,8 +2111,51 @@ export type Database = {
           },
         ]
       }
+      power_message_templates: {
+        Row: {
+          body: string
+          created_at: string
+          duration_target_seconds: number
+          id: string
+          is_active: boolean
+          label: string
+          locale: string
+          variables_required: string[]
+          variant_key: string
+          with_co_speaker: boolean
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          duration_target_seconds?: number
+          id?: string
+          is_active?: boolean
+          label: string
+          locale?: string
+          variables_required?: string[]
+          variant_key: string
+          with_co_speaker?: boolean
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          duration_target_seconds?: number
+          id?: string
+          is_active?: boolean
+          label?: string
+          locale?: string
+          variables_required?: string[]
+          variant_key?: string
+          with_co_speaker?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          ae_activated_at: string | null
+          ae_first_deal_created_at: string | null
+          ae_first_deal_published_at: string | null
+          ae_onboarding_state: string
           avatar_url: string | null
           company: string | null
           created_at: string
@@ -1824,6 +2176,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ae_activated_at?: string | null
+          ae_first_deal_created_at?: string | null
+          ae_first_deal_published_at?: string | null
+          ae_onboarding_state?: string
           avatar_url?: string | null
           company?: string | null
           created_at?: string
@@ -1844,6 +2200,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ae_activated_at?: string | null
+          ae_first_deal_created_at?: string | null
+          ae_first_deal_published_at?: string | null
+          ae_onboarding_state?: string
           avatar_url?: string | null
           company?: string | null
           created_at?: string
@@ -2320,6 +2680,7 @@ export type Database = {
           asset_id: string | null
           campaign_id: string
           created_at: string
+          deal_room_id: string | null
           event_data: Json | null
           event_layer: string | null
           event_type: string
@@ -2331,6 +2692,7 @@ export type Database = {
           asset_id?: string | null
           campaign_id: string
           created_at?: string
+          deal_room_id?: string | null
           event_data?: Json | null
           event_layer?: string | null
           event_type: string
@@ -2342,6 +2704,7 @@ export type Database = {
           asset_id?: string | null
           campaign_id?: string
           created_at?: string
+          deal_room_id?: string | null
           event_data?: Json | null
           event_layer?: string | null
           event_type?: string
@@ -2365,6 +2728,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_voice_sources: {
+        Row: {
+          captured_at: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_org_shareable: boolean
+          label: string | null
+          locale: string
+          user_id: string
+          voxtral_voice_clone_id: string | null
+        }
+        Insert: {
+          captured_at?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_org_shareable?: boolean
+          label?: string | null
+          locale?: string
+          user_id: string
+          voxtral_voice_clone_id?: string | null
+        }
+        Update: {
+          captured_at?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_org_shareable?: boolean
+          label?: string | null
+          locale?: string
+          user_id?: string
+          voxtral_voice_clone_id?: string | null
+        }
+        Relationships: []
       }
       video_access_list: {
         Row: {
@@ -3065,6 +3464,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      effective_deal_layout: {
+        Args: { p_campaign_id: string }
+        Returns: string
+      }
       get_user_org_id: { Args: { _user_id: string }; Returns: string }
       get_user_role_in_org: {
         Args: { _org_id: string; _user_id: string }
