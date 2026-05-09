@@ -116,39 +116,42 @@ export type Database = {
       }
       agent_conversations: {
         Row: {
-          campaign_id: string
+          campaign_id: string | null
           context_snapshot: Json | null
           created_at: string
           feedback: string | null
           id: string
           last_message_at: string
           metadata: Json
+          scope: string
           status: string
           surface: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          campaign_id: string
+          campaign_id?: string | null
           context_snapshot?: Json | null
           created_at?: string
           feedback?: string | null
           id?: string
           last_message_at?: string
           metadata?: Json
+          scope?: string
           status?: string
           surface?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          campaign_id?: string
+          campaign_id?: string | null
           context_snapshot?: Json | null
           created_at?: string
           feedback?: string | null
           id?: string
           last_message_at?: string
           metadata?: Json
+          scope?: string
           status?: string
           surface?: string
           updated_at?: string
