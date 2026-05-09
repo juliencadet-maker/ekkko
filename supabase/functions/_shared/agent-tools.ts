@@ -142,7 +142,7 @@ async function read_timeline(ctx: ToolContext, args: any): Promise<ToolResult> {
 
   let q = ctx.supabase
     .from("timeline_events")
-    .select("id, event_type, event_layer, event_data, actor_user_id, created_at")
+    .select("id, event_type, event_layer, event_data, actor_user_id, logged_via, created_at")
     .eq("campaign_id", campaign_id)
     .order("created_at", { ascending: false })
     .limit(limit);
