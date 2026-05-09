@@ -90,11 +90,26 @@ export async function writeTimelineEvent(
   if (!TIMELINE_EVENT_TYPES.includes(evt.event_type)) {
     return { ok: false, error: `unknown event_type: ${evt.event_type}` };
   }
-  const row = {
-    ...evt,
+  // Real timeline_events schema: only campaign_id, event_layer, event_type,
+  // event_data, viewer_id, asset_id, identity_cluster_id, deal_room_id.
+  // Audit metadata (logged_via, actor_user_id, org_id, payload) is folded
+  // into event_data to preserve traceability without altering the schema.
+  const baseData = (evt.event_data ?? {}) as Record<string, unknown>;
+  const audit = {
     logged_via: via,
     actor_user_id: evt.actor_user_id ?? evt.created_by_user_id ?? null,
+    org_id: evt.org_id ?? null,
+    ...(evt.payload ? { payload: evt.payload } : {}),
   };
+  const row: Record<string, unknown> = {
+    campaign_id: evt.campaign_id,
+    event_type: evt.event_type,
+    event_layer: evt.event_layer,
+    event_data: { ...baseData, _audit: audit },
+  };
+  if (evt.viewer_id) row.viewer_id = evt.viewer_id;
+  if (evt.deal_room_id) row.deal_room_id = evt.deal_room_id;
+
   const { data, error } = await supabase.from("timeline_events").insert(row).select("id").maybeSingle();
   if (error) {
     console.warn(`[timeline:${via}] insert failed:`, error.message);
