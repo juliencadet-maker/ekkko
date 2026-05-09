@@ -28,12 +28,13 @@ import { ROLE_LABELS } from "@/lib/constants";
 import { NotificationBell } from "./NotificationBell";
 import { EkkoLogo } from "@/components/ui/EkkoLogo";
 import { useAECockpitFeed } from "@/hooks/useAECockpitFeed";
+import { useAgentNotifications } from "@/hooks/useAgentNotifications";
 
 const navigationItems = [
   { label: "Cockpit", href: "/app/cockpit", icon: Compass },
   { label: "Inbox", href: "/app/inbox", icon: InboxIcon, badgeKey: "inboxCount" as const },
   { label: "Deals", href: "/app/campaigns", icon: LayoutList },
-  { label: "Agent Ekko", href: "/app/agent", icon: MessageSquare },
+  { label: "Agent Ekko", href: "/app/agent", icon: MessageSquare, badgeKey: "agentPending" as const },
   { label: "Deal Intelligence", href: "/app/deal-intelligence", icon: Brain },
   { label: "Identités", href: "/app/identities", icon: Users },
   {
@@ -112,6 +113,9 @@ export function AppSidebar() {
   const { data: feed } = useAECockpitFeed(60_000);
   const inboxCount = feed?.badges.global_attention || 0;
 
+  // Phase 4 — Agent pending actions badge
+  const { pendingCount: agentPendingCount } = useAgentNotifications(user?.id ?? null);
+
   const renderNavItem = (item: typeof navigationItems[0]) => {
     const isActive = location.pathname === item.href ||
       (item.href === "/app/campaigns" && location.pathname.startsWith("/app/campaigns"));
@@ -119,7 +123,8 @@ export function AppSidebar() {
     const badgeKey = (item as any).badgeKey;
     const badgeValue =
       badgeKey === "pendingApprovals" ? pendingCount :
-      badgeKey === "inboxCount" ? inboxCount : 0;
+      badgeKey === "inboxCount" ? inboxCount :
+      badgeKey === "agentPending" ? agentPendingCount : 0;
     const showBadge = badgeKey && badgeValue > 0;
 
     return (
