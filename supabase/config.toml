@@ -107,3 +107,4 @@ verify_jwt = false
 
 [functions.pending-action-expire-cron]
 verify_jwt = false
+
