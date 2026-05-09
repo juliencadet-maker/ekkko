@@ -321,6 +321,7 @@ Deno.serve(async (req) => {
             role: "user",
             content: lastUser.content,
             surface,
+            metadata: {},
           },
           {
             conversation_id,
