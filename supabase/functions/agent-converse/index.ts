@@ -281,6 +281,9 @@ Deno.serve(async (req) => {
     }
 
     // ---------- Persistence (only if we have a resolvedUserId) ----------
+    // Whitelist surface to satisfy chk_ac_surface check constraint.
+    const ALLOWED_SURFACES = new Set(["cockpit", "deal_compose", "prospect_drawer", "extension", "inbox", "slack"]);
+    const surface = source && ALLOWED_SURFACES.has(source) ? source : "cockpit";
     if (resolvedUserId) {
       // Upsert agent_conversations — use UNIQUE(campaign_id, user_id), return id directly
       const { data: convRow, error: convErr } = await supabase
@@ -292,7 +295,7 @@ Deno.serve(async (req) => {
             context_snapshot: { ...dealContext, tool_calls_made: allToolCalls.length, max_iter_reached: maxIterReached },
             last_message_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            surface: source ?? "direct",
+            surface,
           },
           { onConflict: "campaign_id,user_id", ignoreDuplicates: false },
         )
@@ -317,16 +320,16 @@ Deno.serve(async (req) => {
             conversation_id,
             role: "user",
             content: lastUser.content,
-            surface: source ?? "direct",
+            surface,
           },
           {
             conversation_id,
             role: "assistant",
             content: finalReply,
-            surface: source ?? "direct",
+            surface,
             tool_calls: allToolCalls.length > 0 ? allToolCalls.map((t) => ({ name: t.name, args: t.args })) : null,
             tool_results: allToolCalls.length > 0 ? allToolCalls.map((t) => ({ name: t.name, ok: t.result?.ok })) : null,
-            metadata: { iter, max_iter_reached: maxIterReached, internal_caller: trustedInternalCaller },
+            metadata: { iter, max_iter_reached: maxIterReached, internal_caller: trustedInternalCaller, source: source ?? null },
           },
         ]);
         if (msgErr) console.warn("[agent-converse] agent_messages insert failed:", msgErr.message);
@@ -341,6 +344,7 @@ Deno.serve(async (req) => {
         actor_user_id: resolvedUserId,
         event_data: {
           source: source ?? "direct",
+          surface,
           tool_calls: allToolCalls.length,
           max_iter_reached: maxIterReached,
           tools_used: allToolCalls.map((t) => t.name),
