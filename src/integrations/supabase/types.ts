@@ -2032,6 +2032,7 @@ export type Database = {
           decided_by_user_id: string | null
           expires_at: string
           id: string
+          org_id: string
           payload: Json
           status: string
           user_id: string
@@ -2045,6 +2046,7 @@ export type Database = {
           decided_by_user_id?: string | null
           expires_at?: string
           id?: string
+          org_id: string
           payload: Json
           status?: string
           user_id: string
@@ -2058,6 +2060,7 @@ export type Database = {
           decided_by_user_id?: string | null
           expires_at?: string
           id?: string
+          org_id?: string
           payload?: Json
           status?: string
           user_id?: string
