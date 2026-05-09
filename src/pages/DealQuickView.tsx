@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { EkkoLoader } from "@/components/ui/EkkoLoader";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 export default function DealQuickView() {
   const { id } = useParams<{ id: string }>();
