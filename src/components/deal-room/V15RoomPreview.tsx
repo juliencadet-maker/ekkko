@@ -110,11 +110,6 @@ export function V15RoomPreview({ campaignId, className }: Props) {
             Vidéo non disponible (preview)
           </div>
         )}
-        {data.summary_bullets?.length > 0 && (
-          <ul className="mt-3 space-y-1 text-xs text-foreground/80">
-            {data.summary_bullets.slice(0, 3).map((b, i) => <li key={i}>• {b}</li>)}
-          </ul>
-        )}
       </div>
 
       {/* Blocks */}
