@@ -414,6 +414,23 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                     }`}>
                       {m.role === "assistant"
                         ? <div className="space-y-1">
+                            {m.toolEvents && m.toolEvents.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mb-1.5">
+                                {m.toolEvents.map((te, k) => (
+                                  <span
+                                    key={k}
+                                    className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[10px] bg-background/60"
+                                    title={te.tool}
+                                  >
+                                    <span aria-hidden>🔧</span>
+                                    <span className="font-mono">{te.tool}</span>
+                                    <span aria-hidden>
+                                      {te.status === "start" ? "…" : te.status === "ok" ? "✓" : "✗"}
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             {parseAgentMessage(m.content).map((part, j) =>
                               part.text.trim() === "" ? null : (
                                 <div key={j} className="flex items-start gap-1.5">
@@ -428,6 +445,11 @@ export function EkkoAgent({ campaignId, campaignName, viewers = [], dealScore, i
                                   <span className="whitespace-pre-wrap">{part.text}</span>
                                 </div>
                               )
+                            )}
+                            {m.streaming && m.content === "" && (m.toolEvents?.length ?? 0) === 0 && (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <EkkoLoader mode="loop" size={12} /> Analyse…
+                              </span>
                             )}
                           </div>
                         : m.content
