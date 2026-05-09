@@ -1,9 +1,16 @@
-// Phase 1d.5h — agent-converse
-// Unified agent backend: deal context fetch + Lovable AI Gateway call +
-// agent_messages persistence + agent_conversations upsert (legacy compat).
-// Called both by `ekko-agent` (proxy alias) and any future direct callers.
+// Phase 1d.5h — Phase 3: agent-converse with tool-calling loop.
+// Multi-turn loop: Gemini → tool_calls → execute (READ parallel, WRITE serial)
+//   → reinject tool results → Gemini → ... up to MAX_TOOL_ITER iterations.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { writeTimelineEvent } from "../_shared/timeline-events-writer.ts";
+import {
+  TOOL_HANDLERS,
+  TOOL_DECLARATIONS,
+  READ_TOOLS,
+  MAX_TOOL_ITER,
+  type ToolContext,
+  type ToolName,
+} from "../_shared/agent-tools.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,67 +18,42 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT_TEMPLATE = `Tu es l'agent de deal intelligence d'Ekko. Tu es l'IA embarquée dans l'outil Ekko, un copilote de deal enterprise.
+const SYSTEM_PROMPT_TEMPLATE = `Tu es l'agent de deal intelligence d'Ekko — copilote AE enterprise.
 
-TON RÔLE : aider les AE enterprise à lire leurs deals en profondeur à partir de signaux comportementaux vidéo. Tu analyses un buying committee, tu interprètes les signaux, tu proposes des actions concrètes.
-
-CONTEXTE DU DEAL ACTUEL :
+CONTEXTE DU DEAL ACTIF (snapshot léger) :
 {DEAL_CONTEXT}
 
-TES RÈGLES STRICTES :
-1. Tu n'es PAS un coach de vente générique. Tu parles de CE deal, CES signaux, CET instant.
-2. Chaque inférence que tu fais, tu indiques ton niveau de confiance (fort/modéré/faible).
-3. Tu distingues toujours : fait observé / inférence / recommandation.
-4. Tu ne caches pas l'incertitude. Si tu ne sais pas, tu le dis.
-5. Tu es concis et direct. Pas de blabla. Pas de "bonne question !". Pas de formules creuses.
-6. Tu raisonnes à voix haute — l'AE doit comprendre POURQUOI, pas juste QUOI faire.
-7. Quand tu proposes une action, tu mentionnes son coût d'exécution (email = faible, exec clone = moyen, session dédiée = élevé).
+OUTILS DISPONIBLES :
+- read_deal_signals(campaign_id?, limit?) — faits + score récents
+- read_power_map(campaign_id?) — buying committee + rôles
+- read_timeline(campaign_id?, since?, event_layer?, limit?) — chronologie
+- read_user_portfolio() — 20 deals actifs de l'AE
+- log_declarative_signal(campaign_id?, label, payload?) — signal AE déclaré
+- snooze_deal(campaign_id?, until, reason?) — pause un deal (max 30j)
+- queue_notification(kind, title, body?, campaign_id?, payload?) — notif in-app à l'AE
 
-PHASE D'APPRENTISSAGE :
-PHASE 1 (si moins de 3 réponses AE dans cette session) :
-→ Questions factuelles uniquement. Zéro lecture. Zéro conclusion forte.
-→ Maximum 3 questions par message. Jamais d'affirmation non étayée.
-→ Zéro orientation d'action. Zéro réduction de choix.
+RÈGLES TOOLS :
+- Appelle un tool QUAND tu as besoin de données fraîches/précises ou de poser une action — pas pour faire joli.
+- Tu peux enchaîner jusqu'à 5 tours d'outils. Au-delà, tu réponds avec ce que tu as.
+- Pour WRITE (log_*, snooze_*, queue_*) : appelle UNIQUEMENT si l'AE l'a demandé explicitement ou implicitement.
+- N'invente jamais d'IDs. Si campaign_id absent → tools utilisent le deal du contexte.
 
-PHASE 2 (après 3 réponses AE ou si l'AE donne explicitement du contexte) :
-→ Challenge direct autorisé. Hypothèses conditionnelles possibles.
-→ Tu peux prendre position si les données le permettent.
+RÈGLES DE FOND (inchangées) :
+1. Tu parles de CE deal, CES signaux, CET instant.
+2. Distingue toujours fait observé / inférence / recommandation. Indique ton niveau de confiance.
+3. Tu ne caches pas l'incertitude. Si tu ne sais pas, tu le dis.
+4. Concis et direct. Pas de blabla. Pas de "bonne question".
+5. Tu ne déclenches jamais d'action externe (email, Slack, appel). Tu proposes — l'AE exécute.
+6. Tu ne contredis jamais un fait du moteur Ekko (DES, scores, alertes). Tu interprètes, jamais tu réfutes.
+7. Si donnée insuffisante : "Pas assez de signaux pour orienter une action fiable pour le moment."
 
-RÈGLE MOTEUR VS AGENT : Tu ne peux jamais contredire un fait issu du moteur Ekko
-(DES, scores, alertes, signaux observés). Tu peux l'interpréter, le contextualiser,
-le nuancer. Jamais le réfuter.
-
-RÈGLE NO_ACTION_AUTO : Tu ne déclenches jamais d'action externe (email, Slack, appel).
-Tu proposes. L'AE décide. L'AE exécute.
-
-AGENT_CONTEXT : Utilise agent_context.stage, motion_type, decision_structure,
-decision_window, incumbent_present, competitive_situation pour enrichir ton analyse.
-Si ces champs sont null, ne les invente pas — dis explicitement "non renseigné".
-
-TEMPORALITÉ : Tu es prescriptif, pas descriptif.
-- Si daysSinceSignal > 14 → qualifier comme "à traiter en priorité cette semaine".
-- Si decision_window renseigné et proche (< 14j) → mentionner "fenêtre de décision active".
-
-ORIENTATION, STRUCTURE ET STYLE :
-EN PHASE 2 UNIQUEMENT :
-→ Structurer dans cet ordre : 1) action → 2) justification (signaux observés) → 3) question éventuelle.
-→ Inclure au moins 1 fait brut observable non interprété dans la justification.
-→ Clore par : "Si vous devez faire une seule chose maintenant sur ce deal, c'est [X]."
-EN PHASE 1 : rester en questions factuelles uniquement.
-TOUTES PHASES :
-→ Si données insuffisantes : "Pas assez de signaux pour orienter une action fiable pour le moment."
-→ INTERDIT : listes alternatives, "ou", "également", "vous pouvez aussi", suggestions multiples.
-
-TES TROIS MODES :
-- EXPLAIN, WHAT IF, WHAT SHOULD I DO
-
-STYLE : messages courts (5-10 lignes max sauf si demande de détail). Ton factuel et direct.`;
+STYLE : 5-10 lignes max sauf demande explicite. Ton factuel, prescriptif quand les données le permettent.`;
 
 interface ConverseInput {
   campaign_id: string;
-  messages: Array<{ role: "user" | "assistant" | "system"; content: string }>;
+  messages: Array<{ role: "user" | "assistant" | "system" | "tool"; content: string; tool_call_id?: string }>;
   user_id?: string | null;
-  source?: string; // who called us (e.g. "ekko-agent-proxy", "agent-page")
+  source?: string;
 }
 
 Deno.serve(async (req) => {
@@ -90,85 +72,33 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // Fetch deal context
-    const [campaignRes, viewersRes, scoresRes, eventsRes, reactionsRes, agentCtxRes] = await Promise.all([
-      supabase.from("campaigns").select("*, identities(display_name, type)").eq("id", campaign_id).maybeSingle(),
-      supabase.from("viewers").select("*").eq("campaign_id", campaign_id).order("contact_score", { ascending: false, nullsFirst: false }),
-      supabase.from("deal_scores").select("*").eq("campaign_id", campaign_id).order("scored_at", { ascending: false }).limit(1),
-      supabase.from("video_events").select("*").eq("campaign_id", campaign_id).order("created_at", { ascending: false }).limit(50),
-      supabase.from("video_reactions").select("*").eq("campaign_id", campaign_id).order("created_at", { ascending: false }).limit(20),
-      supabase.from("agent_context")
-        .select("stage, motion_type, decision_structure, decision_window, incumbent_present, incumbent_type, competitive_situation")
-        .eq("campaign_id", campaign_id)
-        .maybeSingle(),
-    ]);
+    // Resolve campaign + org
+    const { data: campaign, error: cErr } = await supabase
+      .from("campaigns")
+      .select("id, org_id, name, deal_stage, deal_status, deal_value, snoozed_until")
+      .eq("id", campaign_id)
+      .maybeSingle();
+    if (cErr || !campaign) return json({ error: "campaign not found" }, 404);
 
-    const campaign = campaignRes.data;
-    if (!campaign) return json({ error: "campaign not found" }, 404);
-    const viewers = viewersRes.data || [];
-    const latestScore = scoresRes.data?.[0] || null;
-    const recentEvents = eventsRes.data || [];
-    const reactions = reactionsRes.data || [];
-    const agentCtx = agentCtxRes.data || null;
+    // Build a lightweight context snapshot (heavy reads now go via tools)
+    const { data: latestScore } = await supabase
+      .from("deal_scores")
+      .select("des, momentum, viewer_count, days_since_last_signal, alerts")
+      .eq("campaign_id", campaign_id)
+      .order("scored_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     const dealContext = {
-      name: campaign?.name || "Deal inconnu",
-      description: campaign?.description || "",
-      status: campaign?.status || "unknown",
-      identity: (campaign as any)?.identities?.display_name || "Inconnu",
-      created_at: campaign?.created_at,
-      des: latestScore?.des ?? "N/A",
-      momentum: latestScore?.momentum ?? "unknown",
-      cold_start_regime: latestScore?.cold_start_regime ?? "cold_global",
-      viewer_count: latestScore?.viewer_count ?? viewers.length,
-      sponsor_count: latestScore?.sponsor_count ?? 0,
-      blocker_count: latestScore?.blocker_count ?? 0,
-      avg_watch_depth: latestScore?.avg_watch_depth ?? 0,
-      breadth: latestScore?.breadth ?? 0,
-      event_velocity: latestScore?.event_velocity ?? 0,
-      multi_threading_score: latestScore?.multi_threading_score ?? 0,
-      alerts: latestScore?.alerts ?? [],
-      recommended_action: latestScore?.recommended_action ?? null,
-      committee: viewers.map((v: any) => ({
-        name: v.name || "Inconnu",
-        email: v.email || null,
-        role: v.title || v.domain || "inconnu",
-        watch_depth: v.total_watch_depth ?? 0,
-        sponsor_score: v.sponsor_score,
-        contact_score: v.contact_score,
-        blocker_score: v.blocker_score,
-        influence_score: v.influence_score,
-        shares: v.share_count ?? 0,
-        replays: v.replay_count ?? 0,
-        cta_clicked: v.cta_clicked ?? false,
-        status: v.status || "unknown",
-        last_seen: v.last_event_at,
-        is_known: v.is_known,
-        company: v.company,
-        domain: v.domain,
-        via: v.via_viewer_id ? "partage interne" : null,
-      })),
-      recent_events: recentEvents.slice(0, 15).map((e: any) => ({
-        time: e.created_at,
-        event_type: e.event_type,
-        viewer: e.viewer_name || e.viewer_email || e.viewer_hash?.slice(0, 8),
-        data: e.event_data,
-        position: e.position_sec,
-      })),
-      reactions_summary: {
-        total: reactions.length,
-        emojis: reactions.filter((r: any) => r.reaction_type === "emoji").length,
-        comments: reactions.filter((r: any) => r.reaction_type === "comment").length,
-      },
-      agent_context: {
-        stage: agentCtx?.stage ?? null,
-        motion_type: agentCtx?.motion_type ?? null,
-        decision_structure: agentCtx?.decision_structure ?? null,
-        decision_window: agentCtx?.decision_window ?? null,
-        incumbent_present: agentCtx?.incumbent_present ?? null,
-        incumbent_type: agentCtx?.incumbent_type ?? null,
-        competitive_situation: agentCtx?.competitive_situation ?? null,
-      },
+      campaign_id,
+      name: campaign.name,
+      deal_stage: campaign.deal_stage,
+      deal_status: campaign.deal_status,
+      des: latestScore?.des ?? null,
+      momentum: latestScore?.momentum ?? "stable",
+      viewer_count: latestScore?.viewer_count ?? 0,
+      days_since_last_signal: latestScore?.days_since_last_signal ?? null,
+      alerts_count: Array.isArray(latestScore?.alerts) ? (latestScore!.alerts as any[]).length : 0,
     };
 
     const systemPrompt = SYSTEM_PROMPT_TEMPLATE.replace("{DEAL_CONTEXT}", JSON.stringify(dealContext, null, 2));
@@ -176,65 +106,214 @@ Deno.serve(async (req) => {
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) return json({ error: "AI not configured" }, 500);
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableApiKey}` },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        max_tokens: 1200,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-        ],
-      }),
-    });
+    // ---------- Tool loop ----------
+    const toolCtx: ToolContext | null = user_id
+      ? {
+        supabase,
+        user_id,
+        org_id: campaign.org_id,
+        campaign_id,
+        via: "agent-converse",
+      }
+      : null;
 
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error("AI error:", errText);
-      return json({ error: "AI request failed" }, 502);
+    // Conversation = system + user-provided messages, then we append assistant + tool turns
+    const convo: any[] = [
+      { role: "system", content: systemPrompt },
+      ...messages.map((m) => ({ role: m.role, content: m.content, ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}) })),
+    ];
+
+    let iter = 0;
+    let finalReply = "";
+    const allToolCalls: Array<{ name: string; args: any; result: any }> = [];
+    let maxIterReached = false;
+
+    while (iter < MAX_TOOL_ITER) {
+      iter++;
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableApiKey}` },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          max_tokens: 1500,
+          messages: convo,
+          tools: toolCtx ? TOOL_DECLARATIONS : undefined,
+          tool_choice: toolCtx ? "auto" : undefined,
+        }),
+      });
+      if (!aiResp.ok) {
+        const errText = await aiResp.text();
+        console.error("[agent-converse] AI error:", errText);
+        return json({ error: "AI request failed", details: errText.slice(0, 500) }, 502);
+      }
+      const aiData = await aiResp.json();
+      const choice = aiData.choices?.[0];
+      const message = choice?.message;
+      const toolCalls = message?.tool_calls;
+
+      if (!toolCalls || toolCalls.length === 0 || !toolCtx) {
+        finalReply = message?.content ?? "Erreur de réponse de l'agent.";
+        // Append final assistant turn for persistence
+        convo.push({ role: "assistant", content: finalReply });
+        break;
+      }
+
+      // Append assistant message with tool_calls (required for OpenAI/Gemini protocol)
+      convo.push({
+        role: "assistant",
+        content: message.content ?? "",
+        tool_calls: toolCalls,
+      });
+
+      // Split READ vs WRITE
+      const reads: any[] = [];
+      const writes: any[] = [];
+      for (const tc of toolCalls) {
+        const name = tc.function?.name as ToolName;
+        if (READ_TOOLS.has(name)) reads.push(tc);
+        else writes.push(tc);
+      }
+
+      const execOne = async (tc: any) => {
+        const name = tc.function?.name as ToolName;
+        let args: any = {};
+        try { args = JSON.parse(tc.function?.arguments ?? "{}"); } catch { /* keep empty */ }
+        const handler = TOOL_HANDLERS[name];
+        let result: any;
+        if (!handler) {
+          result = { ok: false, error: `unknown tool: ${name}` };
+        } else {
+          try {
+            result = await handler(toolCtx!, args);
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "tool exception";
+            result = { ok: false, error: msg };
+          }
+        }
+        allToolCalls.push({ name, args, result });
+        return { tool_call_id: tc.id, content: JSON.stringify(result) };
+      };
+
+      // READ in parallel, WRITE serial
+      const readResults = await Promise.all(reads.map(execOne));
+      const writeResults: any[] = [];
+      for (const w of writes) writeResults.push(await execOne(w));
+
+      // Reinject tool results in original order
+      const byId = new Map<string, any>();
+      [...readResults, ...writeResults].forEach((r) => byId.set(r.tool_call_id, r));
+      for (const tc of toolCalls) {
+        const r = byId.get(tc.id);
+        if (r) convo.push({ role: "tool", tool_call_id: tc.id, content: r.content });
+      }
     }
 
-    const aiData = await aiResponse.json();
-    const reply: string = aiData.choices?.[0]?.message?.content || "Erreur de réponse de l'agent.";
+    if (iter >= MAX_TOOL_ITER && !finalReply) {
+      maxIterReached = true;
+      // Force a final non-tool response by removing tools and asking to wrap up
+      const wrapResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableApiKey}` },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          max_tokens: 800,
+          messages: [
+            ...convo,
+            { role: "user", content: "Limite d'outils atteinte. Synthétise ce que tu as et conclus, sans appeler de tools." },
+          ],
+        }),
+      });
+      if (wrapResp.ok) {
+        const wrapData = await wrapResp.json();
+        finalReply = wrapData.choices?.[0]?.message?.content ?? "Limite d'analyse atteinte.";
+      } else {
+        finalReply = "Limite d'analyse atteinte sans réponse propre.";
+      }
+
+      // Log to system_failures (failure_type='execution', severity='medium')
+      await supabase.from("system_failures").insert({
+        failure_type: "execution",
+        severity: "medium",
+        message: "agent-converse: MAX_TOOL_ITER reached",
+        campaign_id,
+        reason: JSON.stringify({
+          error_code: "agent_max_iter_reached",
+          provider: "internal",
+          attempt_n: iter,
+          request_id: null,
+          deal_room_version_id: null,
+          timestamp_iso: new Date().toISOString(),
+          tool_call_count: allToolCalls.length,
+          tools_used: allToolCalls.map((t) => t.name),
+        }),
+      });
+    }
 
     // Persist conversation (legacy compat — agent_conversations)
     if (user_id) {
-      const allMessages = [...messages, { role: "assistant", content: reply }];
+      const allMessages = [...messages, { role: "assistant", content: finalReply }];
       await supabase.from("agent_conversations").upsert(
         {
           campaign_id,
           user_id,
           messages: allMessages,
-          context_snapshot: dealContext,
+          context_snapshot: { ...dealContext, tool_calls_made: allToolCalls.length, max_iter_reached: maxIterReached },
           updated_at: new Date().toISOString(),
         },
         { onConflict: "campaign_id,user_id", ignoreDuplicates: false },
       );
 
-      // Persist last user msg + assistant reply into agent_messages (multi-turn store)
+      // Persist user msg + assistant reply (with tool_calls) into agent_messages
       const lastUser = [...messages].reverse().find((m) => m.role === "user");
-      if (lastUser) {
+      // Need a conversation_id for agent_messages (FK via RLS). Resolve it now.
+      const { data: convRow } = await supabase
+        .from("agent_conversations")
+        .select("id")
+        .eq("campaign_id", campaign_id)
+        .eq("user_id", user_id)
+        .maybeSingle();
+      const conversation_id = convRow?.id;
+      if (conversation_id && lastUser) {
         await supabase.from("agent_messages").insert([
-          { campaign_id, user_id, role: "user", content: lastUser.content },
-          { campaign_id, user_id, role: "assistant", content: reply, context_snapshot: dealContext },
+          {
+            conversation_id,
+            role: "user",
+            content: lastUser.content,
+            surface: source ?? "direct",
+          },
+          {
+            conversation_id,
+            role: "assistant",
+            content: finalReply,
+            surface: source ?? "direct",
+            tool_calls: allToolCalls.length > 0 ? allToolCalls.map((t) => ({ name: t.name, args: t.args })) : null,
+            tool_results: allToolCalls.length > 0 ? allToolCalls.map((t) => ({ name: t.name, ok: t.result?.ok })) : null,
+            metadata: { iter, max_iter_reached: maxIterReached },
+          },
         ]);
       }
 
       // Audit
       await writeTimelineEvent(supabase, "agent-converse", {
         campaign_id,
-        org_id: (campaign as any)?.org_id ?? null,
+        org_id: campaign.org_id,
         event_type: "agent_message",
         event_layer: "fact",
         actor_user_id: user_id,
-        event_data: { source: source ?? "direct", des: dealContext.des, viewer_count: dealContext.viewer_count },
+        event_data: {
+          source: source ?? "direct",
+          tool_calls: allToolCalls.length,
+          max_iter_reached: maxIterReached,
+          tools_used: allToolCalls.map((t) => t.name),
+        },
       });
     }
 
     return json({
-      reply,
+      reply: finalReply,
       context: { des: dealContext.des, viewer_count: dealContext.viewer_count, momentum: dealContext.momentum },
+      tool_calls: allToolCalls.length,
+      max_iter_reached: maxIterReached,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Internal error";
