@@ -847,7 +847,7 @@ function Hero() {
         className="mx-auto mt-7 text-[17px] md:text-[22px] leading-[1.45]"
         style={{ color: "rgba(13,27,42,0.65)", maxWidth: 720 }}
       >
-        Ekko orchestre la lecture des signaux du comité, le bon move au bon moment, et la production des assets différenciants (vidéo perso, vidéo exec, atelier ROI) — pour que vos AE moyens exécutent comme vos top, et que vos top deviennent inarrêtables.
+        Ekko orchestre la lecture des signaux du comité, le bon move au bon moment, et la production des assets différenciants (vidéo perso, vidéo exec, atelier ROI). Pour que vos AE moyens exécutent comme vos top. Et que vos top deviennent inarrêtables.
       </motion.p>
 
       <motion.div
