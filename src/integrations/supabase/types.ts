@@ -1712,6 +1712,7 @@ export type Database = {
       early_access_leads: {
         Row: {
           created_at: string
+          effectif: string | null
           email: string
           entreprise: string
           id: string
@@ -1719,10 +1720,12 @@ export type Database = {
           notes: string | null
           poste: string
           prenom: string
+          role: string | null
           source: string | null
         }
         Insert: {
           created_at?: string
+          effectif?: string | null
           email: string
           entreprise: string
           id?: string
@@ -1730,10 +1733,12 @@ export type Database = {
           notes?: string | null
           poste: string
           prenom: string
+          role?: string | null
           source?: string | null
         }
         Update: {
           created_at?: string
+          effectif?: string | null
           email?: string
           entreprise?: string
           id?: string
@@ -1741,6 +1746,7 @@ export type Database = {
           notes?: string | null
           poste?: string
           prenom?: string
+          role?: string | null
           source?: string | null
         }
         Relationships: []
