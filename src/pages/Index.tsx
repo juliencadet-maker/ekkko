@@ -189,35 +189,70 @@ function InsightPanel({ insight }: { insight: Insight }) {
         Next Best Actions
       </div>
       <div className="flex flex-col gap-3.5">
-        {nbas.map((nba) => (
-          <div key={nba.n} className="flex gap-3">
-            <div
-              className="shrink-0 w-6 h-6 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
-              style={{ background: `${accent}26`, color: accent }}
-            >
-              {nba.n}
-            </div>
-            <div className="flex-1 min-w-0">
+        {nbas.map((nba) => {
+          const Icon = nba.cta.icon === "send" ? Send : nba.cta.icon === "plus" ? Plus : Check;
+          const showIcon = nba.cta.variant === "filled" && nba.cta.icon;
+          return (
+            <div key={nba.n} className="flex gap-3">
               <div
-                className="text-[14px] font-bold leading-[1.3] mb-1.5"
-                style={{ color: "rgba(247,246,243,0.92)" }}
+                className="shrink-0 w-6 h-6 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
+                style={{ background: `${accent}26`, color: accent }}
               >
-                {nba.title}
+                {nba.n}
               </div>
-              <ul className="space-y-1">
-                {nba.lines.map((l, i) => (
-                  <li
-                    key={i}
-                    className="text-[13px] leading-[1.5] pl-3"
-                    style={{ color: "rgba(247,246,243,0.55)" }}
+              <div className="flex-1 min-w-0">
+                <div
+                  className="text-[14px] font-bold leading-[1.3] mb-1.5"
+                  style={{ color: "rgba(247,246,243,0.92)" }}
+                >
+                  {nba.title}
+                </div>
+                <div className="flex items-end justify-between gap-3 flex-wrap">
+                  <ul className="space-y-1 flex-1 min-w-0">
+                    {nba.lines.map((l, i) => (
+                      <li
+                        key={i}
+                        className="text-[13px] leading-[1.5] pl-3"
+                        style={{ color: "rgba(247,246,243,0.55)" }}
+                      >
+                        <span style={{ color: `${accent}99` }}>→</span> {l}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-[8px] font-bold text-[12px] px-3.5 py-2 transition-all duration-150"
+                    style={
+                      nba.cta.variant === "filled"
+                        ? { background: accent, color: MARINE }
+                        : {
+                            background: "transparent",
+                            color: accent,
+                            border: `1px solid ${accent}`,
+                          }
+                    }
+                    onMouseEnter={(e) => {
+                      if (nba.cta.variant === "filled") {
+                        e.currentTarget.style.filter = "brightness(1.1)";
+                      } else {
+                        e.currentTarget.style.background = `${accent}1A`;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.filter = "";
+                      if (nba.cta.variant === "outline") {
+                        e.currentTarget.style.background = "transparent";
+                      }
+                    }}
                   >
-                    <span style={{ color: `${accent}99` }}>→</span> {l}
-                  </li>
-                ))}
-              </ul>
+                    {showIcon && <Icon className="w-3.5 h-3.5" strokeWidth={2.5} />}
+                    {nba.cta.label}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </motion.div>
   );
