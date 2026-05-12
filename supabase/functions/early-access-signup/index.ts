@@ -117,7 +117,7 @@ function adminSubject(role: Role, entreprise: string) {
     : role === "ae" ? "[AE PILOTE] Inscription bêta"
     : role === "exec" ? "[EXEC LEAD] Note demandée"
     : "[AUTRE] Info demandée";
-  return `${tag} - ${entreprise}`;
+  return `${tag} · ${entreprise}`;
 }
 
 Deno.serve(async (req) => {
