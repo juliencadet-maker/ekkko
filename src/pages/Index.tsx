@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Loader2, ArrowRight, Sparkles, Send, Plus } from "lucide-react";
+import { Check, Loader2, ArrowRight, Sparkles, Send, Plus, Play } from "lucide-react";
 
 const CALENDLY_URL = "https://calendly.com/julien-cadet-getekko/discovery-call";
 const IVORY = "#F7F6F3";
@@ -28,7 +28,7 @@ function scrollToId(id: string) {
 
 /* ---------------- INSIGHT TYPES & DATA ---------------- */
 
-type CTA = { label: string; variant: "filled" | "outline"; icon?: "send" | "plus" | "check" };
+type CTA = { label: string; variant: "filled" | "outline"; icon?: "send" | "plus" | "check" | "play" };
 type NBA = { n: string; title: string; lines: string[]; cta: CTA };
 type Insight = {
   id: string;
@@ -84,9 +84,9 @@ const INSIGHTS: Insight[] = [
       },
       {
         n: "02",
-        title: "Vidéo CTO en miroir",
-        lines: ["Engagement pair-to-pair sur la sécurité"],
-        cta: { label: "Envoyer ma vidéo", variant: "filled", icon: "send" },
+        title: "Engagement pair-to-pair de votre CTO",
+        lines: ["Clone vocal · vidéo prête en 4 min"],
+        cta: { label: "Envoyer la vidéo CTO", variant: "filled", icon: "play" },
       },
       {
         n: "03",
@@ -112,9 +112,9 @@ const INSIGHTS: Insight[] = [
       },
       {
         n: "02",
-        title: "Vidéo perso 2 min",
-        lines: ["Votre lecture + comment vous y remédiez"],
-        cta: { label: "Envoyer ma vidéo", variant: "filled", icon: "send" },
+        title: "Votre vidéo perso 2 min",
+        lines: ["Votre lecture du contexte, en votre nom"],
+        cta: { label: "Envoyer ma vidéo", variant: "filled", icon: "play" },
       },
       {
         n: "03",
@@ -190,7 +190,7 @@ function InsightPanel({ insight }: { insight: Insight }) {
       </div>
       <div className="flex flex-col gap-3.5">
         {nbas.map((nba) => {
-          const Icon = nba.cta.icon === "send" ? Send : nba.cta.icon === "plus" ? Plus : Check;
+          const Icon = nba.cta.icon === "play" ? Play : nba.cta.icon === "send" ? Send : nba.cta.icon === "plus" ? Plus : Check;
           const showIcon = nba.cta.variant === "filled" && nba.cta.icon;
           return (
             <div key={nba.n} className="flex gap-3">
