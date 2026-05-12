@@ -468,20 +468,20 @@ export default function Index() {
               className="mt-3 font-bold"
               style={{ fontSize: 32, lineHeight: 1.05, letterSpacing: "-0.02em", color: MARINE }}
             >
-              Je l'ai fait.
+              Je l'ai fait avant vous.
               <br />
-              Je construis l'outil.
+              Maintenant je veux qu'on le fasse tous.
             </h3>
             <div
               className="mt-6 space-y-4 text-[15px] leading-relaxed"
               style={{ color: "rgba(13,27,42,0.72)" }}
             >
-              <p>Pendant des années, AE en cycle long.</p>
+              <p>Pendant des années, AE en cycle long comme vous.</p>
               <p>
-                Vidéo perso, booklet, atelier ROI sur chaque gros deal. Ça m'a fait gagner ce que mes
-                collègues perdaient.
+                Vidéo perso, booklet exec, atelier ROI sur chaque deal. J'y ai laissé mes soirées et
+                mes weekends.
               </p>
-              <p>Ekko, c'est cet outil. En 5 minutes au lieu de 2h.</p>
+              <p>Ekko, c'est cet outil. Pour qu'on n'ait plus à choisir entre gagner et avoir une vie.</p>
             </div>
             <p className="mt-6 font-bold text-[14px]" style={{ color: MARINE }}>
               Julien · founder
