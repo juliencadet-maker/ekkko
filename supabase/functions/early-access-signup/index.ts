@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
       email: escapeHtml(email),
       entreprise: escapeHtml(entreprise),
       role: escapeHtml(ROLE_LABEL[role]),
-      effectif: escapeHtml(effectif ?? "—"),
+      effectif: escapeHtml(effectif ?? "non renseigné"),
       createdAt: escapeHtml(createdAt),
     };
 
