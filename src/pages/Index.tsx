@@ -190,7 +190,7 @@ function InsightPanel({ insight }: { insight: Insight }) {
       </div>
       <div className="flex flex-col gap-3.5">
         {nbas.map((nba) => {
-          const Icon = nba.cta.icon === "send" ? Send : nba.cta.icon === "plus" ? Plus : Check;
+          const Icon = nba.cta.icon === "play" ? Play : nba.cta.icon === "send" ? Send : nba.cta.icon === "plus" ? Plus : Check;
           const showIcon = nba.cta.variant === "filled" && nba.cta.icon;
           return (
             <div key={nba.n} className="flex gap-3">
