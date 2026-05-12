@@ -587,7 +587,7 @@ function LeviersSection() {
       n: "01 · COACHING",
       Icon: Sparkles,
       title: "Le bon move sur chaque deal.\nSans 1:1 hebdomadaire.",
-      body: "Ekko lit le contexte de chaque deal — signaux du comité, stage, historique — et propose 3 actions stratégiques avec sous-actions exécutables. Vos AE arrivent en deal review armés, repartent avec un plan. Vos top deviennent encore plus précis.",
+      body: "Ekko lit le contexte de chaque deal : signaux du comité, stage, historique. Et propose 3 actions stratégiques avec sous-actions exécutables. Vos AE arrivent en deal review armés, repartent avec un plan. Vos top deviennent encore plus précis.",
       footer: "Pour l'AE et le VP",
     },
     {
