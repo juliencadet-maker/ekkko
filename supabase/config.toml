@@ -108,3 +108,6 @@ verify_jwt = false
 [functions.pending-action-expire-cron]
 verify_jwt = false
 
+
+[functions.early-access-signup]
+verify_jwt = false
