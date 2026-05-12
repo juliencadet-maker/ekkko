@@ -1,7 +1,7 @@
-import { useState, FormEvent } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef, FormEvent } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Loader2, ArrowRight } from "lucide-react";
+import { Check, Loader2, ArrowRight, Sparkles } from "lucide-react";
 
 const CALENDLY_URL = "https://calendly.com/julien-cadet-getekko/discovery-call";
 const IVORY = "#F7F6F3";
