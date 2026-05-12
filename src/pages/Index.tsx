@@ -899,7 +899,7 @@ function Footer() {
           <a href="mailto:julien@getekko.eu" className="underline">julien@getekko.eu</a>
         </div>
         <p className="text-[12px]" style={{ color: "rgba(247,246,243,0.4)" }}>
-          © 2026 Ekko · Paris · Made by an AE
+          © 2026 Ekko · Paris
         </p>
       </div>
     </footer>
