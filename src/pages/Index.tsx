@@ -112,9 +112,9 @@ const INSIGHTS: Insight[] = [
       },
       {
         n: "02",
-        title: "Vidéo perso 2 min",
-        lines: ["Votre lecture + comment vous y remédiez"],
-        cta: { label: "Envoyer ma vidéo", variant: "filled", icon: "send" },
+        title: "Votre vidéo perso 2 min",
+        lines: ["Votre lecture du contexte, en votre nom"],
+        cta: { label: "Envoyer ma vidéo", variant: "filled", icon: "play" },
       },
       {
         n: "03",
