@@ -1709,6 +1709,42 @@ export type Database = {
           },
         ]
       }
+      early_access_leads: {
+        Row: {
+          created_at: string
+          email: string
+          entreprise: string
+          id: string
+          nom: string
+          notes: string | null
+          poste: string
+          prenom: string
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          entreprise: string
+          id?: string
+          nom: string
+          notes?: string | null
+          poste: string
+          prenom: string
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          entreprise?: string
+          id?: string
+          nom?: string
+          notes?: string | null
+          poste?: string
+          prenom?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
       execution_actions: {
         Row: {
           acted_on_at: string | null
