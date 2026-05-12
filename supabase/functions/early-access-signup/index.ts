@@ -10,16 +10,15 @@ const CALENDLY_URL = "https://calendly.com/julien-cadet-getekko/discovery-call";
 const FOUNDER_EMAIL = "julien@getekko.eu";
 const NOTION_CRM_URL = "https://www.notion.so/35ea8d0fe0a0810d9732d595bd3354ee";
 
-const POSTES = [
-  "Account Executive",
-  "Account Executive Senior",
-  "VP Sales",
-  "Head of Sales",
-  "CRO",
-  "Sales Enablement",
-  "Sales Ops / RevOps",
-  "Autre",
-];
+type Role = "vp" | "ae" | "exec" | "other";
+const ROLES: Role[] = ["vp", "ae", "exec", "other"];
+
+const ROLE_LABEL: Record<Role, string> = {
+  vp: "VP Sales / CRO / Head of Sales",
+  ae: "Account Executive (Senior, Enterprise)",
+  exec: "Dirigeant (CEO, COO, DG)",
+  other: "Autre rôle Sales",
+};
 
 function isEmail(s: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
@@ -56,6 +55,71 @@ async function sendEmail(to: string, subject: string, html: string) {
   }
 }
 
+function buildLeadEmail(role: Role, prenom: string, effectif: string | null) {
+  const safePrenom = escapeHtml(prenom);
+  const safeEffectif = effectif ? escapeHtml(effectif) : "";
+  const link = `<a href="${CALENDLY_URL}" style="color:#1AE08A;font-weight:bold">${CALENDLY_URL}</a>`;
+
+  switch (role) {
+    case "vp":
+      return {
+        subject: "Ekko · Confirmons votre créneau de démo",
+        html: `
+          <div style="font-family:Arial,sans-serif;color:#0D1B2A;line-height:1.6">
+            <p>Bonjour ${safePrenom},</p>
+            <p>Merci pour votre intérêt pour Ekko.</p>
+            <p>Voici mon Calendly pour réserver 20 minutes : ${link}</p>
+            <p>Je préparerai une démo personnalisée selon votre stack${safeEffectif ? ` et la taille de votre équipe (${safeEffectif} AE)` : ""}.</p>
+            <p>À très vite,<br/><strong>Julien Cadet</strong><br/>Founder, Ekko</p>
+          </div>`,
+      };
+    case "ae":
+      return {
+        subject: "Ekko · Bienvenue dans la liste pilote bêta",
+        html: `
+          <div style="font-family:Arial,sans-serif;color:#0D1B2A;line-height:1.6">
+            <p>Salut ${safePrenom},</p>
+            <p>Merci pour ton inscription. Tu fais partie des 20 AE Senior sélectionnés pour tester Ekko en pilote pendant 4 semaines à partir de juin.</p>
+            <p>Je te recontacte d'ici 7 jours pour un échange de 20 min avant ton onboarding.</p>
+            <p>En attendant, voici mon Calendly si tu veux booker direct : ${link}</p>
+            <p><strong>Julien</strong></p>
+          </div>`,
+      };
+    case "exec":
+      return {
+        subject: "Ekko · Note de positionnement pour dirigeants",
+        html: `
+          <div style="font-family:Arial,sans-serif;color:#0D1B2A;line-height:1.6">
+            <p>Bonjour ${safePrenom},</p>
+            <p>Merci pour votre intérêt.</p>
+            <p>Je vous prépare une note de positionnement Ekko spécifique aux enjeux exécutifs (présence sur les deals stratégiques sans surcharge agenda) dans les 48h.</p>
+            <p>Si vous préférez 20 min en visio : ${link}</p>
+            <p><strong>Julien</strong>, founder Ekko</p>
+          </div>`,
+      };
+    case "other":
+    default:
+      return {
+        subject: "Ekko · Bienvenue",
+        html: `
+          <div style="font-family:Arial,sans-serif;color:#0D1B2A;line-height:1.6">
+            <p>Bonjour ${safePrenom},</p>
+            <p>Merci pour votre intérêt. Je reviens vers vous d'ici 48h avec une présentation Ekko adaptée à votre contexte.</p>
+            <p>Si vous voulez avancer plus vite : ${link}</p>
+            <p><strong>Julien</strong></p>
+          </div>`,
+      };
+  }
+}
+
+function adminSubject(role: Role, entreprise: string) {
+  const tag = role === "vp" ? "[VP LEAD] Démo demandée"
+    : role === "ae" ? "[AE PILOTE] Inscription bêta"
+    : role === "exec" ? "[EXEC LEAD] Note demandée"
+    : "[AUTRE] Info demandée";
+  return `${tag} - ${entreprise}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -72,9 +136,10 @@ Deno.serve(async (req) => {
     const nom = String(body.nom ?? "").trim().slice(0, 100);
     const email = String(body.email ?? "").trim().toLowerCase().slice(0, 255);
     const entreprise = String(body.entreprise ?? "").trim().slice(0, 200);
-    const poste = String(body.poste ?? "").trim().slice(0, 100);
+    const role = String(body.role ?? "").trim().toLowerCase().slice(0, 20) as Role;
+    const effectif = String(body.effectif ?? "").trim().slice(0, 50) || null;
 
-    if (!prenom || !nom || !email || !entreprise || !poste) {
+    if (!prenom || !nom || !email || !entreprise || !role) {
       return new Response(JSON.stringify({ error: "missing_fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -86,8 +151,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!POSTES.includes(poste)) {
-      return new Response(JSON.stringify({ error: "invalid_poste" }), {
+    if (!ROLES.includes(role)) {
+      return new Response(JSON.stringify({ error: "invalid_role" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -100,7 +165,16 @@ Deno.serve(async (req) => {
 
     const { data: inserted, error } = await supabase
       .from("early_access_leads")
-      .insert({ prenom, nom, email, entreprise, poste, source: "landing" })
+      .insert({
+        prenom,
+        nom,
+        email,
+        entreprise,
+        poste: ROLE_LABEL[role],
+        role,
+        effectif,
+        source: "landing",
+      })
       .select("id, created_at")
       .maybeSingle();
 
@@ -114,7 +188,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Always respond success (do not leak duplicate info to client)
     const response = new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -122,58 +195,39 @@ Deno.serve(async (req) => {
 
     if (isDuplicate) return response;
 
-    // Fire-and-forget emails
     const createdAt = inserted?.created_at ?? new Date().toISOString();
-
     const safe = {
       prenom: escapeHtml(prenom),
       nom: escapeHtml(nom),
       email: escapeHtml(email),
       entreprise: escapeHtml(entreprise),
-      poste: escapeHtml(poste),
+      role: escapeHtml(ROLE_LABEL[role]),
+      effectif: escapeHtml(effectif ?? "—"),
       createdAt: escapeHtml(createdAt),
     };
 
     const adminHtml = `
       <div style="font-family:Arial,sans-serif;color:#0D1B2A;line-height:1.5">
         <p>Bonjour Julien,</p>
-        <p>Nouvelle inscription pilote :</p>
+        <p>Nouveau lead landing :</p>
         <ul>
           <li><strong>Prénom Nom :</strong> ${safe.prenom} ${safe.nom}</li>
           <li><strong>Email :</strong> ${safe.email}</li>
           <li><strong>Entreprise :</strong> ${safe.entreprise}</li>
-          <li><strong>Poste :</strong> ${safe.poste}</li>
-          <li><strong>Source :</strong> landing</li>
+          <li><strong>Rôle :</strong> ${safe.role} (<code>${role}</code>)</li>
+          <li><strong>Effectif équipe Sales :</strong> ${safe.effectif}</li>
           <li><strong>Date :</strong> ${safe.createdAt}</li>
         </ul>
-        <p>Mettre à jour dans le CRM Ekko :<br/>
-        <a href="${NOTION_CRM_URL}">${NOTION_CRM_URL}</a></p>
-        <p style="color:#3D5166">Ekko bot</p>
+        <p>CRM : <a href="${NOTION_CRM_URL}">${NOTION_CRM_URL}</a></p>
       </div>
     `;
 
-    const leadHtml = `
-      <div style="font-family:Arial,sans-serif;color:#0D1B2A;line-height:1.6">
-        <p>Bonjour ${safe.prenom},</p>
-        <p>Merci pour votre inscription au pilote Ekko.</p>
-        <p>On lance le pilote avec 20 AE triés sur le volet en juin 2026. Vous recevrez un email dès qu'il sera prêt.</p>
-        <p>Si entre-temps vous voulez qu'on échange 20 minutes pour comprendre votre quotidien et vos besoins :<br/>
-        <a href="${CALENDLY_URL}" style="color:#1AE08A;font-weight:bold">${CALENDLY_URL}</a></p>
-        <p>À très vite,</p>
-        <p><strong>Julien Cadet</strong><br/>
-        Founder, Ekko<br/>
-        <a href="mailto:julien@getekko.eu">julien@getekko.eu</a></p>
-      </div>
-    `;
+    const leadEmail = buildLeadEmail(role, prenom, effectif);
 
     EdgeRuntime.waitUntil(
       Promise.all([
-        sendEmail(
-          FOUNDER_EMAIL,
-          `Nouveau lead pilote Ekko : ${prenom} ${nom} (${entreprise})`,
-          adminHtml
-        ),
-        sendEmail(email, "Bienvenue dans le pilote Ekko", leadHtml),
+        sendEmail(FOUNDER_EMAIL, adminSubject(role, entreprise), adminHtml),
+        sendEmail(email, leadEmail.subject, leadEmail.html),
       ]).catch((e) => console.error("[early-access] email error", e))
     );
 
