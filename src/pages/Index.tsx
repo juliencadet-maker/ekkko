@@ -157,12 +157,8 @@ function InsightPanel({ insight }: { insight: Insight }) {
       key={insight.id}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{
-        opacity: { duration: 0.4, delay: 0.2, ease: "easeOut" },
-        y: { duration: 0.4, delay: 0.2, ease: "easeOut" },
-        exit: { duration: 0.2, ease: "easeOut" },
-      }}
+      exit={{ opacity: 0, y: -8, transition: { duration: 0.2, ease: "easeOut" } }}
+      transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
       className="absolute inset-0 p-6"
     >
       <div
