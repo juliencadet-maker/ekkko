@@ -567,7 +567,7 @@ function ConstatSection() {
         </motion.h2>
         <div className="space-y-6 text-[19px] leading-[1.55] mx-auto" style={{ color: "rgba(247,246,243,0.75)", maxWidth: 760 }}>
           <p>
-            Vos top performers ont des automatismes : lecture du comité, le bon move au bon moment, activation d'un exec en 1 clic, suivi multi-thread. Pas du talent inné — de la mécanique apprise.
+            Vos top performers ont des automatismes : lecture du comité, le bon move au bon moment, activation d'un exec en 1 clic, suivi multi-thread. Pas du talent inné. De la mécanique apprise.
           </p>
           <p>
             Aujourd'hui, transmettre cette mécanique repose sur les 1:1 hebdomadaires des VP, les weekends de proposition retravaillée, et l'expérience tribale d'équipe. Lent, fragile, non-scalable.
