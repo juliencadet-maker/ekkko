@@ -28,7 +28,7 @@ function scrollToId(id: string) {
 
 /* ---------------- INSIGHT TYPES & DATA ---------------- */
 
-type CTA = { label: string; variant: "filled" | "outline"; icon?: "send" | "plus" | "check" };
+type CTA = { label: string; variant: "filled" | "outline"; icon?: "send" | "plus" | "check" | "play" };
 type NBA = { n: string; title: string; lines: string[]; cta: CTA };
 type Insight = {
   id: string;
