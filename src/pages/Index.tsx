@@ -26,88 +26,218 @@ function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-/* ---------------- INSIGHT CARD ---------------- */
+/* ---------------- INSIGHT TYPES & DATA ---------------- */
 
 type NBA = { n: string; title: string; lines: string[] };
-
-function InsightCard({
-  accent,
-  eyebrow,
-  title,
-  reading,
-  nbas,
-}: {
+type Insight = {
+  id: string;
   accent: string;
   eyebrow: string;
-  title: React.ReactNode;
+  titleLines: string[];
   reading: string;
   nbas: NBA[];
-}) {
-  const isAmber = accent === AMBER;
+};
+
+const INSIGHTS: Insight[] = [
+  {
+    id: "brookfield",
+    accent: "#1AE08A",
+    eyebrow: "NOUVEAU SIGNAL · IL Y A 4 MIN",
+    titleLines: ["Sarah Levin (Brookfield Capital)", "a vu votre proposition"],
+    reading:
+      "Brookfield Capital, fonds investisseur, vient d'entrer dans la boucle. Aucun contact côté fonds engagé à date. Un fonds peut faire pencher ou capoter un deal selon son réseau. Trois leviers connus à activer.",
+    nbas: [
+      {
+        n: "01",
+        title: "Auditer le portefeuille du fonds",
+        lines: [
+          "Quels de vos clients actuels sont déjà détenus par Brookfield ?",
+          "Sont-ils contents ou pas ? (signal direct ou bloqueur silencieux)",
+        ],
+      },
+      {
+        n: "02",
+        title: "Activer un référent client dans leur portfolio",
+        lines: [
+          "Identifier un client content détenu par Brookfield",
+          "Organiser une mise en relation avec votre prospect",
+          "« Même fonds, même choix » : ça rassure",
+        ],
+      },
+      {
+        n: "03",
+        title: "Vérifier l'angle engagement cloud",
+        lines: [
+          "Brookfield a-t-il un engagement consommation cloud ?",
+          "Si oui : proposer l'achat de votre solution via leur crédit",
+          "Levier économique direct pour le fonds",
+        ],
+      },
+    ],
+  },
+  {
+    id: "renard",
+    accent: "#E8A838",
+    eyebrow: "SIGNAL D'ALERTE · 14 JOURS SANS SIGNAL",
+    titleLines: ["Sophie Renard (DSI) ne répond plus", "depuis le 28 avril"],
+    reading:
+      "Sponsor technique en décrochage. La DRH et le DAF restent très engagés (12 vues cette semaine). Le risque se concentre sur la fonction technique. Possible blocage technique ou désintérêt non exprimé.",
+    nbas: [
+      {
+        n: "01",
+        title: "Tester un atelier dédié sécurité / archi",
+        lines: [
+          "Proposer une session 1h avec votre architecte",
+          "Format apprécié des DSI prudents",
+          "Ouvre l'opportunité de répondre aux non-dits techniques",
+        ],
+      },
+      {
+        n: "02",
+        title: "Activer votre sponsor technique en miroir",
+        lines: [
+          "Vidéo personnalisée de votre CTO/CISO sur la sécurité",
+          "Validation 1 clic, vidéo prête en 4 min",
+          "Pair-to-pair, moins défensif qu'un commercial",
+        ],
+      },
+      {
+        n: "03",
+        title: "Passer par votre relais favorable",
+        lines: [
+          "Demander à la DRH ou au DAF d'organiser un 3-way",
+          "Format informel, moins menaçant pour la DSI",
+        ],
+      },
+    ],
+  },
+  {
+    id: "rfp",
+    accent: "#1AE08A",
+    eyebrow: "FENÊTRE DE VISIBILITÉ · IL Y A 12 MIN",
+    titleLines: ["3 nouveaux contacts ont ouvert", "votre réponse RFP"],
+    reading:
+      "3 contacts non adressés viennent d'ouvrir votre proposition. Probable revue interne du comité acheteur en préparation. Vous êtes un dossier parmi d'autres. Courte fenêtre pour vous distinguer.",
+    nbas: [
+      {
+        n: "01",
+        title: "Renforcer les points faibles de votre réponse",
+        lines: [
+          "Identifier les 2 zones d'ombre du call du 28 avril",
+          "Préparer un addendum ciblé",
+        ],
+      },
+      {
+        n: "02",
+        title: "Différencier avec une vidéo personnalisée 2 min",
+        lines: [
+          "Votre lecture de leur contexte + comment vous y remédiez",
+          "Production avec votre voix en 4 min",
+          "Atterrit avec la proposition, pas un PDF de plus",
+        ],
+      },
+      {
+        n: "03",
+        title: "Saisir la fenêtre temporelle",
+        lines: [
+          "Envoyer sous 24h pour atterrir AVANT la revue interne",
+          "Forcer votre dossier en haut de la pile mentale",
+        ],
+      },
+    ],
+  },
+];
+
+/* ---------------- INSIGHT PANEL ---------------- */
+
+function InsightPanel({ insight }: { insight: Insight }) {
+  const { accent, eyebrow, titleLines, reading, nbas } = insight;
   return (
-    <div
-      className="rounded-[14px] p-5 md:p-6 border-l-[3px]"
-      style={{
-        borderLeftColor: accent,
-        background: "rgba(247,246,243,0.05)",
-        animation: `${isAmber ? "ekkoGlowAmber" : "ekkoGlowGreen"} 4s ease-in-out infinite`,
+    <motion.div
+      key={insight.id}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{
+        opacity: { duration: 0.4, delay: 0.2, ease: "easeOut" },
+        y: { duration: 0.4, delay: 0.2, ease: "easeOut" },
+        exit: { duration: 0.2, ease: "easeOut" },
       }}
+      className="absolute inset-0 p-6"
     >
-      <div className="text-[11px] font-semibold tracking-[0.16em] mb-2" style={{ color: accent }}>
+      <div
+        className="text-[11px] font-semibold uppercase mb-2"
+        style={{ color: accent, letterSpacing: "0.16em" }}
+      >
         {eyebrow}
       </div>
-      <div className="text-[19px] font-bold leading-[1.3] mb-4" style={{ color: IVORY }}>
-        {title}
-      </div>
+      <h3
+        className="text-[19px] font-bold leading-[1.3] mb-4"
+        style={{ color: IVORY }}
+      >
+        {titleLines.map((l, i) => (
+          <span key={i} className="block">
+            {l}
+          </span>
+        ))}
+      </h3>
 
-      {/* Bloc lecture Ekko */}
+      {/* Lecture Ekko */}
       <div
-        className="rounded-[10px] p-3.5 mb-4 text-[13px] leading-relaxed"
+        className="rounded-[12px] p-4 md:p-4 mb-5"
         style={{
-          background: "rgba(247,246,243,0.04)",
-          borderLeft: "2px solid rgba(247,246,243,0.15)",
-          color: "rgba(247,246,243,0.78)",
+          background: "rgba(247,246,243,0.05)",
+          borderLeft: `2px solid ${accent}66`,
         }}
       >
-        <div
-          className="text-[10px] font-semibold tracking-[0.14em] mb-1.5"
-          style={{ color: "rgba(247,246,243,0.4)" }}
-        >
-          LECTURE EKKO
+        <div className="flex items-center gap-1.5 mb-2">
+          <Sparkles className="w-3.5 h-3.5" style={{ color: accent }} />
+          <span
+            className="text-[11px] font-semibold uppercase"
+            style={{ color: accent, letterSpacing: "0.14em" }}
+          >
+            Lecture Ekko
+          </span>
         </div>
-        {reading}
+        <p
+          className="text-[14px] italic leading-[1.55]"
+          style={{ color: "rgba(247,246,243,0.75)" }}
+        >
+          {reading}
+        </p>
       </div>
 
       {/* NBAs */}
-      <div className="flex flex-col gap-2.5">
+      <div
+        className="text-[11px] font-semibold uppercase mb-3"
+        style={{ color: "rgba(247,246,243,0.4)", letterSpacing: "0.16em" }}
+      >
+        Next Best Actions
+      </div>
+      <div className="flex flex-col gap-3.5">
         {nbas.map((nba) => (
-          <div
-            key={nba.n}
-            className="rounded-[10px] p-3 flex gap-3"
-            style={{ background: "rgba(247,246,243,0.04)" }}
-          >
+          <div key={nba.n} className="flex gap-3">
             <div
-              className="text-[11px] font-bold font-mono shrink-0 px-1.5 py-0.5 rounded h-fit"
-              style={{ color: accent, background: `${accent}1F` }}
+              className="shrink-0 w-6 h-6 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
+              style={{ background: `${accent}26`, color: accent }}
             >
               {nba.n}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13.5px] font-semibold mb-1.5" style={{ color: IVORY }}>
+              <div
+                className="text-[14px] font-bold leading-[1.3] mb-1.5"
+                style={{ color: "rgba(247,246,243,0.92)" }}
+              >
                 {nba.title}
               </div>
               <ul className="space-y-1">
                 {nba.lines.map((l, i) => (
                   <li
                     key={i}
-                    className="text-[12.5px] leading-snug pl-3 relative"
-                    style={{ color: "rgba(247,246,243,0.65)" }}
+                    className="text-[13px] leading-[1.5] pl-3"
+                    style={{ color: "rgba(247,246,243,0.55)" }}
                   >
-                    <span
-                      className="absolute left-0 top-[7px] w-1 h-1 rounded-full"
-                      style={{ background: "rgba(247,246,243,0.35)" }}
-                    />
-                    {l}
+                    <span style={{ color: `${accent}99` }}>→</span> {l}
                   </li>
                 ))}
               </ul>
@@ -115,89 +245,113 @@ function InsightCard({
           </div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-/* ---------------- HERO VISUAL : Scène réelle ---------------- */
+/* ---------------- HERO VISUAL : Carousel insights ---------------- */
 
 function HeroScene() {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (paused) return;
+    timer.current = setTimeout(() => {
+      setIndex((i) => (i + 1) % INSIGHTS.length);
+    }, 12000);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [index, paused]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full max-w-[1100px] mx-auto rounded-[24px] overflow-hidden"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      className="w-full max-w-[1240px] mx-auto rounded-[24px] overflow-hidden"
       style={{
         background: MARINE,
-        boxShadow: "0 40px 100px -20px rgba(13,27,42,0.45), 0 12px 32px -8px rgba(13,27,42,0.35)",
+        boxShadow:
+          "0 40px 100px -20px rgba(13,27,42,0.45), 0 12px 32px -8px rgba(13,27,42,0.35)",
+        padding: "0",
       }}
     >
-      {/* Top bar */}
-      <div
-        className="flex items-center justify-between px-6 py-4 border-b"
-        style={{ borderColor: "rgba(247,246,243,0.08)" }}
-      >
-        <div className="flex items-center gap-3">
-          <span className="relative flex h-2.5 w-2.5">
-            <span
-              className="absolute inline-flex h-full w-full rounded-full opacity-75"
-              style={{ background: GREEN, animation: "ekkoPulse 1.5s ease-in-out infinite" }}
-            />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: GREEN }} />
-          </span>
-          <span style={{ color: IVORY }} className="text-[13px] font-medium">
-            Deal TotalEnergies · €380k · 4 sponsors actifs
+      <div className="px-5 md:px-9 pt-5 md:pt-9 pb-0">
+        {/* Top bar */}
+        <div
+          className="flex items-center justify-between pb-5 border-b flex-wrap gap-2"
+          style={{ borderColor: "rgba(247,246,243,0.08)" }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-2.5 w-2.5">
+              <span
+                className="absolute inline-flex h-full w-full rounded-full opacity-75"
+                style={{
+                  background: GREEN,
+                  animation: "ekkoPulse 1.5s ease-in-out infinite",
+                }}
+              />
+              <span
+                className="relative inline-flex rounded-full h-2.5 w-2.5"
+                style={{ background: GREEN }}
+              />
+            </span>
+            <span style={{ color: IVORY }} className="text-[13px] font-medium">
+              Deal TotalEnergies · €380k · 4 sponsors actifs
+            </span>
+          </div>
+          <span
+            style={{ color: "rgba(247,246,243,0.5)" }}
+            className="text-[12px]"
+          >
+            Lundi 9h12 · live
           </span>
         </div>
-        <span style={{ color: "rgba(247,246,243,0.5)" }} className="text-[12px]">
-          Lundi 9h12 · live
-        </span>
+
+        {/* Dots */}
+        <div className="flex items-center justify-center gap-2 pt-5 pb-3">
+          {INSIGHTS.map((ins, i) => {
+            const active = i === index;
+            return (
+              <button
+                key={ins.id}
+                type="button"
+                aria-label={`Voir insight ${i + 1}`}
+                onClick={() => setIndex(i)}
+                className="rounded-[2px] transition-all duration-[600ms]"
+                style={{
+                  height: 4,
+                  width: active ? 24 : 8,
+                  background: active ? GREEN : "rgba(247,246,243,0.2)",
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
 
-      {/* Cards */}
-      <div className="p-5 md:p-6 flex flex-col gap-4">
-        <InsightCard
-          accent={GREEN}
-          eyebrow="NOUVEAU SIGNAL · IL Y A 4 MIN"
-          title={<>Sarah Levin (Brookfield Capital)<br/>a vu votre proposition</>}
-          reading="Brookfield Capital, fonds investisseur, vient d'entrer dans la boucle. Aucun contact côté fonds engagé à date. Un fonds peut faire pencher ou capoter un deal selon son réseau. Trois leviers connus à activer."
-          nbas={[
-            { n: "01", title: "Auditer le portefeuille du fonds", lines: ["Quels de vos clients actuels sont déjà détenus par Brookfield ?", "Sont-ils contents ou pas ? (signal direct ou bloqueur silencieux)"] },
-            { n: "02", title: "Activer un référent client dans leur portfolio", lines: ["Identifier un client content détenu par Brookfield", "Organiser une mise en relation avec votre prospect", "« Même fonds, même choix, ça rassure »"] },
-            { n: "03", title: "Vérifier l'angle engagement cloud", lines: ["Brookfield a-t-il un engagement consommation auprès d'un cloud provider ?", "Si oui : proposer l'achat de votre solution via ce crédit", "Levier économique direct pour le fonds"] },
-          ]}
-        />
-
-        <InsightCard
-          accent={AMBER}
-          eyebrow="SIGNAL D'ALERTE · 14 JOURS SANS SIGNAL"
-          title={<>Sophie Renard (DSI) ne répond plus<br/>depuis le 28 avril</>}
-          reading="Sponsor technique en décrochage. La DRH et le DAF restent très engagés (12 vues cette semaine). Le risque se concentre sur la fonction technique. Possible blocage technique ou désintérêt non exprimé."
-          nbas={[
-            { n: "01", title: "Tester un atelier dédié sécurité / archi", lines: ["Proposer une session 1h avec votre architecte", "Format apprécié des DSI prudents", "Ouvre l'opportunité de répondre aux non-dits techniques"] },
-            { n: "02", title: "Activer votre sponsor technique en miroir", lines: ["Vidéo personnalisée de votre CTO/CISO sur la sécurité", "Validation 1 clic, vidéo prête en 4 min", "Pair-to-pair, moins défensif qu'un commercial"] },
-            { n: "03", title: "Passer par votre relais favorable", lines: ["Demander à la DRH ou au DAF d'organiser un 3-way", "Format informel, moins menaçant pour la DSI"] },
-          ]}
-        />
-
-        <InsightCard
-          accent={GREEN}
-          eyebrow="FENÊTRE DE VISIBILITÉ · IL Y A 12 MIN"
-          title={<>3 nouveaux contacts ont ouvert<br/>votre réponse RFP</>}
-          reading="3 contacts non adressés viennent d'ouvrir votre proposition. Probable revue interne du comité acheteur en préparation. Vous êtes un dossier parmi d'autres. Courte fenêtre pour vous distinguer."
-          nbas={[
-            { n: "01", title: "Renforcer les points faibles de votre réponse", lines: ["Identifier les 2 zones d'ombre du call du 28 avril", "Préparer un addendum ciblé"] },
-            { n: "02", title: "Différencier avec une vidéo personnalisée 2 min", lines: ["Votre lecture de leur contexte + comment vous y remédiez", "Production avec votre voix en 4 min", "Atterrit avec la proposition, pas un PDF de plus"] },
-            { n: "03", title: "Saisir la fenêtre temporelle", lines: ["Envoyer sous 24h pour atterrir AVANT la revue interne", "Forcer votre dossier en haut de la pile mentale"] },
-          ]}
-        />
+      {/* Carousel area */}
+      <div
+        className="relative mx-5 md:mx-9 mb-5 md:mb-6"
+        style={{ minHeight: 460 }}
+      >
+        <AnimatePresence mode="wait">
+          <InsightPanel key={INSIGHTS[index].id} insight={INSIGHTS[index]} />
+        </AnimatePresence>
       </div>
 
       {/* Footer */}
       <div
-        className="px-6 py-4 text-center text-[12px] border-t"
-        style={{ borderColor: "rgba(247,246,243,0.08)", color: "rgba(247,246,243,0.4)" }}
+        className="px-6 py-5 text-center text-[14px] border-t"
+        style={{
+          borderColor: "rgba(247,246,243,0.08)",
+          color: "rgba(247,246,243,0.55)",
+        }}
       >
         Aussi : PowerMap live · booklet exec · atelier ROI · timing coach
       </div>
