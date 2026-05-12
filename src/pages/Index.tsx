@@ -28,7 +28,8 @@ function scrollToId(id: string) {
 
 /* ---------------- INSIGHT TYPES & DATA ---------------- */
 
-type NBA = { n: string; title: string; lines: string[] };
+type CTA = { label: string; variant: "filled" | "outline"; icon?: "send" | "plus" | "check" };
+type NBA = { n: string; title: string; lines: string[]; cta: CTA };
 type Insight = {
   id: string;
   accent: string;
@@ -43,71 +44,55 @@ const INSIGHTS: Insight[] = [
     id: "brookfield",
     accent: "#1AE08A",
     eyebrow: "NOUVEAU SIGNAL · IL Y A 4 MIN",
-    titleLines: ["Sarah Levin (Brookfield Capital)", "a vu votre proposition"],
+    titleLines: ["Brookfield Capital est entré", "dans la boucle"],
     reading:
-      "Brookfield Capital, fonds investisseur, vient d'entrer dans la boucle. Aucun contact côté fonds engagé à date. Un fonds peut faire pencher ou capoter un deal selon son réseau. Trois leviers connus à activer.",
+      "Fonds investisseur. Aucun contact côté fonds engagé. Peut faire pencher ou capoter le deal.",
     nbas: [
       {
         n: "01",
-        title: "Auditer le portefeuille du fonds",
-        lines: [
-          "Quels de vos clients actuels sont déjà détenus par Brookfield ?",
-          "Sont-ils contents ou pas ? (signal direct ou bloqueur silencieux)",
-        ],
+        title: "Auditer le portefeuille",
+        lines: ["Vos clients déjà détenus par Brookfield ?"],
+        cta: { label: "Lancer l'audit", variant: "outline" },
       },
       {
         n: "02",
-        title: "Activer un référent client dans leur portfolio",
-        lines: [
-          "Identifier un client content détenu par Brookfield",
-          "Organiser une mise en relation avec votre prospect",
-          "« Même fonds, même choix » : ça rassure",
-        ],
+        title: "Activer un référent client",
+        lines: ["Un client content du fonds en témoin"],
+        cta: { label: "Identifier le référent", variant: "outline" },
       },
       {
         n: "03",
-        title: "Vérifier l'angle engagement cloud",
-        lines: [
-          "Brookfield a-t-il un engagement consommation cloud ?",
-          "Si oui : proposer l'achat de votre solution via leur crédit",
-          "Levier économique direct pour le fonds",
-        ],
+        title: "Vérifier l'engagement cloud",
+        lines: ["Crédit de consommation à mobiliser ?"],
+        cta: { label: "Vérifier l'angle", variant: "outline" },
       },
     ],
   },
   {
     id: "renard",
     accent: "#E8A838",
-    eyebrow: "SIGNAL D'ALERTE · 14 JOURS SANS SIGNAL",
-    titleLines: ["Sophie Renard (DSI) ne répond plus", "depuis le 28 avril"],
+    eyebrow: "SIGNAL D'ALERTE · 14 JOURS SILENCE",
+    titleLines: ["Sophie Renard (DSI) décroche"],
     reading:
-      "Sponsor technique en décrochage. La DRH et le DAF restent très engagés (12 vues cette semaine). Le risque se concentre sur la fonction technique. Possible blocage technique ou désintérêt non exprimé.",
+      "DRH + DAF très actifs (12 vues cette semaine). Risque concentré sur la fonction technique.",
     nbas: [
       {
         n: "01",
-        title: "Tester un atelier dédié sécurité / archi",
-        lines: [
-          "Proposer une session 1h avec votre architecte",
-          "Format apprécié des DSI prudents",
-          "Ouvre l'opportunité de répondre aux non-dits techniques",
-        ],
+        title: "Atelier sécurité dédié",
+        lines: ["Session 1h avec votre architecte"],
+        cta: { label: "Proposer l'atelier", variant: "outline" },
       },
       {
         n: "02",
-        title: "Activer votre sponsor technique en miroir",
-        lines: [
-          "Vidéo personnalisée de votre CTO/CISO sur la sécurité",
-          "Validation 1 clic, vidéo prête en 4 min",
-          "Pair-to-pair, moins défensif qu'un commercial",
-        ],
+        title: "Vidéo CTO en miroir",
+        lines: ["Engagement pair-to-pair sur la sécurité"],
+        cta: { label: "Envoyer ma vidéo", variant: "filled", icon: "send" },
       },
       {
         n: "03",
-        title: "Passer par votre relais favorable",
-        lines: [
-          "Demander à la DRH ou au DAF d'organiser un 3-way",
-          "Format informel, moins menaçant pour la DSI",
-        ],
+        title: "Relais via DRH ou DAF",
+        lines: ["3-way informel, moins menaçant"],
+        cta: { label: "Demander le 3-way", variant: "outline" },
       },
     ],
   },
@@ -115,34 +100,27 @@ const INSIGHTS: Insight[] = [
     id: "rfp",
     accent: "#1AE08A",
     eyebrow: "FENÊTRE DE VISIBILITÉ · IL Y A 12 MIN",
-    titleLines: ["3 nouveaux contacts ont ouvert", "votre réponse RFP"],
+    titleLines: ["3 contacts ouvrent votre RFP"],
     reading:
-      "3 contacts non adressés viennent d'ouvrir votre proposition. Probable revue interne du comité acheteur en préparation. Vous êtes un dossier parmi d'autres. Courte fenêtre pour vous distinguer.",
+      "Revue interne du comité acheteur en préparation. Vous êtes un dossier parmi d'autres.",
     nbas: [
       {
         n: "01",
-        title: "Renforcer les points faibles de votre réponse",
-        lines: [
-          "Identifier les 2 zones d'ombre du call du 28 avril",
-          "Préparer un addendum ciblé",
-        ],
+        title: "Renforcer votre réponse",
+        lines: ["Addendum ciblé sur les 2 zones d'ombre"],
+        cta: { label: "Créer la Deal Room", variant: "outline" },
       },
       {
         n: "02",
-        title: "Différencier avec une vidéo personnalisée 2 min",
-        lines: [
-          "Votre lecture de leur contexte + comment vous y remédiez",
-          "Production avec votre voix en 4 min",
-          "Atterrit avec la proposition, pas un PDF de plus",
-        ],
+        title: "Vidéo perso 2 min",
+        lines: ["Votre lecture + comment vous y remédiez"],
+        cta: { label: "Envoyer ma vidéo", variant: "filled", icon: "send" },
       },
       {
         n: "03",
-        title: "Saisir la fenêtre temporelle",
-        lines: [
-          "Envoyer sous 24h pour atterrir AVANT la revue interne",
-          "Forcer votre dossier en haut de la pile mentale",
-        ],
+        title: "Saisir la fenêtre 24h",
+        lines: ["Atterrir AVANT la revue interne"],
+        cta: { label: "Programmer l'envoi", variant: "outline" },
       },
     ],
   },
