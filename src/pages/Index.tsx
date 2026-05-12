@@ -421,8 +421,8 @@ function DemoSection() {
           </h3>
           <div className="space-y-4 text-[16px] leading-[1.6]" style={{ color: "rgba(13,27,42,0.7)" }}>
             <p>Pendant des années, AE enterprise en cycle long. J'ai vécu les deal reviews tendues, les VP surchargés, et l'équipe moyenne qui plafonne à 70-80% de quota.</p>
-            <p>Ekko est l'outil qui aurait permis à mon VP de faire de moi un top performer en 6 mois — pas en 3 ans. Et qui aurait permis aux 8 autres AE de mon équipe de gagner aussi.</p>
-            <p>Si vous gérez une équipe Sales B2B, ou si vous êtes AE en cycle long et voulez tester en pilote — parlons 20 minutes.</p>
+            <p>Ekko est l'outil qui aurait permis à mon VP de faire de moi un top performer en 6 mois. Pas en 3 ans. Et qui aurait permis aux 8 autres AE de mon équipe de gagner aussi.</p>
+            <p>Si vous gérez une équipe Sales B2B, ou si vous êtes AE en cycle long et voulez tester en pilote, parlons 20 minutes.</p>
           </div>
           <p className="mt-6 text-[15px] font-bold" style={{ color: MARINE }}>Julien · founder Ekko</p>
           <a href="mailto:julien@getekko.eu" className="text-[14px] underline mt-1 inline-block" style={{ color: "rgba(13,27,42,0.6)" }}>
