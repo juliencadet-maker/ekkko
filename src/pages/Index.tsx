@@ -84,9 +84,9 @@ const INSIGHTS: Insight[] = [
       },
       {
         n: "02",
-        title: "Vidéo CTO en miroir",
-        lines: ["Engagement pair-to-pair sur la sécurité"],
-        cta: { label: "Envoyer ma vidéo", variant: "filled", icon: "send" },
+        title: "Engagement pair-to-pair de votre CTO",
+        lines: ["Clone vocal · vidéo prête en 4 min"],
+        cta: { label: "Envoyer la vidéo CTO", variant: "filled", icon: "play" },
       },
       {
         n: "03",
