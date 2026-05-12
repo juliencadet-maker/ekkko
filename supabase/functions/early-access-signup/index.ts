@@ -117,7 +117,7 @@ function adminSubject(role: Role, entreprise: string) {
     : role === "ae" ? "[AE PILOTE] Inscription bêta"
     : role === "exec" ? "[EXEC LEAD] Note demandée"
     : "[AUTRE] Info demandée";
-  return `${tag} - ${entreprise}`;
+  return `${tag} · ${entreprise}`;
 }
 
 Deno.serve(async (req) => {
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
       email: escapeHtml(email),
       entreprise: escapeHtml(entreprise),
       role: escapeHtml(ROLE_LABEL[role]),
-      effectif: escapeHtml(effectif ?? "—"),
+      effectif: escapeHtml(effectif ?? "non renseigné"),
       createdAt: escapeHtml(createdAt),
     };
 
