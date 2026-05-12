@@ -658,20 +658,20 @@ function LeviersSection() {
 
 function DifferenciationSection() {
   const lines = [
-    ["Gong analyse les calls passés.", "Ekko déclenche le bon move sur le deal en cours."],
-    ["Clari fait votre forecast.", "Ekko déclenche les actions qui font bouger le forecast."],
-    ["Vidyard produit des vidéos perso.", "Ekko produit votre voix exec en clone vocal, sur chaque deal."],
-    ["Pavilion donne des best practices dans Slack.", "Ekko déclenche la bonne best practice au bon moment, sur le bon deal."],
+    ["Vos outils d'écoute de calls analysent le passé.", "Ekko déclenche le bon move sur le deal en cours."],
+    ["Vos outils de forecast prédisent.", "Ekko déclenche les actions qui font bouger le forecast."],
+    ["Vos outils de vidéo perso produisent du contenu.", "Ekko produit votre voix exec en clone vocal, sur chaque deal."],
+    ["Vos communautés Sales donnent des best practices.", "Ekko déclenche la bonne best practice au bon moment, sur le bon deal."],
   ];
   return (
     <section className="px-5 py-20 md:py-32" style={{ background: MARINE }}>
       <div className="mx-auto text-center" style={{ maxWidth: 920 }}>
-        <Eyebrow>Mais vous avez déjà des outils</Eyebrow>
+        <Eyebrow>Pourquoi Ekko</Eyebrow>
         <h2 className="font-bold mt-6 mb-6" style={{ color: IVORY, fontSize: "clamp(28px, 4.5vw, 48px)", lineHeight: 1, letterSpacing: "-0.02em" }}>
-          Ekko n'est pas un Gong de plus.<br />C'est la couche manquante.
+          La couche manquante<br />de votre stack Sales.
         </h2>
         <p className="text-[18px] italic mb-12" style={{ color: "rgba(247,246,243,0.7)" }}>
-          Vos outils actuels collectent. Ekko orchestre.
+          Vos outils actuels collectent les données.<br />Ekko orchestre l'exécution sur chaque deal.
         </p>
         <div className="flex flex-col gap-3 mb-12">
           {lines.map((l, i) => (
