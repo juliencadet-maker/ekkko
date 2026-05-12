@@ -26,6 +26,99 @@ function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/* ---------------- INSIGHT CARD ---------------- */
+
+type NBA = { n: string; title: string; lines: string[] };
+
+function InsightCard({
+  accent,
+  eyebrow,
+  title,
+  reading,
+  nbas,
+}: {
+  accent: string;
+  eyebrow: string;
+  title: React.ReactNode;
+  reading: string;
+  nbas: NBA[];
+}) {
+  const isAmber = accent === AMBER;
+  return (
+    <div
+      className="rounded-[14px] p-5 md:p-6 border-l-[3px]"
+      style={{
+        borderLeftColor: accent,
+        background: "rgba(247,246,243,0.05)",
+        animation: `${isAmber ? "ekkoGlowAmber" : "ekkoGlowGreen"} 4s ease-in-out infinite`,
+      }}
+    >
+      <div className="text-[11px] font-semibold tracking-[0.16em] mb-2" style={{ color: accent }}>
+        {eyebrow}
+      </div>
+      <div className="text-[19px] font-bold leading-[1.3] mb-4" style={{ color: IVORY }}>
+        {title}
+      </div>
+
+      {/* Bloc lecture Ekko */}
+      <div
+        className="rounded-[10px] p-3.5 mb-4 text-[13px] leading-relaxed"
+        style={{
+          background: "rgba(247,246,243,0.04)",
+          borderLeft: "2px solid rgba(247,246,243,0.15)",
+          color: "rgba(247,246,243,0.78)",
+        }}
+      >
+        <div
+          className="text-[10px] font-semibold tracking-[0.14em] mb-1.5"
+          style={{ color: "rgba(247,246,243,0.4)" }}
+        >
+          LECTURE EKKO
+        </div>
+        {reading}
+      </div>
+
+      {/* NBAs */}
+      <div className="flex flex-col gap-2.5">
+        {nbas.map((nba) => (
+          <div
+            key={nba.n}
+            className="rounded-[10px] p-3 flex gap-3"
+            style={{ background: "rgba(247,246,243,0.04)" }}
+          >
+            <div
+              className="text-[11px] font-bold font-mono shrink-0 px-1.5 py-0.5 rounded h-fit"
+              style={{ color: accent, background: `${accent}1F` }}
+            >
+              {nba.n}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] font-semibold mb-1.5" style={{ color: IVORY }}>
+                {nba.title}
+              </div>
+              <ul className="space-y-1">
+                {nba.lines.map((l, i) => (
+                  <li
+                    key={i}
+                    className="text-[12.5px] leading-snug pl-3 relative"
+                    style={{ color: "rgba(247,246,243,0.65)" }}
+                  >
+                    <span
+                      className="absolute left-0 top-[7px] w-1 h-1 rounded-full"
+                      style={{ background: "rgba(247,246,243,0.35)" }}
+                    />
+                    {l}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- HERO VISUAL : Scène réelle ---------------- */
 
 function HeroScene() {
