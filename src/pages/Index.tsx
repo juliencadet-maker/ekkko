@@ -26,6 +26,99 @@ function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/* ---------------- INSIGHT CARD ---------------- */
+
+type NBA = { n: string; title: string; lines: string[] };
+
+function InsightCard({
+  accent,
+  eyebrow,
+  title,
+  reading,
+  nbas,
+}: {
+  accent: string;
+  eyebrow: string;
+  title: React.ReactNode;
+  reading: string;
+  nbas: NBA[];
+}) {
+  const isAmber = accent === AMBER;
+  return (
+    <div
+      className="rounded-[14px] p-5 md:p-6 border-l-[3px]"
+      style={{
+        borderLeftColor: accent,
+        background: "rgba(247,246,243,0.05)",
+        animation: `${isAmber ? "ekkoGlowAmber" : "ekkoGlowGreen"} 4s ease-in-out infinite`,
+      }}
+    >
+      <div className="text-[11px] font-semibold tracking-[0.16em] mb-2" style={{ color: accent }}>
+        {eyebrow}
+      </div>
+      <div className="text-[19px] font-bold leading-[1.3] mb-4" style={{ color: IVORY }}>
+        {title}
+      </div>
+
+      {/* Bloc lecture Ekko */}
+      <div
+        className="rounded-[10px] p-3.5 mb-4 text-[13px] leading-relaxed"
+        style={{
+          background: "rgba(247,246,243,0.04)",
+          borderLeft: "2px solid rgba(247,246,243,0.15)",
+          color: "rgba(247,246,243,0.78)",
+        }}
+      >
+        <div
+          className="text-[10px] font-semibold tracking-[0.14em] mb-1.5"
+          style={{ color: "rgba(247,246,243,0.4)" }}
+        >
+          LECTURE EKKO
+        </div>
+        {reading}
+      </div>
+
+      {/* NBAs */}
+      <div className="flex flex-col gap-2.5">
+        {nbas.map((nba) => (
+          <div
+            key={nba.n}
+            className="rounded-[10px] p-3 flex gap-3"
+            style={{ background: "rgba(247,246,243,0.04)" }}
+          >
+            <div
+              className="text-[11px] font-bold font-mono shrink-0 px-1.5 py-0.5 rounded h-fit"
+              style={{ color: accent, background: `${accent}1F` }}
+            >
+              {nba.n}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] font-semibold mb-1.5" style={{ color: IVORY }}>
+                {nba.title}
+              </div>
+              <ul className="space-y-1">
+                {nba.lines.map((l, i) => (
+                  <li
+                    key={i}
+                    className="text-[12.5px] leading-snug pl-3 relative"
+                    style={{ color: "rgba(247,246,243,0.65)" }}
+                  >
+                    <span
+                      className="absolute left-0 top-[7px] w-1 h-1 rounded-full"
+                      style={{ background: "rgba(247,246,243,0.35)" }}
+                    />
+                    {l}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- HERO VISUAL : Scène réelle ---------------- */
 
 function HeroScene() {
@@ -63,92 +156,42 @@ function HeroScene() {
       </div>
 
       {/* Cards */}
-      <div className="p-5 md:p-6 flex flex-col gap-3">
-        {/* Card 1 — Signal vert */}
-        <div
-          className="rounded-[14px] p-5 border-l-[3px] relative overflow-hidden"
-          style={{
-            borderLeftColor: GREEN,
-            background: "rgba(247,246,243,0.08)",
-            animation: "ekkoGlowGreen 3s ease-in-out infinite",
-          }}
-        >
-          <div className="text-[11px] font-semibold tracking-[0.12em] mb-2" style={{ color: GREEN }}>
-            NOUVEAU SIGNAL · IL Y A 4 MIN
-          </div>
-          <div className="text-[17px] font-bold leading-snug mb-1" style={{ color: IVORY }}>
-            Sarah Levin (Brookfield Capital) a vu votre proposition
-          </div>
-          <div className="text-[13px] mb-4" style={{ color: "rgba(247,246,243,0.6)" }}>
-            Le fonds est dans la boucle. Pas encore adressé.
-          </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full transition"
-            style={{ background: "rgba(26,224,138,0.18)", color: GREEN }}
-          >
-            Voir les 3 next best actions <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
+      <div className="p-5 md:p-6 flex flex-col gap-4">
+        <InsightCard
+          accent={GREEN}
+          eyebrow="NOUVEAU SIGNAL · IL Y A 4 MIN"
+          title={<>Sarah Levin (Brookfield Capital)<br/>a vu votre proposition</>}
+          reading="Brookfield Capital, fonds investisseur, vient d'entrer dans la boucle. Aucun contact côté fonds engagé à date. Un fonds peut faire pencher ou capoter un deal selon son réseau. Trois leviers connus à activer."
+          nbas={[
+            { n: "01", title: "Auditer le portefeuille du fonds", lines: ["Quels de vos clients actuels sont déjà détenus par Brookfield ?", "Sont-ils contents ou pas ? (signal direct ou bloqueur silencieux)"] },
+            { n: "02", title: "Activer un référent client dans leur portfolio", lines: ["Identifier un client content détenu par Brookfield", "Organiser une mise en relation avec votre prospect", "« Même fonds, même choix, ça rassure »"] },
+            { n: "03", title: "Vérifier l'angle engagement cloud", lines: ["Brookfield a-t-il un engagement consommation auprès d'un cloud provider ?", "Si oui : proposer l'achat de votre solution via ce crédit", "Levier économique direct pour le fonds"] },
+          ]}
+        />
 
-        {/* Card 2 — Risque amber */}
-        <div
-          className="rounded-[14px] p-5 border-l-[3px]"
-          style={{
-            borderLeftColor: AMBER,
-            background: "rgba(247,246,243,0.05)",
-            animation: "ekkoGlowAmber 3s ease-in-out 1.5s infinite",
-          }}
-        >
-          <div className="text-[11px] font-semibold tracking-[0.12em] mb-2" style={{ color: AMBER }}>
-            RISQUE · 14 JOURS SANS SIGNAL
-          </div>
-          <div className="text-[17px] font-bold leading-snug mb-1" style={{ color: IVORY }}>
-            Sophie Renard (DSI) ne répond plus depuis le 28 avril
-          </div>
-          <div className="text-[13px] mb-4" style={{ color: "rgba(247,246,243,0.6)" }}>
-            Sponsor décrocheur. 3 leviers identifiés.
-          </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full"
-            style={{ background: "rgba(232,168,56,0.15)", color: AMBER }}
-          >
-            Activer un levier <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
+        <InsightCard
+          accent={AMBER}
+          eyebrow="SIGNAL D'ALERTE · 14 JOURS SANS SIGNAL"
+          title={<>Sophie Renard (DSI) ne répond plus<br/>depuis le 28 avril</>}
+          reading="Sponsor technique en décrochage. La DRH et le DAF restent très engagés (12 vues cette semaine). Le risque se concentre sur la fonction technique. Possible blocage technique ou désintérêt non exprimé."
+          nbas={[
+            { n: "01", title: "Tester un atelier dédié sécurité / archi", lines: ["Proposer une session 1h avec votre architecte", "Format apprécié des DSI prudents", "Ouvre l'opportunité de répondre aux non-dits techniques"] },
+            { n: "02", title: "Activer votre sponsor technique en miroir", lines: ["Vidéo personnalisée de votre CTO/CISO sur la sécurité", "Validation 1 clic, vidéo prête en 4 min", "Pair-to-pair, moins défensif qu'un commercial"] },
+            { n: "03", title: "Passer par votre relais favorable", lines: ["Demander à la DRH ou au DAF d'organiser un 3-way", "Format informel, moins menaçant pour la DSI"] },
+          ]}
+        />
 
-        {/* Card 3 — Action proposée */}
-        <motion.div
-          key="card3"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: [0, 1, 1, 1, 0], y: [16, 0, 0, 0, -8] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", times: [0, 0.15, 0.5, 0.85, 1] }}
-          className="rounded-[14px] p-5 border"
-          style={{
-            background: "rgba(26,224,138,0.15)",
-            borderColor: "rgba(26,224,138,0.35)",
-          }}
-        >
-          <div className="text-[11px] font-semibold tracking-[0.12em] mb-2" style={{ color: GREEN }}>
-            NEXT BEST ACTION RECOMMANDÉE
-          </div>
-          <div className="text-[17px] font-bold leading-snug mb-1.5" style={{ color: IVORY }}>
-            Activez Thomas Roche (CTO Groupe) sur ce deal
-          </div>
-          <div className="text-[13px] mb-4 leading-relaxed" style={{ color: "rgba(247,246,243,0.7)" }}>
-            Script personnalisé prêt. Validation 1 clic.
-            <br />
-            Vidéo perso avec clone vocal en 4 min.
-          </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 text-[13px] font-semibold px-4 py-2 rounded-full transition hover:brightness-110"
-            style={{ background: GREEN, color: MARINE }}
-          >
-            Voir le script <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </motion.div>
+        <InsightCard
+          accent={GREEN}
+          eyebrow="FENÊTRE DE VISIBILITÉ · IL Y A 12 MIN"
+          title={<>3 nouveaux contacts ont ouvert<br/>votre réponse RFP</>}
+          reading="3 contacts non adressés viennent d'ouvrir votre proposition. Probable revue interne du comité acheteur en préparation. Vous êtes un dossier parmi d'autres. Courte fenêtre pour vous distinguer."
+          nbas={[
+            { n: "01", title: "Renforcer les points faibles de votre réponse", lines: ["Identifier les 2 zones d'ombre du call du 28 avril", "Préparer un addendum ciblé"] },
+            { n: "02", title: "Différencier avec une vidéo personnalisée 2 min", lines: ["Votre lecture de leur contexte + comment vous y remédiez", "Production avec votre voix en 4 min", "Atterrit avec la proposition, pas un PDF de plus"] },
+            { n: "03", title: "Saisir la fenêtre temporelle", lines: ["Envoyer sous 24h pour atterrir AVANT la revue interne", "Forcer votre dossier en haut de la pile mentale"] },
+          ]}
+        />
       </div>
 
       {/* Footer */}
