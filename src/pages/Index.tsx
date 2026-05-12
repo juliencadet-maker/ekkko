@@ -421,8 +421,8 @@ function DemoSection() {
           </h3>
           <div className="space-y-4 text-[16px] leading-[1.6]" style={{ color: "rgba(13,27,42,0.7)" }}>
             <p>Pendant des années, AE enterprise en cycle long. J'ai vécu les deal reviews tendues, les VP surchargés, et l'équipe moyenne qui plafonne à 70-80% de quota.</p>
-            <p>Ekko est l'outil qui aurait permis à mon VP de faire de moi un top performer en 6 mois — pas en 3 ans. Et qui aurait permis aux 8 autres AE de mon équipe de gagner aussi.</p>
-            <p>Si vous gérez une équipe Sales B2B, ou si vous êtes AE en cycle long et voulez tester en pilote — parlons 20 minutes.</p>
+            <p>Ekko est l'outil qui aurait permis à mon VP de faire de moi un top performer en 6 mois. Pas en 3 ans. Et qui aurait permis aux 8 autres AE de mon équipe de gagner aussi.</p>
+            <p>Si vous gérez une équipe Sales B2B, ou si vous êtes AE en cycle long et voulez tester en pilote, parlons 20 minutes.</p>
           </div>
           <p className="mt-6 text-[15px] font-bold" style={{ color: MARINE }}>Julien · founder Ekko</p>
           <a href="mailto:julien@getekko.eu" className="text-[14px] underline mt-1 inline-block" style={{ color: "rgba(13,27,42,0.6)" }}>
@@ -567,7 +567,7 @@ function ConstatSection() {
         </motion.h2>
         <div className="space-y-6 text-[19px] leading-[1.55] mx-auto" style={{ color: "rgba(247,246,243,0.75)", maxWidth: 760 }}>
           <p>
-            Vos top performers ont des automatismes : lecture du comité, le bon move au bon moment, activation d'un exec en 1 clic, suivi multi-thread. Pas du talent inné — de la mécanique apprise.
+            Vos top performers ont des automatismes : lecture du comité, le bon move au bon moment, activation d'un exec en 1 clic, suivi multi-thread. Pas du talent inné. De la mécanique apprise.
           </p>
           <p>
             Aujourd'hui, transmettre cette mécanique repose sur les 1:1 hebdomadaires des VP, les weekends de proposition retravaillée, et l'expérience tribale d'équipe. Lent, fragile, non-scalable.
@@ -587,7 +587,7 @@ function LeviersSection() {
       n: "01 · COACHING",
       Icon: Sparkles,
       title: "Le bon move sur chaque deal.\nSans 1:1 hebdomadaire.",
-      body: "Ekko lit le contexte de chaque deal — signaux du comité, stage, historique — et propose 3 actions stratégiques avec sous-actions exécutables. Vos AE arrivent en deal review armés, repartent avec un plan. Vos top deviennent encore plus précis.",
+      body: "Ekko lit le contexte de chaque deal : signaux du comité, stage, historique. Et propose 3 actions stratégiques avec sous-actions exécutables. Vos AE arrivent en deal review armés, repartent avec un plan. Vos top deviennent encore plus précis.",
       footer: "Pour l'AE et le VP",
     },
     {
@@ -658,20 +658,20 @@ function LeviersSection() {
 
 function DifferenciationSection() {
   const lines = [
-    ["Gong analyse les calls passés.", "Ekko déclenche le bon move sur le deal en cours."],
-    ["Clari fait votre forecast.", "Ekko déclenche les actions qui font bouger le forecast."],
-    ["Vidyard produit des vidéos perso.", "Ekko produit votre voix exec en clone vocal, sur chaque deal."],
-    ["Pavilion donne des best practices dans Slack.", "Ekko déclenche la bonne best practice au bon moment, sur le bon deal."],
+    ["Vos outils d'écoute de calls analysent le passé.", "Ekko déclenche le bon move sur le deal en cours."],
+    ["Vos outils de forecast prédisent.", "Ekko déclenche les actions qui font bouger le forecast."],
+    ["Vos outils de vidéo perso produisent du contenu.", "Ekko produit votre voix exec en clone vocal, sur chaque deal."],
+    ["Vos communautés Sales donnent des best practices.", "Ekko déclenche la bonne best practice au bon moment, sur le bon deal."],
   ];
   return (
     <section className="px-5 py-20 md:py-32" style={{ background: MARINE }}>
       <div className="mx-auto text-center" style={{ maxWidth: 920 }}>
-        <Eyebrow>Mais vous avez déjà des outils</Eyebrow>
+        <Eyebrow>Pourquoi Ekko</Eyebrow>
         <h2 className="font-bold mt-6 mb-6" style={{ color: IVORY, fontSize: "clamp(28px, 4.5vw, 48px)", lineHeight: 1, letterSpacing: "-0.02em" }}>
-          Ekko n'est pas un Gong de plus.<br />C'est la couche manquante.
+          La couche manquante<br />de votre stack Sales.
         </h2>
         <p className="text-[18px] italic mb-12" style={{ color: "rgba(247,246,243,0.7)" }}>
-          Vos outils actuels collectent. Ekko orchestre.
+          Vos outils actuels collectent les données.<br />Ekko orchestre l'exécution sur chaque deal.
         </p>
         <div className="flex flex-col gap-3 mb-12">
           {lines.map((l, i) => (
@@ -847,7 +847,7 @@ function Hero() {
         className="mx-auto mt-7 text-[17px] md:text-[22px] leading-[1.45]"
         style={{ color: "rgba(13,27,42,0.65)", maxWidth: 720 }}
       >
-        Ekko orchestre la lecture des signaux du comité, le bon move au bon moment, et la production des assets différenciants (vidéo perso, vidéo exec, atelier ROI) — pour que vos AE moyens exécutent comme vos top, et que vos top deviennent inarrêtables.
+        Ekko orchestre la lecture des signaux du comité, le bon move au bon moment, et la production des assets différenciants (vidéo perso, vidéo exec, atelier ROI). Pour que vos AE moyens exécutent comme vos top. Et que vos top deviennent inarrêtables.
       </motion.p>
 
       <motion.div
@@ -899,7 +899,7 @@ function Footer() {
           <a href="mailto:julien@getekko.eu" className="underline">julien@getekko.eu</a>
         </div>
         <p className="text-[12px]" style={{ color: "rgba(247,246,243,0.4)" }}>
-          © 2026 Ekko · Paris · Made by an AE
+          © 2026 Ekko · Paris
         </p>
       </div>
     </footer>
