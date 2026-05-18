@@ -1,9 +1,12 @@
-// Phase 4-fix v2 — Rich previews for the 7 pending action types.
-// Honest rendering of the payload without paraphrasing the side-effect.
-// Brand: Marine #0D1B2A, Vert #1AE08A, Rouge #E24B4A, Ivoire #F7F6F3.
+// Phase 4-fix v2 + 1d.5h-bis UX-04 — Rich previews for the 7 pending action types.
+// V15RoomPreview est désormais cliquable → ouvre Dialog Radix shadcn (ESC + overlay).
 import type { PendingAction } from "@/hooks/useAgentNotifications";
 import { Badge } from "@/components/ui/badge";
 import { V15RoomPreview } from "@/components/deal-room/V15RoomPreview";
+import {
+  Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Maximize2 } from "lucide-react";
 
 const MARINE = "#0D1B2A";
 const IVOIRE = "#F7F6F3";
@@ -31,19 +34,38 @@ function KV({ k, v }: { k: string; v: React.ReactNode }) {
   );
 }
 
-// 1 — Publish deal room: real V15RoomPreview embed.
+// 1 — Publish deal room: V15RoomPreview cliquable → Dialog.
 export function PublishDealRoomPreview({ p }: { p: PendingAction }) {
   return (
     <div className="space-y-2">
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-        Aperçu du deal room (lecture seule)
+        Aperçu du deal room (cliquer pour agrandir)
       </p>
-      <div
-        className="border rounded-lg overflow-hidden"
-        style={{ background: IVOIRE }}
-      >
-        <V15RoomPreview campaignId={p.campaign_id} className="h-[320px] overflow-y-auto" />
-      </div>
+      <Dialog>
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            className="group relative w-full border rounded-lg overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-ring"
+            style={{ background: IVOIRE }}
+            aria-label="Agrandir l'aperçu du deal room"
+          >
+            <V15RoomPreview campaignId={p.campaign_id} className="h-[320px] overflow-y-auto pointer-events-none" />
+            <div className="absolute inset-0 flex items-center justify-center bg-foreground/0 group-hover:bg-foreground/20 transition-colors">
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 rounded-full bg-background/90 border px-3 py-1.5 text-xs font-medium text-foreground">
+                <Maximize2 className="h-3.5 w-3.5" /> Agrandir
+              </span>
+            </div>
+          </button>
+        </DialogTrigger>
+        <DialogContent className="max-w-4xl p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="px-4 py-3 border-b">
+            <DialogTitle className="text-sm">Aperçu du deal room</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto" style={{ background: IVOIRE }}>
+            <V15RoomPreview campaignId={p.campaign_id} />
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="flex flex-wrap gap-2 text-[11px]">
         {p.payload?.layout_mode && <Badge variant="outline">Mode: {p.payload.layout_mode}</Badge>}
         {p.payload?.version_label && <Badge variant="outline">Version: {p.payload.version_label}</Badge>}
