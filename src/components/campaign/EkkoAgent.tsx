@@ -6,7 +6,7 @@
 // - Bulles brand: AE = bg-primary/text-primary-foreground (Marine/Ivoire),
 //   agent = bg-card border (Ivoire/Marine), CTA = bg-accent (Signal Green)
 // - Suppression E1/E2 (handleSuggestionAction, agentSuggestion, regex extract)
-// - Wording: "Execution Amplifier" (jamais "Deal Intelligence")
+// - Wording: "Execution Amplifier" (jamais l'ancien label obsolète)
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";

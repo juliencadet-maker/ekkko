@@ -89,7 +89,7 @@ export default function DealIntelligence() {
         setOutcomes((outcomesRes.data || []) as DealOutcomeRow[]);
         setTotalViewers(viewersRes.count ?? 0);
       } catch {
-        console.error("Fetch deal intelligence failed");
+        console.error("Fetch execution data failed");
       } finally {
         setIsLoading(false);
       }
@@ -175,8 +175,8 @@ export default function DealIntelligence() {
   return (
     <AppLayout>
       <PageHeader
-        title="Deal Intelligence"
-        description="Vue macro des signaux deal sur l'ensemble de votre pipeline"
+        title="Exécution"
+        description="Vue macro des signaux deal sur l'ensemble de votre pipeline."
       />
 
       {!hasData && (

@@ -1717,7 +1717,7 @@ export default function CampaignDetail() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Résumé du deal</TabsTrigger>
-          <TabsTrigger value="intelligence">Deal Intelligence</TabsTrigger>
+          <TabsTrigger value="intelligence">Exécution</TabsTrigger>
           <TabsTrigger value="assets">Contenu du deal</TabsTrigger>
         </TabsList>
 
@@ -2047,7 +2047,7 @@ export default function CampaignDetail() {
           </SectionGuard>
         </TabsContent>
 
-        {/* ─── Tab 2: Deal Intelligence ─── */}
+        {/* Tab 2: Exécution */}
         <TabsContent value="intelligence" className="space-y-6">
           {/* B3 — Questions clés */}
           <SectionGuard name="QuestionsClés">

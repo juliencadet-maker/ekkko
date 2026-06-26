@@ -22,7 +22,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT_DEAL = `Tu es l'agent de deal intelligence d'Ekko — copilote AE enterprise.
+const SYSTEM_PROMPT_DEAL = `Tu es l'agent Ekko Execution Amplifier, copilote AE enterprise.
 
 CONTEXTE DU DEAL ACTIF (snapshot léger) :
 {DEAL_CONTEXT}
@@ -55,7 +55,7 @@ FORMAT MARKDOWN :
 - Tu peux utiliser ### pour des sous-sections.
 - Tu peux préfixer une ligne avec [FAIT], [INFÉRENCE ≈] ou [CONTEXTE AE] (ces préfixes sont rendus en badge visuel).`;
 
-const SYSTEM_PROMPT_PORTFOLIO = `Tu es l'agent de deal intelligence d'Ekko — copilote AE enterprise, mode PORTFOLIO (cross-deal).
+const SYSTEM_PROMPT_PORTFOLIO = `Tu es l'agent Ekko Execution Amplifier, copilote AE enterprise, mode PORTFOLIO (cross-deal).
 
 CONTEXTE PORTFOLIO DE L'AE (snapshot léger) :
 {PORTFOLIO_CONTEXT}

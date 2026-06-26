@@ -14,6 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_ecosystem_map: {
+        Row: {
+          account_id: string
+          ae_confirmation: string | null
+          created_at: string | null
+          deal_id: string | null
+          domain_category: string
+          email_domain: string
+          engagement_score: number | null
+          first_appearance_at: string | null
+          id: string
+          inference_confidence: number | null
+          inferred_blocker_score: number | null
+          inferred_role: string | null
+          inferred_supporter_score: number | null
+          last_activity_at: string | null
+          org_id: string
+          silent_witness: boolean | null
+          state: string
+          truth_layer: string
+          updated_at: string | null
+          viewer_hash: string
+        }
+        Insert: {
+          account_id: string
+          ae_confirmation?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          domain_category: string
+          email_domain: string
+          engagement_score?: number | null
+          first_appearance_at?: string | null
+          id?: string
+          inference_confidence?: number | null
+          inferred_blocker_score?: number | null
+          inferred_role?: string | null
+          inferred_supporter_score?: number | null
+          last_activity_at?: string | null
+          org_id: string
+          silent_witness?: boolean | null
+          state?: string
+          truth_layer?: string
+          updated_at?: string | null
+          viewer_hash: string
+        }
+        Update: {
+          account_id?: string
+          ae_confirmation?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          domain_category?: string
+          email_domain?: string
+          engagement_score?: number | null
+          first_appearance_at?: string | null
+          id?: string
+          inference_confidence?: number | null
+          inferred_blocker_score?: number | null
+          inferred_role?: string | null
+          inferred_supporter_score?: number | null
+          last_activity_at?: string | null
+          org_id?: string
+          silent_witness?: boolean | null
+          state?: string
+          truth_layer?: string
+          updated_at?: string | null
+          viewer_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_ecosystem_map_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_ecosystem_map_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_ecosystem_map_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_storyline: {
+        Row: {
+          account_id: string
+          generated_at: string | null
+          id: string
+          key_milestones: Json | null
+          org_id: string
+          storyline_narrative: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          generated_at?: string | null
+          id?: string
+          key_milestones?: Json | null
+          org_id: string
+          storyline_narrative?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          generated_at?: string | null
+          id?: string
+          key_milestones?: Json | null
+          org_id?: string
+          storyline_narrative?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_storyline_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_storyline_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           account_domain_group: string | null
@@ -51,6 +187,64 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_outcomes: {
+        Row: {
+          deal_id: string
+          evidence_signals: Json | null
+          id: string
+          measured_at: string | null
+          measurement_window_days: number | null
+          org_id: string
+          outcome: string | null
+          pattern_code: string
+          pattern_match_id: string | null
+        }
+        Insert: {
+          deal_id: string
+          evidence_signals?: Json | null
+          id?: string
+          measured_at?: string | null
+          measurement_window_days?: number | null
+          org_id: string
+          outcome?: string | null
+          pattern_code: string
+          pattern_match_id?: string | null
+        }
+        Update: {
+          deal_id?: string
+          evidence_signals?: Json | null
+          id?: string
+          measured_at?: string | null
+          measurement_window_days?: number | null
+          org_id?: string
+          outcome?: string | null
+          pattern_code?: string
+          pattern_match_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_outcomes_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_outcomes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_outcomes_pattern_match_id_fkey"
+            columns: ["pattern_match_id"]
+            isOneToOne: false
+            referencedRelation: "pattern_matches"
             referencedColumns: ["id"]
           },
         ]
@@ -662,6 +856,7 @@ export type Database = {
       assets: {
         Row: {
           archived_at: string | null
+          arme_type: string | null
           asset_type: string
           created_at: string
           created_via: string
@@ -682,6 +877,7 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          arme_type?: string | null
           asset_type: string
           created_at?: string
           created_via?: string
@@ -702,6 +898,7 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          arme_type?: string | null
           asset_type?: string
           created_at?: string
           created_via?: string
@@ -768,6 +965,178 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "audit_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      best_action_proposals: {
+        Row: {
+          created_at: string | null
+          id: string
+          org_id: string
+          pattern_draft: Json
+          proposed_by_ae_id: string
+          rationale: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          org_id: string
+          pattern_draft: Json
+          proposed_by_ae_id: string
+          rationale?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          org_id?: string
+          pattern_draft?: Json
+          proposed_by_ae_id?: string
+          rationale?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "best_action_proposals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      best_actions_catalog: {
+        Row: {
+          acceptance_rate: number | null
+          action_family: string
+          action_impact_level: string | null
+          action_type: string
+          bypass_confidence_threshold: boolean | null
+          contraindications: Json | null
+          cooldown_days: number | null
+          created_at: string | null
+          current_stage: string
+          differentiation_score: number | null
+          effort_level: string | null
+          expected_outcome: string | null
+          expected_signal_windows: Json | null
+          fallback_action_if_failed: string | null
+          generated_asset_type: string | null
+          grip_score: number | null
+          id: string
+          lifecycle_stage: string | null
+          negative_outcomes: number | null
+          org_id: string
+          origin: string | null
+          owner: string | null
+          pattern_code: string
+          pattern_type: string
+          positive_outcomes: number | null
+          proposed_by_ae_id: string | null
+          rationale_fact_based: string | null
+          required_executive_role: string | null
+          required_inputs: Json | null
+          required_tier: string | null
+          reversibility: string | null
+          status: string | null
+          target_role: string | null
+          total_matches: number | null
+          triggers_when: string | null
+          updated_at: string | null
+          urgency: string | null
+        }
+        Insert: {
+          acceptance_rate?: number | null
+          action_family: string
+          action_impact_level?: string | null
+          action_type: string
+          bypass_confidence_threshold?: boolean | null
+          contraindications?: Json | null
+          cooldown_days?: number | null
+          created_at?: string | null
+          current_stage?: string
+          differentiation_score?: number | null
+          effort_level?: string | null
+          expected_outcome?: string | null
+          expected_signal_windows?: Json | null
+          fallback_action_if_failed?: string | null
+          generated_asset_type?: string | null
+          grip_score?: number | null
+          id?: string
+          lifecycle_stage?: string | null
+          negative_outcomes?: number | null
+          org_id: string
+          origin?: string | null
+          owner?: string | null
+          pattern_code: string
+          pattern_type: string
+          positive_outcomes?: number | null
+          proposed_by_ae_id?: string | null
+          rationale_fact_based?: string | null
+          required_executive_role?: string | null
+          required_inputs?: Json | null
+          required_tier?: string | null
+          reversibility?: string | null
+          status?: string | null
+          target_role?: string | null
+          total_matches?: number | null
+          triggers_when?: string | null
+          updated_at?: string | null
+          urgency?: string | null
+        }
+        Update: {
+          acceptance_rate?: number | null
+          action_family?: string
+          action_impact_level?: string | null
+          action_type?: string
+          bypass_confidence_threshold?: boolean | null
+          contraindications?: Json | null
+          cooldown_days?: number | null
+          created_at?: string | null
+          current_stage?: string
+          differentiation_score?: number | null
+          effort_level?: string | null
+          expected_outcome?: string | null
+          expected_signal_windows?: Json | null
+          fallback_action_if_failed?: string | null
+          generated_asset_type?: string | null
+          grip_score?: number | null
+          id?: string
+          lifecycle_stage?: string | null
+          negative_outcomes?: number | null
+          org_id?: string
+          origin?: string | null
+          owner?: string | null
+          pattern_code?: string
+          pattern_type?: string
+          positive_outcomes?: number | null
+          proposed_by_ae_id?: string | null
+          rationale_fact_based?: string | null
+          required_executive_role?: string | null
+          required_inputs?: Json | null
+          required_tier?: string | null
+          reversibility?: string | null
+          status?: string | null
+          target_role?: string | null
+          total_matches?: number | null
+          triggers_when?: string | null
+          updated_at?: string | null
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "best_actions_catalog_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
@@ -1030,6 +1399,51 @@ export type Database = {
           typical_titles?: string[] | null
         }
         Relationships: []
+      }
+      compound_signals: {
+        Row: {
+          atomic_signals_refs: Json
+          compound_type: string
+          confidence: number
+          deal_id: string
+          detected_at: string | null
+          id: string
+          org_id: string
+        }
+        Insert: {
+          atomic_signals_refs: Json
+          compound_type: string
+          confidence: number
+          deal_id: string
+          detected_at?: string | null
+          id?: string
+          org_id: string
+        }
+        Update: {
+          atomic_signals_refs?: Json
+          compound_type?: string
+          confidence?: number
+          deal_id?: string
+          detected_at?: string | null
+          id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compound_signals_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compound_signals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deal_assets: {
         Row: {
@@ -1506,24 +1920,32 @@ export type Database = {
       }
       deal_scores: {
         Row: {
+          action_impact_level: string | null
+          action_readiness_score: number | null
           alerts: Json | null
+          arme_coverage_score: number | null
           avg_watch_depth: number | null
           blocker_count: number | null
           breadth: number | null
           campaign_id: string
           cold_start_regime: string | null
+          compelling_event_urgency: string | null
           confidence_level: string | null
           created_at: string
           days_since_last_signal: number | null
           des: number | null
+          differentiation_gap: number | null
           engagement_half_life: number | null
           event_velocity: number | null
+          execution_gap: number | null
+          external_context_pressure: string | null
           graph_centralization: number | null
           id: string
           layer_coverage: Json | null
           metadata: Json | null
           momentum: string | null
           multi_threading_score: number | null
+          political_risk_score: number | null
           priority_deal_score: number | null
           priority_score: number | null
           recommended_action: Json | null
@@ -1531,30 +1953,41 @@ export type Database = {
           risk_level: string | null
           scored_at: string
           signal_coverage: number | null
+          silence_qualifier: string | null
           sponsor_count: number | null
           stage_signal_gap: number | null
+          storyline_narrative: string | null
           trajectory: string | null
           viewer_count: number | null
+          vp_coaching_signal: string | null
         }
         Insert: {
+          action_impact_level?: string | null
+          action_readiness_score?: number | null
           alerts?: Json | null
+          arme_coverage_score?: number | null
           avg_watch_depth?: number | null
           blocker_count?: number | null
           breadth?: number | null
           campaign_id: string
           cold_start_regime?: string | null
+          compelling_event_urgency?: string | null
           confidence_level?: string | null
           created_at?: string
           days_since_last_signal?: number | null
           des?: number | null
+          differentiation_gap?: number | null
           engagement_half_life?: number | null
           event_velocity?: number | null
+          execution_gap?: number | null
+          external_context_pressure?: string | null
           graph_centralization?: number | null
           id?: string
           layer_coverage?: Json | null
           metadata?: Json | null
           momentum?: string | null
           multi_threading_score?: number | null
+          political_risk_score?: number | null
           priority_deal_score?: number | null
           priority_score?: number | null
           recommended_action?: Json | null
@@ -1562,30 +1995,41 @@ export type Database = {
           risk_level?: string | null
           scored_at?: string
           signal_coverage?: number | null
+          silence_qualifier?: string | null
           sponsor_count?: number | null
           stage_signal_gap?: number | null
+          storyline_narrative?: string | null
           trajectory?: string | null
           viewer_count?: number | null
+          vp_coaching_signal?: string | null
         }
         Update: {
+          action_impact_level?: string | null
+          action_readiness_score?: number | null
           alerts?: Json | null
+          arme_coverage_score?: number | null
           avg_watch_depth?: number | null
           blocker_count?: number | null
           breadth?: number | null
           campaign_id?: string
           cold_start_regime?: string | null
+          compelling_event_urgency?: string | null
           confidence_level?: string | null
           created_at?: string
           days_since_last_signal?: number | null
           des?: number | null
+          differentiation_gap?: number | null
           engagement_half_life?: number | null
           event_velocity?: number | null
+          execution_gap?: number | null
+          external_context_pressure?: string | null
           graph_centralization?: number | null
           id?: string
           layer_coverage?: Json | null
           metadata?: Json | null
           momentum?: string | null
           multi_threading_score?: number | null
+          political_risk_score?: number | null
           priority_deal_score?: number | null
           priority_score?: number | null
           recommended_action?: Json | null
@@ -1593,10 +2037,13 @@ export type Database = {
           risk_level?: string | null
           scored_at?: string
           signal_coverage?: number | null
+          silence_qualifier?: string | null
           sponsor_count?: number | null
           stage_signal_gap?: number | null
+          storyline_narrative?: string | null
           trajectory?: string | null
           viewer_count?: number | null
+          vp_coaching_signal?: string | null
         }
         Relationships: [
           {
@@ -1613,34 +2060,40 @@ export type Database = {
           campaign_id: string | null
           confidence: number | null
           created_at: string | null
+          dimension_d106: string | null
           id: string
           interpretation: string | null
           org_id: string | null
           raw_data: Json | null
           signal_layer: string
           signal_type: string
+          subtype: string | null
         }
         Insert: {
           campaign_id?: string | null
           confidence?: number | null
           created_at?: string | null
+          dimension_d106?: string | null
           id?: string
           interpretation?: string | null
           org_id?: string | null
           raw_data?: Json | null
           signal_layer: string
           signal_type: string
+          subtype?: string | null
         }
         Update: {
           campaign_id?: string | null
           confidence?: number | null
           created_at?: string | null
+          dimension_d106?: string | null
           id?: string
           interpretation?: string | null
           org_id?: string | null
           raw_data?: Json | null
           signal_layer?: string
           signal_type?: string
+          subtype?: string | null
         }
         Relationships: [
           {
@@ -1652,6 +2105,57 @@ export type Database = {
           },
           {
             foreignKeyName: "deal_signals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_storyline: {
+        Row: {
+          deal_id: string
+          generated_at: string | null
+          id: string
+          key_milestones: Json | null
+          org_id: string
+          storyline_for_exec: string | null
+          storyline_for_vp: string | null
+          storyline_narrative: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          deal_id: string
+          generated_at?: string | null
+          id?: string
+          key_milestones?: Json | null
+          org_id: string
+          storyline_for_exec?: string | null
+          storyline_for_vp?: string | null
+          storyline_narrative?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          deal_id?: string
+          generated_at?: string | null
+          id?: string
+          key_milestones?: Json | null
+          org_id?: string
+          storyline_for_exec?: string | null
+          storyline_for_vp?: string | null
+          storyline_narrative?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_storyline_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_storyline_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
@@ -1822,6 +2326,132 @@ export type Database = {
             columns: ["trigger_id"]
             isOneToOne: false
             referencedRelation: "deal_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_news_events: {
+        Row: {
+          account_id: string
+          classified_relevance: string | null
+          confidence: number | null
+          created_at: string | null
+          event_type: string
+          id: string
+          observed_at: string
+          org_id: string
+          payload: Json
+          source: string
+          time_sensitivity: string | null
+          truth_layer: string
+        }
+        Insert: {
+          account_id: string
+          classified_relevance?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          observed_at: string
+          org_id: string
+          payload: Json
+          source: string
+          time_sensitivity?: string | null
+          truth_layer?: string
+        }
+        Update: {
+          account_id?: string
+          classified_relevance?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          observed_at?: string
+          org_id?: string
+          payload?: Json
+          source?: string
+          time_sensitivity?: string | null
+          truth_layer?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_news_events_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_news_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_people_changes: {
+        Row: {
+          account_id: string
+          change_type: string
+          classified_impact: string | null
+          classified_relevance: string | null
+          confidence: number | null
+          created_at: string | null
+          id: string
+          observed_at: string
+          org_id: string
+          person_name: string | null
+          person_role_new: string | null
+          person_role_old: string | null
+          source: string
+          truth_layer: string
+        }
+        Insert: {
+          account_id: string
+          change_type: string
+          classified_impact?: string | null
+          classified_relevance?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          observed_at: string
+          org_id: string
+          person_name?: string | null
+          person_role_new?: string | null
+          person_role_old?: string | null
+          source: string
+          truth_layer?: string
+        }
+        Update: {
+          account_id?: string
+          change_type?: string
+          classified_impact?: string | null
+          classified_relevance?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          observed_at?: string
+          org_id?: string
+          person_name?: string | null
+          person_role_new?: string | null
+          person_role_old?: string | null
+          source?: string
+          truth_layer?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_people_changes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_people_changes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
             referencedColumns: ["id"]
           },
         ]
@@ -2066,6 +2696,75 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pattern_matches: {
+        Row: {
+          ae_user_id: string | null
+          confidence: number
+          contraindications_checked: Json | null
+          deal_id: string
+          expected_window: Json | null
+          id: string
+          meta_pattern_fallback: boolean | null
+          org_id: string
+          pattern_code: string
+          pending_external_action_id: string | null
+          responded_at: string | null
+          status: string
+          surfaced_at: string | null
+          trigger_source: string
+          triggered_at: string
+        }
+        Insert: {
+          ae_user_id?: string | null
+          confidence: number
+          contraindications_checked?: Json | null
+          deal_id: string
+          expected_window?: Json | null
+          id?: string
+          meta_pattern_fallback?: boolean | null
+          org_id: string
+          pattern_code: string
+          pending_external_action_id?: string | null
+          responded_at?: string | null
+          status?: string
+          surfaced_at?: string | null
+          trigger_source: string
+          triggered_at?: string
+        }
+        Update: {
+          ae_user_id?: string | null
+          confidence?: number
+          contraindications_checked?: Json | null
+          deal_id?: string
+          expected_window?: Json | null
+          id?: string
+          meta_pattern_fallback?: boolean | null
+          org_id?: string
+          pattern_code?: string
+          pending_external_action_id?: string | null
+          responded_at?: string | null
+          status?: string
+          surfaced_at?: string | null
+          trigger_source?: string
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pattern_matches_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pattern_matches_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pending_external_actions: {
         Row: {
