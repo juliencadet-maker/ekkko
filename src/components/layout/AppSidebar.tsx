@@ -35,7 +35,7 @@ const navigationItems = [
   { label: "Inbox", href: "/app/inbox", icon: InboxIcon, badgeKey: "inboxCount" as const },
   { label: "Deals", href: "/app/campaigns", icon: LayoutList },
   { label: "Agent Ekko", href: "/app/agent", icon: MessageSquare, badgeKey: "agentPending" as const },
-  { label: "Deal Intelligence", href: "/app/deal-intelligence", icon: Brain },
+  { label: "Exécution", href: "/app/deal-intelligence", icon: Brain },
   { label: "Identités", href: "/app/identities", icon: Users },
   {
     label: "Validations",

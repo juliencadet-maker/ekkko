@@ -70,7 +70,7 @@ const BLOCKS: Block[] = [
     kind: "deck",
     eyebrow: "02 — Présentation",
     title: "Ekko en 8 slides",
-    subtitle: "Plateforme Deal Intelligence pour équipes Enterprise",
+    subtitle: "Execution Amplifier pour équipes Enterprise",
     viewed: true,
     viewed_at: "vu mardi 14:41",
   },
@@ -408,7 +408,7 @@ function PricingBlock() {
             )}
           </div>
           <ul className="space-y-1.5 text-[13px] text-foreground/65">
-            <li>· Deal Intelligence complet</li>
+            <li>· Execution Amplifier complet</li>
             <li>· Read receipts & heatmaps</li>
             <li>· Intégrations CRM</li>
           </ul>
@@ -715,7 +715,7 @@ function AssistantFAB() {
                   En 3 points
                 </p>
                 <ul className="space-y-2 text-[14px] leading-relaxed text-foreground/80">
-                  <li>· Plateforme Deal Intelligence pour équipes Enterprise.</li>
+                  <li>· Execution Amplifier pour équipes Enterprise.</li>
                   <li>· ROI projeté +8,4 M€ sur 12 mois pour 47 AEs.</li>
                   <li>· Sécurité ISO 27001, hébergement EU, DPA RGPD.</li>
                 </ul>
